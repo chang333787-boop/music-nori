@@ -1,14 +1,17 @@
 // 리4 2분음표 — 한 소리가 박 여러 개를 차지한다(박 점 두 개가 한 막대로 이어진 그림)
 //  보기: 예시 넷(4분 넷 · 2분 둘 · 섞음 둘 · 악기 넷) — 박 점 위 막대가 소리 나는 동안 차오른다
-//  따라 하기: 한 마디씩 — 막대가 선에 닿으면 누르고, 막대가 끝날 때 뗀다 · 세 번 이어서 맞히면 지남
+//  연습: 한 마디씩 — 막대가 선에 닿으면 꾹 누르고 있다가, 막대가 끝나면 뗀다 · 세 번 이어서 맞히면 지남
 //  확인 게임: 풍선 불기 9마디(22음) · 4분음표 = 짧게 누르기(동그란 풍선) · 2분음표 = 두 박 동안 누르기(긴 풍선)
 //  판정: 누름 시작 = engine/judge.js 판정 창 · 뗌 = 2분음표는 끝 박 ±(학년군 비율) · 4분음표는 한 박 반 안에만 떼면 됨(_beat.js releaseGrade)
 //  길이는 가로 길이로(화면 약속) — 풍선도 길게 늘어난다
-import { bpmOf, releaseGrade, HOLD_WIN, layoutNotes, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, fireUp, startCard, noteSVG, SYL, LEN } from './_beat.js';
+//  11-07 평가 2차: 긴 음 다루는 말은 하나로(HOW) · 준비 박 숫자 · 판정 말은 말풍선(ui.tell) · 음 번호는 ui.count · 연습 점은 ui.practice
+//   지금 선(재생선)과 '지금' 막대 = 잉크 · 지난 박 = 진한 점 · 남은 박 = 빈 동그라미 · 마디 세로줄은 리5(마디)에서 배우므로 여기선 그리지 않음
+import { bpmOf, releaseGrade, HOLD_WIN, layoutNotes, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, fireUp, startCard, noteSVG, SYL, LEN, exampleGroup, countTeller } from './_beat.js';
 import { windows } from '../../../engine/judge.js';
 
 const PX = 170, COUNT = 4, PITCH = 67;                      // 박 하나 = 170px · 솔(G4) 한 음
 const BAL = ['#BFDDEF', '#F2B6C6', '#CFE5C3', '#F3D98B', '#D9CDEB'];
+const HOW = '막대가 선에 닿으면 꾹 누르고 있다가, 막대가 끝나면 떼요';   // 긴 음 다루는 말(연습 · 게임 · 시작 카드 같은 말)
 const EXAMPLES = [
   { bars: [['q', 'q', 'q', 'q']], name: '4분음표 넷', inst: 'recorder', inName: '리코더' },
   { bars: [['h', 'h']], name: '2분음표 둘', inst: 'strings', inName: '현악기' },
@@ -22,7 +25,7 @@ const PLAN = [['q', 'q', 'h'], ['q', 'q', 'h'], ['h', 'h'], ['h', 'q', 'q'], ['q
 let RUN = 0;
 const sylOf = k => (k === 'q' ? '따' : SYL[k]);
 
-// 박 길(가로) — 박 점 · 마디줄 · 음표 막대(길이만큼) · 준비 박 숫자
+// 박 길(가로) — 박 점(지난 박 진한 점 · 남은 박 빈 동그라미) · 음표 막대(길이만큼) · 준비 박 점
 function laneView(kit, bars, { scroll = true } = {}) {
   const { h } = kit;
   const stick = kit.band === 'low';
@@ -30,9 +33,10 @@ function laneView(kit, bars, { scroll = true } = {}) {
   const rests = [];
   { let b = 0; for (const bar of bars) for (const k of bar) { if (k === 'qr') rests.push(b); b += LEN[k]; } }
   const track = h('div', { class: 'r4-track' });
+  const dots = [];                                            // { el, b } — 지난 박이면 진하게
   for (let b = scroll ? -COUNT : 0; b < beats; b++) {
-    if (b > 0 && b % 4 === 0) track.append(h('i', { class: 'r4-barline', style: { left: `${b * PX - 32}px` } }));
-    track.append(h('i', { class: 'r4-dot' + (b < 0 ? ' cnt' : ''), style: { left: `${b * PX}px` } }, b < 0 ? String(b + COUNT + 1) : ''));
+    const el = h('i', { class: 'r4-dot' + (b < 0 ? ' cnt' : ''), style: { left: `${b * PX}px` } });
+    track.append(el); dots.push({ el, b });
   }
   const els = notes.map(n => {
     const fill = h('i', { class: 'fill' });
@@ -40,22 +44,21 @@ function laneView(kit, bars, { scroll = true } = {}) {
       fill, h('span', { class: 'sym', html: noteSVG(n.kind, { stick, size: 56 }) }), h('b', { class: 'syl' }, sylOf(n.kind)));
     track.append(el);
     // 막대 위 박 점(이 음이 차지하는 박마다 하나 — 2분음표는 둘이 한 막대로 이어진다)
-    for (let j = 0; j < n.len; j++) el.append(h('i', { class: 'pdot', style: { left: `${19 + j * PX}px` } }));
+    for (let j = 0; j < n.len; j++) { const d = h('i', { class: 'pdot', style: { left: `${19 + j * PX}px` } }); el.append(d); dots.push({ el: d, b: n.beat + j }); }
     return { el, fill };
   });
   for (const b of rests) track.append(h('span', { class: 'r4-rest', style: { left: `${b * PX}px` }, html: noteSVG('qr', { size: 56 }) }, h('b', {}, '쉼')));
   const hit = h('i', { class: 'r4-hit' });
-  const cnum = h('b', { class: 'r4-cnum' });                  // 멈춘 길(보기)의 준비 박 숫자
-  const lane = h('div', { class: 'r4-lane' + (scroll ? '' : ' still') }, track, hit, cnum);
-  let x0 = 0;
+  const lane = h('div', { class: 'r4-lane' + (scroll ? '' : ' still') }, track, hit);
+  let x0 = 0, pastB = -99;
+  const past = b => { if (b === pastB) return; pastB = b; for (const d of dots) d.el.classList.toggle('past', d.b <= b); };
   return {
     lane, notes, beats, els,
     // nowBeat = 첫 박에서 몇 박 지났나(준비 박은 음수) · 길을 옮기거나(scroll) 선을 옮긴다(still)
     place(nowBeat) {
+      past(Math.floor(nowBeat + 0.05));
       if (scroll) { track.style.transform = `translateX(${(220 - nowBeat * PX).toFixed(1)}px)`; return; }
       if (!x0) x0 = Math.max(60, (lane.clientWidth - beats * PX) / 2 + 22);
-      const c = nowBeat < 0 && nowBeat >= -COUNT ? String(Math.floor(nowBeat) + COUNT + 1) : '';
-      if (cnum.textContent !== c) cnum.textContent = c;
       track.style.transform = `translateX(${x0}px)`;
       hit.style.transform = `translateX(${(x0 + Math.max(-0.5, Math.min(beats - 0.3, nowBeat)) * PX).toFixed(1)}px)`;
     },
@@ -70,8 +73,7 @@ function skyView(kit) {
   const { h } = kit;
   const hog = kit.friendImg(kit.friend, 'idle', { label: false });
   const hogBox = h('div', { class: 'r4-hog' }, hog);
-  const word = h('div', { class: 'r4-word' });
-  const sky = h('div', { class: 'r4-sky' }, hogBox, word);
+  const sky = h('div', { class: 'r4-sky' }, hogBox);
   const ROW0 = 420;
   let slot = 0, n = 0, rowX = [ROW0, ROW0];
   function balloon(len) {
@@ -85,7 +87,7 @@ function skyView(kit) {
       grow,
       tie() {                                   // 줄에 매달기(성공한 풍선이 하늘에 남는다)
         grow(1);
-        const w = W(1) * 0.5, lim = sky.clientWidth - 190, row = rowX[0] + w > lim ? 1 : 0;   /* 오른쪽 위 = 셈 자리 */
+        const w = W(1) * 0.5, lim = sky.clientWidth - 30, row = rowX[0] + w > lim ? 1 : 0;
         if (rowX[row] + w > lim) rowX = [ROW0, ROW0];
         const x = rowX[row]; rowX[row] += w + 8;
         el.classList.add('tied');
@@ -96,12 +98,11 @@ function skyView(kit) {
       away() { el.classList.add('away'); setTimeout(() => el.remove(), 900); },
     };
   }
-  const say = (t, k) => { word.textContent = t; word.dataset.k = k || ''; word.classList.remove('show'); void word.offsetWidth; word.classList.add('show'); };
-  return { sky, hog, hogBox, balloon, say };
+  return { sky, hog, hogBox, balloon };
 }
 
 // 한 판 틀 — 준비 박 넷 → 마디들(쉼 없이) · 누르기/떼기 판정 · 소리 · 그림
-function holdRun(kit, view, lane, { bars, bpm, onNote, onEnd }) {
+function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
   const { engine } = kit;
   const ac = engine.ensure();
   const bus = newBus(engine);
@@ -118,8 +119,10 @@ function holdRun(kit, view, lane, { bars, bpm, onNote, onEnd }) {
   }
   engine.note('marimba', 60, tOf(lane.beats), beat * 2, 0.45, bus);
   const notes = lane.notes.map(n => ({ ...n, at: tOf(n.beat), res: null, press: null, down: null, bal: null }));
-  let holding = null, tone = null, gone = false, raf = 0, ended = false;
+  let holding = null, tone = null, gone = false, raf = 0, ended = false, nextN = 0;
   const atMs = n => perfOf(ac, n.at);
+  const counter = countTeller(ui);
+  const say = (t, k) => ui.tell(t, k, 800);                  // 판정 말 = 말풍선(무대 위에 겹쳐 그리지 않음)
 
   function down(e) {
     if (gone) return;
@@ -158,23 +161,25 @@ function holdRun(kit, view, lane, { bars, bpm, onNote, onEnd }) {
     lane.now(i, false);
     if (rel === 'ok') {
       lane.fillTo(i, 1); lane.mark(i, n.press === 'great' ? 'ok great' : 'ok'); n.bal.tie();
-      view.say(n.press === 'great' ? '딱!' : '좋아', n.press === 'great' ? 'great' : 'good');
+      say(n.press === 'great' ? '딱!' : '좋아', 'good');
       kit.setPose(view.hog, kit.friend, 'happy');
     } else if (rel === 'short') {
-      lane.mark(i, 'short'); n.bal.pop(); view.say('일찍 뗐어요', 'oops'); kit.setPose(view.hog, kit.friend, 'oops');
+      lane.mark(i, 'short'); n.bal.pop(); say('일찍 뗐어요', 'oops'); kit.setPose(view.hog, kit.friend, 'oops');
     } else {
-      lane.mark(i, 'long'); n.bal.away(); view.say(n.len >= 2 ? '두 박에서 떼요' : '짧게 떼요', 'oops'); kit.setPose(view.hog, kit.friend, 'oops');
+      lane.mark(i, 'long'); n.bal.away(); say(n.len >= 2 ? '두 박에서 떼요' : '짧게 떼요', 'oops'); kit.setPose(view.hog, kit.friend, 'oops');
     }
     onNote && onNote(i, n.res);
   }
   function loop() {
     if (gone) return;
-    const now = heardNow(ac);
-    lane.place((now - t0) / beat);
+    const now = heardNow(ac), nb = (now - t0) / beat;
+    lane.place(nb);
+    counter(nb >= -COUNT && nb < 0 ? Math.floor(nb) + COUNT + 1 : 0);   // 준비 박 세기 = 말풍선
+    while (nextN < notes.length && now >= notes[nextN].at - beat * 0.5) { nextN++; onCount && onCount(nextN, notes.length); }
     notes.forEach((n, i) => {
       if (n.res) return;
       if (!n.press) {
-        if (now > n.at + (w.late + lat) / 1000) { n.res = { press: 'miss', rel: null, ok: false }; lane.mark(i, 'miss'); view.say('놓쳤어요', 'oops'); onNote && onNote(i, n.res); }
+        if (now > n.at + (w.late + lat) / 1000) { n.res = { press: 'miss', rel: null, ok: false }; lane.mark(i, 'miss'); say('놓쳤어요', 'oops'); onNote && onNote(i, n.res); }
         return;
       }
       // 누르는 중 — 막대가 차오르고 풍선이 커진다
@@ -197,7 +202,7 @@ function holdRun(kit, view, lane, { bars, bpm, onNote, onEnd }) {
   });
   return {
     down, up, targets,
-    stop() { gone = true; cancelAnimationFrame(raf); if (tone) { tone.stop(ac.currentTime); tone = null; } killBus(engine, bus); },
+    stop() { gone = true; cancelAnimationFrame(raf); if (tone) { tone.stop(ac.currentTime); tone = null; } killBus(engine, bus); counter(0); },
   };
 }
 
@@ -214,17 +219,18 @@ export default {
     const { h, onPress, engine } = kit;
     const stick = kit.band === 'low';
     ui.say('2분음표는 소리 하나가 박 두 개 동안 이어져요');
-    let lane = laneView(kit, EXAMPLES[0].bars, { scroll: false });
+    let lane = laneView(kit, EXAMPLES[2].bars, { scroll: false });
     const laneBox = h('div', { class: 'r4-lanebox' }, lane.lane);
     const hog = kit.friendImg(kit.friend, 'idle', { label: false });
     const pair = (kind, beats, text, sub) => h('div', { class: 'r4-pair' },
-      h('span', { class: 'r4-psym', html: noteSVG(kind, { stick, size: 70 }) }),
+      h('span', { class: 'r4-psym', html: noteSVG(kind, { stick, size: 64 }) }),
       h('span', { class: 'r4-pbar ' + kind }, ...Array.from({ length: beats }, () => h('i'))),
       h('span', { class: 'r4-ptxt' }, h('b', {}, text), h('small', {}, sub)));
+    const counter = countTeller(ui);
     let bus = null, raf = 0;
-    const stop = () => { cancelAnimationFrame(raf); killBus(engine, bus); bus = null; kit.setPose(hog, kit.friend, 'idle'); };
+    const stop = () => { cancelAnimationFrame(raf); killBus(engine, bus); bus = null; counter(0); kit.setPose(hog, kit.friend, 'idle'); };
     const cards = EXAMPLES.map(ex => {
-      const btn = h('button', { type: 'button', class: 'excard r4-ex' },
+      const btn = h('button', { type: 'button', class: 'excard r4-ex', 'aria-label': `${ex.name} · ${ex.inName} 들어 보기` },
         h('b', {}, ex.bars[0].map(sylOf).join(' ')),
         h('span', { class: 'r4-mini', html: ex.bars[0].map(k => noteSVG(k, { stick, size: 38 })).join('') }),
         h('span', {}, `${ex.name} · ${ex.inName}`));
@@ -241,6 +247,7 @@ export default {
         const loop = () => {
           const nb = (heardNow(ac) - t0) / beat;
           lane.place(nb);
+          counter(nb >= -COUNT && nb < 0 ? Math.floor(nb) + COUNT + 1 : 0);
           lane.notes.forEach((n, i) => { lane.fillTo(i, (nb - n.beat) / (n.len - 0.12)); lane.now(i, nb >= n.beat && nb < n.beat + n.len); });
           kit.setPose(hog, kit.friend, nb >= 0 && nb < lane.beats ? 'play' : 'idle');
           if (nb > lane.beats + 0.6) { stop(); return; }
@@ -253,31 +260,27 @@ export default {
     });
     ui.stage.append(h('div', { class: 'r4 r4-show' },
       h('div', { class: 'r4-pairs' }, h('div', { class: 'r4-shog' }, hog),
-        pair('q', 1, '4분음표 = 박 하나', '따 · 손뼉 한 번'),
-        pair('h', 2, '2분음표 = 박 둘', '따아 · 쭈욱 이어서')),
+        pair('q', 1, '4분음표 = 박 하나', "'따' · 손뼉 한 번"),
+        pair('h', 2, '2분음표 = 박 둘', "'따아' · 소리가 두 박 동안 이어져요")),
       laneBox,
-      h('div', { class: 'r4-exgrid' }, ...cards)));
+      exampleGroup(kit, cards)));
     requestAnimationFrame(() => lane.place(-1));
     let k = 0;
     kit.setAuto(() => { if (k < cards.length) cards[k++].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); else kit.next(); });
     return () => stop();
   },
 
-  // ── 따라 하기: 한 마디씩 — 세 번 이어서 맞히면 지남 ──
+  // ── 연습: 한 마디씩 — 세 번 이어서 맞히면 지남 ──
   follow(ui, kit) {
     const { h } = kit;
     const T = kit.timers(), r = kit.rng();
-    ui.say('막대가 선에 닿으면 누르고, 막대가 끝나면 떼요');
+    ui.say(HOW);
     const host = h('div', { class: 'r4-host' });
     const msg = h('p', { class: 'fmsg' });
-    const dots = h('span', { class: 'streak' }, ...[0, 1, 2].map(() => h('i')));
-    ui.stage.append(h('div', { class: 'r4-wrap' }, host, h('div', { class: 'r4-info' }, dots, msg)));
+    ui.stage.append(h('div', { class: 'r4-wrap' }, host, h('div', { class: 'r4-info' }, msg)));
     let streak = 0, run = null, n = 0, passed = false;
-    const paint = () => [...dots.children].forEach((d, i) => d.classList.toggle('on', i < streak));
     const input = pressInput(ui, kit, { onDown: e => run && run.down(e), onUp: e => run && run.up(e), label: '꾹!', aria: '꾹 — 누르고 있기' });
-    const skip = h('button', { type: 'button' }, '넘어가기');
-    kit.onPress(skip, () => kit.next());
-    ui.setBar(skip, input.btn);
+    ui.setBar(...input.nodes);
     const auto = autoScheduler(T);
     function attempt() {
       if (passed) return;
@@ -287,20 +290,22 @@ export default {
       run && run.stop();
       const sc = holdScene(kit, [bar]);
       host.replaceChildren(sc.el);
-      run = holdRun(kit, sc.view, sc.lane, {
+      run = holdRun(kit, ui, sc.view, sc.lane, {
         bars: [bar], bpm: bpmOf('hold', kit.band),
         onEnd: res => {
           const bad = res.findIndex(x => !x.ok);
           if (bad < 0) {
-            kit.sfx.good(kit.engine); streak++; paint();
-            msg.textContent = '맞아요 — 따는 한 박, 따아는 두 박 동안 눌렀어요';
+            kit.sfx.good(kit.engine); streak++; ui.practice(streak);
+            ui.tell('맞아요', 'good');
+            msg.textContent = "'따'는 한 박, '따아'는 두 박 동안 눌렀어요";
             if (streak >= 3) { passed = true; run.stop(); input.off(); kit.pass('세 번 이어서 길이를 맞혔어요'); return; }
           } else {
-            streak = 0; paint();
+            streak = 0; ui.practice(0);
+            ui.tell('다시 들어 봐요', 'oops', 1500);
             const kind = sc.lane.notes[bad].kind, x = res[bad];
             msg.textContent = x.press === 'miss' ? `${bad + 1}번째 음을 놓쳤어요 — 막대가 선에 닿을 때 눌러요`
-              : x.rel === 'short' ? '따아(2분음표)를 일찍 뗐어요 — 박 점 두 개가 지날 때까지 눌러요'
-                : kind === 'q' ? '따(4분음표)는 한 박만 — 짧게 눌렀다 떼요' : '따아는 두 박까지만 — 막대가 끝나면 떼요';
+              : x.rel === 'short' ? "'따아'(2분음표)를 일찍 뗐어요 — 막대가 끝날 때까지 꾹 누르고 있어요"
+                : kind === 'q' ? "'따'(4분음표)는 한 박만 — 짧게 눌렀다 떼요" : "'따아'는 두 박까지만 — 막대가 끝나면 떼요";
           }
           T.after(1500, attempt);
         },
@@ -311,29 +316,28 @@ export default {
     return () => { T.clear(); run && run.stop(); input.off(); };
   },
 
-  // ── 확인 게임: 풍선 불기 8마디 ──
+  // ── 확인 게임: 풍선 불기 9마디 ──
   game(ui, kit) {
     const { h } = kit;
     const T = kit.timers();
-    ui.say('');
+    ui.say(HOW);
     const sc = holdScene(kit, PLAN);
-    const counter = h('div', { class: 'r4-counter' });
-    ui.stage.append(h('div', { class: 'r4-wrap game' }, sc.el, h('div', { class: 'r4-info' }, counter)));
+    ui.stage.append(h('div', { class: 'r4-wrap game' }, sc.el));
     sc.lane.place(-COUNT - 0.6);
     const total = sc.lane.notes.length;
-    let run = null, input = null, done = 0;
+    let run = null, input = null;
     const auto = autoScheduler(T);
     const card = startCard(ui, kit, {
       title: '풍선 불기',
-      sub: [h('p', { class: 'sub r4-cardpair', html: `${noteSVG('q', { stick: kit.band === 'low', size: 46 })}<span>따 = 짧게 꾹</span>${noteSVG('h', { size: 46 })}<span>따아 = 두 박 동안 꾹</span>` }),
-        `막대가 선에 닿으면 눌러요 · ${PLAN.length}마디`],
+      sub: [h('p', { class: 'sub r4-cardpair', html: `${noteSVG('q', { stick: kit.band === 'low', size: 46 })}<span>'따' = 한 박</span>${noteSVG('h', { size: 46 })}<span>'따아' = 두 박</span>` }),
+        '꾹 누르고 있다가 막대가 끝나면 떼요', `음 ${total}개`],
       onStart: () => {
         input = pressInput(ui, kit, { onDown: e => run && run.down(e), onUp: e => run && run.up(e), label: '꾹!', aria: '꾹 — 누르고 있기' });
         ui.setBar(...input.nodes);
-        counter.textContent = `풍선 0 / ${total}`;
-        run = holdRun(kit, sc.view, sc.lane, {
+        ui.count(1, total);
+        run = holdRun(kit, ui, sc.view, sc.lane, {
           bars: PLAN, bpm: bpmOf('hold', kit.band),
-          onNote: (i, x) => { if (x.ok) done++; counter.textContent = `풍선 ${done} / ${total}`; },
+          onCount: i => ui.count(Math.max(1, i), total),
           onEnd: res => T.after(900, () => end(res)),
         });
       },
@@ -351,13 +355,14 @@ export default {
       const miss = res.filter(x => x.press === 'miss').length;
       let tip;
       if (s.kept === s.total) tip = '4분음표는 한 박, 2분음표는 두 박 — 길이를 모두 맞게 눌렀어요.';
-      else if (shortH >= Math.max(longQ, longH, miss)) tip = `2분음표를 일찍 뗀 적이 ${shortH}번 있었어요. 박 점 두 개가 다 지날 때까지 눌러요.`;
-      else if (longQ >= Math.max(longH, miss)) tip = `4분음표를 길게 누른 적이 ${longQ}번 있었어요. 따는 한 박만 — 짧게 눌렀다 떼요.`;
+      else if (shortH >= Math.max(longQ, longH, miss)) tip = `2분음표를 일찍 뗀 적이 ${shortH}번 있었어요. 막대가 끝날 때까지 꾹 누르고 있어요.`;
+      else if (longQ >= Math.max(longH, miss)) tip = `4분음표를 길게 누른 적이 ${longQ}번 있었어요. '따'는 한 박만 — 짧게 눌렀다 떼요.`;
       else if (longH >= miss) tip = `2분음표를 두 박보다 오래 누른 적이 ${longH}번 있었어요. 막대가 끝나면 떼요.`;
       else tip = `누르는 때를 놓친 음이 ${miss}개 있었어요. 막대가 선에 닿을 때 눌러요.`;
+      ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
-        title: `${s.total}번 중 ${s.kept}번 알맞게 눌렀어요`, replay: ok,
-        facts: [`가장 길게 이어서 ${s.streak}번`, `2분음표 ${hAll}개 중 ${hOk}개를 두 박 동안`],
+        title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: ok, group: PLAN.map(b => b.filter(k => !k.endsWith('r')).length),   /* 다시 보기는 마디마다 끊음 */
+        facts: [`가장 길게 이어서 ${s.streak}번`, `2분음표 ${hAll}개 중 ${hOk}개를 두 박 동안 눌렀어요`],
         starOn: s.starOn, rules: s.rules, tip,
       });
     }

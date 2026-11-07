@@ -34,3 +34,20 @@ export function voice(engine) {
     hush() { if (bus) { fade(bus); bus = null; } },
   };
 }
+
+// ── 칸 화면 조각(소3 · 소4 · 소5 · 악1이 같이 씀 · 모양은 각 칸 css의 .snd-*) ──
+// 스피커 그림 — 보기 카드가 '누르면 소리가 나요'를 알려 줌
+export const SPEAKER = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 15h7l9-8v26l-9-8H6z" fill="#FFFFFF" stroke="#3B2A1E" stroke-width="3" stroke-linejoin="round"/><path d="M27 14c3 3 3 9 0 12M31 10c5 5 5 15 0 20" fill="none" stroke="#3B2A1E" stroke-width="3" stroke-linecap="round"/></svg>';
+// 보기 카드 묶음 — 위에 "눌러서 들어 봐요" · 카드마다 오른쪽 위 스피커
+export function exGroup(kit, cards, cls = 'exgrid') {
+  const { h } = kit;
+  for (const c of cards) c.append(h('span', { class: 'snd-spk', html: SPEAKER }));
+  return h('div', { class: 'snd-exwrap' }, h('p', { class: 'snd-exhead' }, h('span', { class: 'snd-spk in', html: SPEAKER }), '눌러서 들어 봐요'), h('div', { class: cls }, ...cards));
+}
+// 보기 카드 하나를 '지금 소리 나는 카드'로(잉크 테두리 — 주황 X)
+export function nowCard(cards, btn) { for (const c of cards) c.classList.toggle('now', c === btn); }
+
+// 친구 그림 — 없는 자세는 band.js poseOf가 가까운 자세로 바꿔 준다(파일을 찾으러 가지 않음 · 404 X)
+export function pal(kit, key, pose = 'idle') { return kit.friendImg(key, pose, { label: false }); }
+export function pose(kit, img, key, p) { kit.setPose(img, key, p); }
+

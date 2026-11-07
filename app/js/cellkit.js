@@ -3,7 +3,7 @@
 //   export default { show(ui, kit), follow(ui, kit), game(ui, kit) } — 각각 정리 함수를 돌려준다
 //   ui  = { stage(무대 그릇), bar(아래 띠), say(글), setBar(...단추) }
 //   kit = { engine, device, band, next(), pass(), finish(결과), setAuto(fn), ... }
-import { h, lsGet, lsSet } from './util.js';
+import { h, lsGet, lsSet, onPress } from './util.js';
 
 // ── 진행(기기에만) ── { [칸]: { stars, at } }
 export const getProg = () => lsGet('prog', {});
@@ -27,10 +27,13 @@ export function scoreChoices(results, need = 5) {
   return { total, kept, streak: best, starOn, stars: starOn.filter(Boolean).length, rules: ['절반 넘게 맞혔어요', `${n}번 이어서 맞혔어요`, '모두 맞혔어요'] };
 }
 
-// 결과 카드 — r = { title, replay:[true/false], facts:[…], starOn, rules, tip }
+// 결과 카드 — r = { title, replay:[true/false], group(다시 보기 묶음 크기 · 기본 4 · 배열이면 묶음마다 길이), facts:[…], starOn, rules, tip }
 export function resultCard(r) {
+  const g = r.group || 4;
+  const cuts = new Set();
+  if (Array.isArray(g)) { let t = 0; for (const n of g) { t += n; cuts.add(t); } } else for (let t = g; t < (r.replay || []).length; t += g) cuts.add(t);
   const replay = r.replay ? h('div', { class: 'replay', 'aria-label': '다시 보기' },
-    ...r.replay.map((ok, i) => [i && i % 4 === 0 ? h('span', { class: 'gap' }) : null, h('i', { class: ok ? 'g' : 'm' })]).flat()) : null;
+    ...r.replay.map((ok, i) => [i && cuts.has(i) ? h('span', { class: 'gap' }) : null, h('i', { class: ok ? 'g' : 'm' })]).flat()) : null;
   return h('div', { class: 'panelcard resultcard', role: 'dialog', 'aria-label': '결과' },
     h('h2', {}, r.title),
     replay,
@@ -73,3 +76,27 @@ export function rng(seed = Date.now()) {
   return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
 export const shuffle = (a, r = Math.random) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// 답 단추 묶음(11-07 평가 2차 — 모든 고르기 칸이 같은 모양 · 같은 자리: 무대 오른쪽 세로 한 줄)
+//  items = [{ key, label, chip(그림 html 또는 노드), locked }] · onPick(key)
+//  게임 중에 고를 것이 늘어나는 칸은 처음부터 다 깔고 locked로 흐리게 잠가 둔다(자리가 밀리지 않게)
+export function answers(items, onPick, { cls = '' } = {}) {
+  const btns = new Map();
+  const el = h('div', { class: ('answers ' + cls).trim(), role: 'group' }, ...items.map(it => {
+    const chip = h('span', { class: 'chip', 'aria-hidden': 'true' });
+    if (it.chip && it.chip.nodeType) chip.append(it.chip); else if (it.chip) chip.innerHTML = it.chip;
+    const b = h('button', { type: 'button', class: 'ans' + (it.locked ? ' locked' : ''), 'data-k': it.key, 'aria-disabled': it.locked ? 'true' : null },
+      it.chip ? chip : null, h('span', { class: 'lab' }, it.label));
+    onPress(b, () => { if (!b.classList.contains('locked')) onPick(it.key); });
+    btns.set(it.key, b);
+    return b;
+  }));
+  return {
+    el,
+    btn: k => btns.get(k),
+    lock(k, on = true) { const b = btns.get(k); if (b) { b.classList.toggle('locked', on); b.setAttribute('aria-disabled', on ? 'true' : 'false'); } },
+    // 고른 뒤 표시 — 'right' 금 테두리 · 'wrong' 점선(빨강 X)
+    mark(k, kind) { for (const b of btns.values()) b.classList.remove('right', 'wrong'); if (k != null) { const b = btns.get(k); if (b) b.classList.add(kind); } },
+    clear() { for (const b of btns.values()) b.classList.remove('right', 'wrong'); },
+  };
+}

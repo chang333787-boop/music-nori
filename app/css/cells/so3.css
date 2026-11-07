@@ -1,71 +1,73 @@
-/* 소3 길게·짧게 — 가로 길이 줄(소리가 나는 동안 막대가 가로로 자람) · 확인 게임 '다람쥐 기차' */
-.ln-left{display:flex;flex-direction:column;gap:12px;min-height:0}
-.lanes{position:relative;flex:1;min-height:0;border:3px solid var(--ink);border-radius:24px;background:var(--bunny-t);display:grid;grid-auto-rows:minmax(0,1fr);padding:0 26px 0 14px}
-.lanes.n2 .ln-row+.ln-row{border-top:3px dashed rgba(59,42,30,.25)}
-.ln-row{display:grid;grid-template-columns:52px minmax(0,1fr);align-items:end;gap:10px;padding:0 0 26px}
-.lanes.n1{padding-left:64px}
-.lanes.n1 .ln-row{grid-template-columns:minmax(0,1fr);padding-bottom:40%}
+/* 소3 길게·짧게 — 가로 길이 줄(소리가 나는 동안 막대가 가로로 자람) · 확인 게임 '다람쥐 기차'(코덱스 그림) */
+/* 보기 카드 묶음(_snd.js exGroup) — 위에 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 · 지금 소리 나는 카드 = 잉크 테두리 + 작은 세모 */
+.snd-exwrap{display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0}
+.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:22px;color:var(--ink)}
+.snd-spk{position:absolute;top:10px;right:12px;width:30px;height:30px;pointer-events:none}
+.snd-spk.in{position:static;width:30px;height:30px}
+.snd-spk svg{display:block;width:100%;height:100%}
+.excard.now{outline:4px solid var(--ink);outline-offset:3px}
+.excard.now::after{content:'';position:absolute;left:50%;top:-19px;margin-left:-9px;border:9px solid transparent;border-top:10px solid var(--ink);border-bottom:0}
+
+/* 길이 줄 */
+.ln-show{display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;width:100%;min-height:0}
+.ln-hint{margin:0;font-family:var(--head);font-size:24px;color:var(--ink)}
+.ln-main{display:grid;grid-template-columns:104px minmax(0,1fr) minmax(0,1fr);gap:20px;min-height:0}
+.ln-follow{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:22px;width:100%;min-height:0}
+.ln-pal{align-self:end;width:100%}
+.ln-pal img,.ln-pal svg{display:block;width:100%;height:auto;max-height:150px;object-fit:contain;object-position:50% 100%}
+.lanes{position:relative;min-height:0;border:3px solid var(--ink);border-radius:24px;background:var(--bunny-t);display:grid;grid-auto-rows:minmax(0,1fr);padding:0 26px 0 22px}
+.lanes .ln-row+.ln-row{border-top:3px dashed rgba(59,42,30,.25)}
+.ln-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:end;padding:0 0 16px}
+.lanes.nums .ln-row{grid-template-columns:48px minmax(0,1fr);gap:10px}
 .ln-num{width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:24px;margin-bottom:2px}
 .ln-track{position:relative;height:48px;border-bottom:3px solid rgba(59,42,30,.35)}
 .ln-bar{position:absolute;left:0;bottom:4px;height:40px;width:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box}
 .ln-bar.off{visibility:hidden}
-.ln-tag{position:absolute;bottom:6px;font-family:var(--head);font-size:22px;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:2px 14px;opacity:0;transition:opacity 160ms}
+.ln-tag{position:absolute;left:0;bottom:54px;font-family:var(--head);font-size:22px;line-height:1.1;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 14px;opacity:0;transition:opacity 160ms}
 .ln-tag.on{opacity:1}
-.ln-ask{position:absolute;left:calc(50% - 30px);bottom:0;width:60px;height:60px;border:3px dashed rgba(59,42,30,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:34px;color:var(--ink-2);background:var(--surface)}
-.ln-bunny{position:absolute;left:0;top:0;width:92px;height:92px;transform:translate(-66%,-100%);pointer-events:none}
-.lanes.n1 .ln-bunny{width:120px;height:120px}
-.ln-bunny img,.ln-bunny svg{width:100%;height:100%;object-fit:contain}
-.ln-hint{margin:0;font-family:var(--head);font-size:22px;color:var(--ink)}
+/* 고르기 전 — 막대가 자랄 자리에 '?' · 소리가 나는 동안 또렷하게(모양은 늘 같음) */
+.ln-ask{position:absolute;left:0;bottom:-2px;width:56px;height:56px;border:3px dashed rgba(59,42,30,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:32px;color:var(--ink-2);background:var(--surface);transition:transform 120ms ease-out}
+.ln-ask.live{border:4px solid var(--ink);color:var(--ink);transform:scale(1.12)}
+.ln-row.cur .ln-ask::after{content:'';position:absolute;left:50%;top:-18px;margin-left:-8px;border:8px solid transparent;border-top:9px solid var(--ink);border-bottom:0}
 /* 막대 아이콘 — 짧은 막대 / 긴 막대 */
 .ln-pair{display:inline-flex;align-items:center;gap:10px}
-.ln-icon{display:inline-flex;align-items:center;width:66px;height:20px}
+.ln-icon{display:inline-flex;align-items:center;width:54px;height:20px}
 .ln-icon i{display:block;height:16px;border:3px solid var(--ink);border-radius:999px;background:var(--bunny);box-sizing:border-box}
-.ln-icon.s{width:auto}.ln-icon.s i{width:20px}.ln-icon.l i{width:66px}
-.excard .ln-icon.l{width:54px}.excard .ln-icon.l i{width:54px}
-.ln-pick{justify-content:flex-start;gap:28px;padding-left:36px}
-.ln-pick .ln-icon{width:150px;height:34px}.ln-pick .ln-icon.s{width:150px}
-.ln-pick .ln-icon i{height:30px}
-.ln-pick .ln-icon.s i{width:40px}.ln-pick .ln-icon.l i{width:150px}
+.ln-icon.s{width:auto}.ln-icon.s i{width:20px}.ln-icon.l i{width:54px}
+.ans .ln-icon{width:56px;height:26px;justify-content:flex-start}
+.ans .ln-icon i{height:22px}
+.ans .ln-icon.s i{width:22px}.ans .ln-icon.l i{width:56px}
 
 /* ── 확인 게임: 다람쥐 기차 ── */
-.tr-scene{position:absolute;inset:0;background:#E3EEF4;overflow:hidden}
-.tr-ground{position:absolute;left:0;right:0;bottom:0;height:20%;background:#B9D3A0;border-top:3px solid var(--ink)}
-.tr-rail{position:absolute;left:0;right:0;bottom:calc(20% + 10px);height:12px;background:#C9B79C;border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)}
-.tr-train{position:absolute;left:50%;bottom:calc(20% + 34px);display:flex;align-items:flex-end;transform:translateX(-50%);transition:transform 1.4s ease-in}
-.tr-train.leave{transform:translateX(calc(-50% + 1500px))}
-.tr-car{position:relative;flex:none;height:178px;min-height:0;padding:0;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:0;border-radius:16px;background:#F2C6D3;box-shadow:none;transition:filter var(--up)}
-.tr-car:active,.tr-car.press{transform:none;box-shadow:none;filter:brightness(.94)}
-.tr-car.long{width:470px}.tr-car.short{width:200px}
-.tr-car.nope{animation:tr-nope 320ms ease-out}
-@keyframes tr-nope{0%,100%{translate:0}25%{translate:-8px}50%{translate:7px}75%{translate:-4px}}
-.tr-win{margin:12px 12px 0;height:102px;background:var(--surface);border:3px solid var(--ink);border-radius:10px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:6px;box-sizing:border-box}
-.tr-car.short .tr-win{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
-.tr-seat{display:block;border:3px dashed rgba(59,42,30,.28);border-radius:12px;min-height:0}
-.tr-seat.on{border:0;animation:tr-pop 260ms ease-out}
-.tr-seat svg{display:block;width:100%;height:100%}
-.tr-name{align-self:center;margin-top:8px;font-family:var(--head);font-size:26px;line-height:1.1;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 18px}
-.tr-wheels{position:absolute;left:18px;right:18px;bottom:-24px;display:flex;justify-content:space-between;pointer-events:none}
-.tr-wheels i{display:block;width:42px;height:42px;border-radius:50%;background:#5B4636;border:3px solid var(--ink);box-shadow:inset 0 0 0 9px #8A7058}
-.tr-link{flex:none;width:22px;height:12px;margin-bottom:34px;background:var(--ink);border-radius:4px}
-.tr-loco{position:relative;flex:none;width:250px;height:200px}
-.tr-cab{position:absolute;left:0;bottom:0;width:124px;height:200px;background:var(--bunny);border:3px solid var(--ink);border-radius:16px 16px 8px 8px}
-.tr-driver{position:absolute;left:12px;top:16px;width:94px;height:94px;background:var(--surface);border:3px solid var(--ink);border-radius:12px;overflow:hidden}
-.tr-driver img,.tr-driver svg{width:100%;height:100%;object-fit:contain;object-position:50% 20%}
-.tr-boiler{position:absolute;left:116px;bottom:0;width:134px;height:124px;background:var(--bunny);border:3px solid var(--ink);border-radius:10px 60px 40px 10px}
-.tr-chim{position:absolute;left:52px;top:-52px;width:36px;height:52px;background:#5B4636;border:3px solid var(--ink);border-bottom:0;border-radius:6px 6px 0 0}
-.tr-loco .tr-wheels{left:14px;right:22px}
-/* 소리 막대 — 긴 칸과 같은 자(긴 칸 너비 = 1.2초) */
-.tr-lane{position:absolute;left:calc(50% - 482px);top:27%;height:56px;display:flex;align-items:center;gap:14px;opacity:0;transition:opacity 160ms}
-.tr-lane.on{opacity:1}
-.tr-lbar{height:46px;width:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box;transition:width 320ms ease-out}
-.tr-ltag{font-family:var(--head);font-size:28px;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:2px 18px}
-.tr-sq{position:absolute;left:calc(50% - 482px - 138px);top:calc(27% - 44px);width:126px;height:126px;pointer-events:none;z-index:2}
-.tr-sq svg{width:100%;height:100%;display:block}
+.tr-wrap{display:flex;gap:24px;width:100%;min-height:0}
+.tr-scene{position:relative;flex:1;min-width:0;border:3px solid var(--ink);border-radius:24px;overflow:hidden;background:#DCEBF3}
+.tr-hills{position:absolute;left:0;right:0;bottom:60px;height:120px;background:url(../../img/scene/bg_hills_strip.webp) repeat-x left bottom/auto 120px;mix-blend-mode:multiply}   /* 띠 그림의 크림색 하늘이 하늘색에 녹게 */
+.tr-ground{position:absolute;left:0;right:0;bottom:0;height:64px;background:#B9D3A0;border-top:3px solid var(--ink)}
+.tr-train{position:absolute;right:14px;bottom:58px;display:flex;align-items:flex-end;transition:transform 1.4s ease-in}
+.tr-train.leave{transform:translateX(1100px)}
+.tr-car{position:relative;flex:none;height:128px;cursor:pointer;touch-action:manipulation}
+.tr-car.short{height:124px}
+.tr-car.loco{height:132px;cursor:default}
+.tr-img{display:block;height:100%;width:auto;pointer-events:none;user-select:none;-webkit-user-select:none}
+.tr-car.long.press .tr-img,.tr-car.short.press .tr-img{filter:brightness(.94)}
+.tr-seat{position:absolute;display:block;pointer-events:none}
+.tr-roof{position:absolute;left:4%;right:4%;bottom:calc(100% - 4px);height:46px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;pointer-events:none}
+.tr-roofseat{position:relative;display:block;min-width:0}
+.tr-seat img,.tr-roofseat img{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 100%}
+.tr-seat.on,.tr-roofseat.on{animation:tr-pop 260ms ease-out}
+.tr-name{position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);font-family:var(--head);font-size:24px;line-height:1.1;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 16px;pointer-events:none}
+.tr-link{flex:none;width:12px;height:10px;margin-bottom:24px;background:var(--ink);border-radius:3px}
+.tr-bunny{position:absolute;left:8px;bottom:52px;width:120px;height:150px;pointer-events:none}
+.tr-bunny img,.tr-bunny svg{width:100%;height:100%;object-fit:contain;object-position:50% 100%}
+/* 손님 다람쥐 — 왼쪽 위에서 기다림 · 고르면 맞는 칸 자리로 폴짝 */
+.tr-sq{position:absolute;left:16px;top:66px;width:92px;height:100px;pointer-events:none;z-index:2;transform-origin:50% 50%}
+.tr-sq img{width:100%;height:100%;object-fit:contain;display:block}
 .tr-sq.in{animation:tr-pop 280ms ease-out}
 .tr-sq.hop{transition:transform 380ms cubic-bezier(.3,.7,.4,1)}
 .tr-sq.gone{visibility:hidden}
 @keyframes tr-pop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:none}}
-.tr-count:empty{display:none}
-.tr-count{position:absolute;left:24px;top:22px;font-family:var(--head);font-size:26px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:4px 14px;pointer-events:none}
-.tr-word{position:absolute;left:50%;top:6%;transform:translateX(-50%);font-family:var(--head);font-size:44px;pointer-events:none}
-.tr-word[data-k="good"]{color:var(--good)}.tr-word[data-k="oops"]{color:var(--ink-2)}
+/* 소리 막대 — 긴 칸과 같은 자(긴 칸 너비 = 1.2초) · 긴 칸 왼쪽 끝에서 시작 */
+.tr-lane{position:absolute;top:92px;height:52px;display:flex;align-items:center;gap:14px;opacity:0;transition:opacity 160ms;pointer-events:none}
+.tr-lane.on{opacity:1}
+.tr-lbar{height:42px;width:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box;transition:width 320ms ease-out}
+.tr-ltag{font-family:var(--head);font-size:26px;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:2px 16px}

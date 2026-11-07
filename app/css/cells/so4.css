@@ -1,27 +1,41 @@
-/* 소4 높게·낮게 — 세로 높이 길(나무 위 ↔ 연못) · 확인 게임 장면 */
+/* 소4 높게·낮게 — 세로 높이 길(나무 ↔ 연못 · 코덱스 그림) · 확인 게임 장면 */
+/* 보기 카드 묶음(_snd.js exGroup) — 위에 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 · 지금 소리 나는 카드 = 잉크 테두리 + 작은 세모 */
+.snd-exwrap{display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0}
+.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:22px;color:var(--ink)}
+.snd-spk{position:absolute;top:10px;right:12px;width:30px;height:30px;pointer-events:none}
+.snd-spk.in{position:static;width:30px;height:30px}
+.snd-spk svg{display:block;width:100%;height:100%}
+.excard.now{outline:4px solid var(--ink);outline-offset:3px}
+.excard.now::after{content:'';position:absolute;left:50%;top:-19px;margin-left:-9px;border:9px solid transparent;border-top:10px solid var(--ink);border-bottom:0}
+
+.so4-cols{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr)}
+.so4-follow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;width:100%;min-height:0}
+.so4-ex{min-height:128px}
+.so4-dots{display:block;width:84px;height:48px}
+.so4-dots svg{display:block;width:100%;height:100%}
+.ans .chip svg{width:56px;height:auto}
+
 .ladder{position:relative;border:3px solid var(--ink);border-radius:24px;overflow:hidden;min-height:0;display:grid;grid-template-rows:1fr 8% 1fr}
-.lad-top{background:#CFE5C3;display:flex;align-items:flex-start;padding:12px 16px}
+.lad-top{position:relative;background:#CFE5C3;display:flex;align-items:flex-start;padding:12px 16px}
 .lad-mid{background:var(--panel);border-top:3px dashed rgba(59,42,30,.35);border-bottom:3px dashed rgba(59,42,30,.35)}
-.lad-bot{background:#BFDDEF;display:flex;align-items:flex-end;padding:12px 16px}
-.lad-top span,.lad-bot span{font-family:var(--head);font-size:28px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:4px 16px}
-.lad-bird{position:absolute;left:50%;width:120px;height:120px;transform:translateX(-50%);transition:bottom 260ms ease-out}
+.lad-bot{position:relative;background:#BFDDEF;display:flex;align-items:flex-end;padding:12px 16px}
+.lad-top span,.lad-bot span{position:relative;z-index:1;font-family:var(--head);font-size:26px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 16px}
+.lad-tree{position:absolute;right:6%;bottom:0;height:92%;width:auto;pointer-events:none}
+.lad-pond{position:absolute;right:4%;bottom:8%;height:74%;width:auto;pointer-events:none}
+.lad-bird{position:absolute;left:42%;width:100px;height:100px;transform:translateX(-50%);transition:bottom 260ms ease-out;z-index:2}
 .lad-bird img,.lad-bird svg{width:100%;height:100%;object-fit:contain}
-.exarrow.up::before{content:'↑ '}.exarrow.down::before{content:'↓ '}
-.pick.up::before{content:'↑ '}.pick.down::before{content:'↓ '}
-/* 확인 게임 */
-.g-scene{position:absolute;inset:0;display:grid;grid-template-rows:1fr 1fr}
-.g-zone{position:relative;border:0;border-radius:0;box-shadow:none;min-height:0;font-size:30px;justify-content:flex-start;align-items:flex-start;padding:18px 24px}
-.g-zone:active,.g-zone.press{transform:none;box-shadow:none;filter:brightness(.96)}
-.g-zone span{background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:4px 18px}
+.lad-ghost{opacity:.3;transition:none;z-index:1}
+
+/* 확인 게임 — 위 = 나무(가지에 앉음) · 아래 = 연못 · 참새는 가운데에서 기다림 */
+.g-wrap{display:flex;gap:24px;width:100%;min-height:0}
+.g-scene{position:relative;flex:1;min-width:0;border:3px solid var(--ink);border-radius:24px;overflow:hidden;display:grid;grid-template-rows:1fr 1fr}
+.g-zone{position:relative;cursor:pointer;touch-action:manipulation}
+.g-zone.press{filter:brightness(.96)}
 .g-tree{background:#DCEBCF;border-bottom:3px solid var(--ink)}
-.g-tree::before{content:'';position:absolute;left:calc(50% - 22px);bottom:-3px;width:44px;height:46%;background:#8B5A2B;border:3px solid var(--ink);border-bottom:0}
-.g-tree::after{content:'';position:absolute;left:calc(50% - 190px);top:10%;width:380px;height:44%;border-radius:50%;background:#7FB283;border:3px solid var(--ink);box-shadow:-120px 24px 0 -30px #6FA676,120px 24px 0 -30px #6FA676}
-.g-pond{background:#CFE5F2;align-items:flex-end}
-.g-pond::after{content:'';position:absolute;left:calc(50% - 230px);bottom:12%;width:460px;height:34%;border-radius:50%;background:#7FB7DA;border:3px solid var(--ink)}
-.g-bird{position:absolute;left:50%;top:50%;width:140px;height:140px;transform:translate(-50%,-50%);transition:top 280ms ease-out;pointer-events:none;z-index:1}
-.g-bird[data-at="top"]{top:15%}
-.g-bird[data-at="bot"]{top:78%}
+.g-pond{background:#CFE5F2}
+.g-tree-img{position:absolute;left:calc(50% - 92px);bottom:0;height:190px;width:auto;pointer-events:none}
+.g-pond-img{position:absolute;left:calc(50% - 56px);bottom:12px;height:150px;width:auto;pointer-events:none}
+.g-bird{position:absolute;left:calc(50% - 10px);top:calc(50% - 50px);width:100px;height:100px;transition:top 280ms ease-out;pointer-events:none;z-index:1}
+.g-bird[data-at="top"]{top:calc(50% - 165px)}
+.g-bird[data-at="bot"]{top:calc(50% + 26px)}
 .g-bird img,.g-bird svg{width:100%;height:100%;object-fit:contain}
-.g-count{position:absolute;left:24px;top:50%;transform:translateY(-50%);font-family:var(--head);font-size:26px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:4px 14px;pointer-events:none}
-.g-word{position:absolute;left:50%;top:6%;transform:translateX(-50%);font-family:var(--head);font-size:40px;pointer-events:none;-webkit-text-stroke:0}
-.g-word[data-k="good"]{color:var(--good)}.g-word[data-k="oops"]{color:var(--ink-2)}

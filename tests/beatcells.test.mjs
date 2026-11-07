@@ -6,7 +6,7 @@ import { windows } from '../engine/judge.js';
 import { fillBar } from '../engine/measure.js';
 import { PLAN as P2 } from '../app/js/cells/ri2.js';
 import { PLAN as P4 } from '../app/js/cells/ri4.js';
-import { PLAN as P5 } from '../app/js/cells/ri5.js';
+import { PLAN as P5, FINAL as F5, TOTAL as T5 } from '../app/js/cells/ri5.js';
 import { PLAN as P6 } from '../app/js/cells/ri6.js';
 
 let n = 0;
@@ -109,6 +109,8 @@ ok('리5: 같은 빠르기 짝 · 2박 3박 반씩 · 비틀기는 빠르기를 
   assert.equal(P5.filter(p => p.m === 2).length, P5.filter(p => p.m === 3).length);
   const tw = P5.filter(p => p.twist);
   assert.ok(tw.some(p => p.m === 3 && p.bpm > 120) && tw.some(p => p.m === 2 && p.bpm < 90), '빠른 왈츠 · 느린 행진');
+  // 화면 번호(ui.count) = 고르기 판 + 센박 마디 = 결과 'N번 중'
+  assert.equal(P5.length + F5.segs.reduce((n, s) => n + s.bars, 0), T5);
 });
 ok('리6: 상자 답(자동 시험)이 꼭 4박 · 조건을 지킴 · 고르기 판은 답이 하나', () => {
   const T = { q: 12, h: 24, w: 48, qr: 12, ee: 12 };
@@ -123,6 +125,8 @@ ok('리6: 상자 답(자동 시험)이 꼭 4박 · 조건을 지킴 · 고르기
       assert.equal(p.tray.filter(k => T[k] === left).length, 1, '꼭 맞는 블록이 하나뿐: ' + p.pre.join(','));
     }
   }
+  // 블록 판은 다섯 블록을 늘 같은 자리에 깔고 잠그기만 함 — 판마다 쓰는 블록이 그 다섯 안에 있어야 함
+  for (const p of P6) for (const k of p.tray) assert.ok(['q', 'h', 'w', 'qr', 'ee'].includes(k), k);
   // 마지막 상자 '블록 셋으로' — 블록 수와 박 수가 다른 답
   const last = P6[P6.length - 1];
   assert.ok(last.need(['h', 'q', 'q']) && !last.need(['q', 'q', 'q', 'q']) && !last.need(['w']));

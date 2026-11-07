@@ -1,27 +1,35 @@
-/* 가2 라 — 보기 · 따라 하기(높이 판은 _mel.css) · 확인 게임 '라는 몇 번째?' */
+/* 가2 라 — 보기 · 연습(높이 판 · 카드 · 답 단추는 _mel.css) · 확인 게임 '물음표 소리' */
 .ga-cols{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
-.m-pick.three{min-height:78px}
-.m-pick.three .m-badge{width:58px;height:58px;font-size:32px}
 
-/* 확인 게임 — 왼쪽 나뭇가지(참새가 부름) · 가운데 자리 칸(첫째 ~ 넷째 · 누르면 그 자리 높이가 보임) */
-.e2-scene{position:absolute;inset:0;background:#DCEBF5;overflow:hidden}
-.e2-scene::before{content:'';position:absolute;left:-90px;top:-70px;width:400px;height:230px;border-radius:50%;background:#7FB283;border:3px solid var(--ink)}
-.e2-trunk{position:absolute;left:58px;bottom:-3px;width:70px;height:78%;background:#8B5A2B;border:3px solid var(--ink);border-bottom:0}
-.e2-branch{position:absolute;left:120px;top:46%;width:190px;height:26px;background:#8B5A2B;border:3px solid var(--ink);border-left:0;border-radius:0 14px 14px 0}
-.e2-bird{position:absolute;left:168px;top:calc(46% - 128px);width:136px;height:136px;pointer-events:none;z-index:1}
+/* 확인 게임 — 왼쪽 나무(코덱스 그림 · 오른쪽 가지에 참새) · 가운데 칸 넷(첫 번째 ~ 네 번째) · 오른쪽 라 · 솔 · 미 답 단추 */
+.e2-scene{position:absolute;inset:0;display:grid;grid-template-columns:290px minmax(0,1fr) auto;column-gap:22px;padding-right:28px;background:#DCEBF5;overflow:hidden}
+.e2-tree{position:absolute;left:-6px;bottom:-4px;height:410px;aspect-ratio:733/900;pointer-events:none}
+.e2-tree img{width:100%;height:100%;object-fit:contain;user-select:none}
+/* 가지 윗면 ≈ 그림 높이 65% · 가지 끝 쪽 ≈ 너비 75% */
+.e2-bird{position:absolute;left:58%;top:calc(66% - 112px);width:112px;height:112px}
 .e2-bird img,.e2-bird svg{width:100%;height:100%;object-fit:contain}
-.e2-mid{position:absolute;left:340px;right:30px;top:62px;bottom:24px;display:flex;align-items:center;justify-content:center;gap:18px}
-.e2-axis{position:relative;width:46px;height:360px;margin-top:56px;flex:none}
+.e2-mid{grid-column:2;display:flex;align-items:stretch;justify-content:center;gap:14px;padding:34px 0 20px}
+.e2-axis{position:relative;width:46px;flex:none;margin-top:52px}
 .e2-axis .m-badge{position:absolute;left:0;width:46px;height:46px;font-size:24px;transform:translateY(-50%)}
-.e2-row{display:flex;gap:20px;height:416px}
-.e2-row.done{pointer-events:none}
-.e2-slot{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;width:178px;height:100%;min-height:0;padding:0;border-radius:22px;overflow:visible;transition:transform 120ms ease-out,background-color 120ms ease-out,box-shadow 120ms ease-out}
-.e2-ord{flex:none;height:56px;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:26px;border-bottom:3px solid var(--ink)}
+.e2-row{display:flex;gap:14px}
+.e2-slot{position:relative;display:flex;flex-direction:column;width:124px;background:var(--surface);border:3px solid var(--ink);border-radius:22px;transition:opacity 120ms ease-out}
+.e2-slot.off{opacity:.35;border-style:dashed}
+.e2-slot.off .e2-band{display:none}
+.e2-ord{flex:none;height:52px;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:22px;border-bottom:3px solid var(--ink)}
 .e2-track{position:relative;flex:1}
-.e2-track i{position:absolute;left:16px;right:16px;border-top:3px dashed var(--line2)}
-.e2-slot.sung{background:var(--bird-t);transform:translateY(-6px)}
-.e2-slot.right{box-shadow:0 4px 0 var(--ink),0 0 0 6px var(--paper),0 0 0 11px var(--great)}
-.e2-slot.miss{opacity:.55}
-.e2-note{position:absolute;left:50%;width:92px;height:92px;border-radius:50%;background:var(--c);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);animation:e2-pop 160ms ease-out}
-.e2-note .m-badge{width:52px;height:52px;font-size:28px}
+.e2-band{position:absolute;left:10px;right:10px;height:18px;border-radius:9px;background:var(--c);opacity:.26;transform:translateY(-50%)}
+.e2-band.ghost{background:none;opacity:1;border:2px dashed rgba(59,42,30,.3)}
+/* 지금 여기 — 잉크 4px 테두리 + 작은 세모 */
+.e2-slot.now{outline:4px solid var(--ink);outline-offset:4px}
+.e2-slot.now::after{content:'';position:absolute;left:50%;top:-26px;margin-left:-11px;border:11px solid transparent;border-top:13px solid var(--ink);border-bottom:0}
+.e2-note{position:absolute;left:50%;width:76px;height:76px;border-radius:50%;background:var(--c);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%)}
+.e2-note .m-badge{width:46px;height:46px;font-size:26px}
+.e2-note.pop{animation:e2-pop 160ms ease-out}
 @keyframes e2-pop{0%{transform:translate(-50%,-50%) scale(.6)}100%{transform:translate(-50%,-50%) scale(1)}}
+.e2-q{position:absolute;inset:8px;z-index:1;display:flex;align-items:center;justify-content:center;border:4px dashed var(--ink);border-radius:16px;background:var(--surface);font-family:var(--head);font-size:52px;line-height:1;color:var(--ink)}   /* 높이를 모르는 자리 — 칸 전체를 점선으로(한 높이에 놓지 않음) */
+.e2-ans{grid-column:3;width:300px;z-index:1}
+.e2-ans .ans{min-height:100px;font-size:40px}
+.e2-ans .chip{width:64px;height:64px}
+.e2-ans .m-dot{width:56px;height:56px}
+.e2-ans .ans.glow{box-shadow:0 4px 0 var(--ink),0 0 0 5px var(--paper),0 0 0 9px var(--ink)}
+.e2-ans .ans{transition:opacity 120ms ease-out,transform var(--up),box-shadow var(--up)}

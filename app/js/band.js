@@ -100,10 +100,25 @@ export const friendOf = key => BAND.find(b => b.key === key) || BAND[0];
 // 그림 파일(코덱스가 그린 일러스트 · tools/img_prep.py로 손질한 webp) — 없으면 아래 코드 도형으로 바꿔 끼운다
 //  pose: idle 서기 · play 연주 · jump 뛰기 · oops 삐끗 · happy 기쁨(지금은 고슴도치만 다섯 가지)
 export const IMG_DIR = 'app/img/band/';
+// 있는 그림 — 없는 자세는 가까운 자세로 바꿔 받는다(없는 파일을 찾느라 404가 나지 않게). 그림이 더 들어오면 여기에 더한다
+export const POSES = {
+  hog: ['idle', 'play', 'jump', 'oops', 'happy', 'face'],
+  bird: ['idle', 'play', 'face'],
+  bunny: ['idle', 'play', 'face'],
+  turtle: ['idle', 'play', 'face'],
+  bear: ['idle', 'play', 'face'],
+};
+const NEAR = { happy: 'play', jump: 'play', oops: 'idle', face: 'idle', play: 'idle' };
+export function poseOf(key, pose) {
+  const have = POSES[key] || [];
+  let p = pose;
+  for (let k = 0; k < 4 && !have.includes(p); k++) p = NEAR[p] || 'idle';
+  return p;
+}
 export function friendImg(key, pose = 'idle', { label = true, cls = '' } = {}) {
   const f = friendOf(key);
   const img = new Image();
-  img.src = `${IMG_DIR}${f.key}_${pose}.webp`;
+  img.src = `${IMG_DIR}${f.key}_${poseOf(f.key, pose)}.webp`;
   img.alt = label ? f.name : '';
   img.draggable = false;
   img.decoding = 'async';
@@ -116,10 +131,10 @@ export function friendImg(key, pose = 'idle', { label = true, cls = '' } = {}) {
 export function setPose(img, key, pose) {
   if (!img || img.tagName !== 'IMG' || !img.isConnected || img.dataset.pose === pose) return;
   img.dataset.pose = pose;
-  img.src = `${IMG_DIR}${friendOf(key).key}_${pose}.webp`;
+  img.src = `${IMG_DIR}${friendOf(key).key}_${poseOf(friendOf(key).key, pose)}.webp`;
 }
 export function preload(list) {
-  for (const [key, pose] of list) { const i = new Image(); i.src = `${IMG_DIR}${key}_${pose}.webp`; }
+  for (const [key, pose] of list) { const i = new Image(); i.src = `${IMG_DIR}${key}_${poseOf(key, pose)}.webp`; }
 }
 
 export function friendSVG(key, { label = true } = {}) {

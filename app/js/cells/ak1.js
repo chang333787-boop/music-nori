@@ -6,7 +6,9 @@
 //  따라 하기: 막대 셋짜리 짧은 악보 — 재생 선이 기다려 준다(맞는 단추를 누르면 그 길이만큼 소리와 함께 지나감) · 세 번 이어서 맞히면 지남
 //  확인 게임: 네 줄(줄마다 8박 · 넷 세고 시작) — 소개 → 발전(긴 막대가 먼저) → 비틀기(빨라지고 자주 바뀜) → 마무리(자작 곡 앞 두 마디)
 //  때는 너그럽게(engine/judge.js 'low' 창 = 이르게 150ms · 늦게 180ms) · 높이가 맞아야 맞음 · 실수해도 줄은 끝까지 흐른다
-import { voice } from './_snd.js';
+//  11-07 평가 2차: 아이 화면에서 위 · 아래 띠를 '줄'이라 부르지 않는다('줄'은 오선에서만 — 여기는 '위 · 아래') · 넷 세기와 판정 말은 맨 위 말풍선(ui.tell)
+//   번호 "1 / 4" · 결과 "높이 23개 다 맞힘 · 박자 맞춤 17개" · 4박마다 굵은 세로선 X(마디는 ri5에서 배움)
+import { voice, exGroup, nowCard, pal, pose } from './_snd.js';
 import { windows } from '../../../engine/judge.js';
 import { audioToPerf } from '../clock.js';
 import { SONGS } from '../../../engine/songs/index.js';
@@ -14,8 +16,8 @@ import { parseMel } from '../../../engine/song.js';
 import { TPQ } from '../../../engine/theory.js';
 
 const ROWS = {
-  2: { p: [67, 64], name: ['높은 소리', '낮은 소리'], keys: '↑ ↓' },
-  3: { p: [69, 67, 64], name: ['높은 소리', '가운데 소리', '낮은 소리'], keys: '1 2 3' },
+  2: { p: [67, 64], name: ['높은 소리', '낮은 소리'], at: ['위', '아래'], keys: ['↑', '↓'] },
+  3: { p: [69, 67, 64], name: ['높은 소리', '가운데 소리', '낮은 소리'], at: ['위', '가운데', '아래'], keys: ['1', '2', '3'] },
 };
 const INST = 'recorder';
 // 막대 적는 법: 줄(H 높은 · M 가운데 · L 낮은) + 박 수 · R = 쉼
@@ -75,7 +77,7 @@ function toBars(def, n) {
 // 줄 아이콘 — n칸 가운데 r째 칸을 채움(단추에서 '어느 줄'인지 한눈에)
 const rowIcon = (n, r) => `<svg viewBox="0 0 40 ${n * 14 + 4}" aria-hidden="true">${Array.from({ length: n }, (_, k) => `<rect x="3" y="${3 + k * 14}" width="34" height="10" rx="5" fill="${k === r ? '#3B2A1E' : '#FFFFFF'}" stroke="#3B2A1E" stroke-width="2.5"/>`).join('')}</svg>`;
 
-// 그림 악보 — 줄 n개 · 오른쪽 끝에 줄 이름(또는 누르는 단추) · 재생 선 + 거북
+// 그림 악보 — 띠 n개(위 · 아래) · 오른쪽 끝에 높이 이름(또는 누르는 단추) · 재생 선 + 거북
 function score(kit, n, { keys = false, rowh = 140, head = 70 } = {}) {
   const { h } = kit;
   const R = ROWS[n];
@@ -92,19 +94,17 @@ function score(kit, n, { keys = false, rowh = 140, head = 70 } = {}) {
   }
   sheet.style.gridRow = `1 / span ${n}`;
   const grid = h('div', { class: 'ps-grid' });
-  const turtle = h('div', { class: 'ps-turtle' }, kit.friendImg('turtle', 'idle', { label: false }));
-  const word = h('span', { class: 'ps-word' });
-  const line = h('div', { class: 'ps-head' }, turtle, word, h('i', { class: 'ps-line' }));
-  const count = h('div', { class: 'ps-count' });
+  const turtle = h('div', { class: 'ps-turtle' }, pal(kit, 'turtle'));
+  const line = h('div', { class: 'ps-head' }, turtle, h('i', { class: 'ps-line' }));
   const track = h('div', { class: 'ps-track' }, grid, line);
-  const el = h('div', { class: 'pscore' + (keys ? ' keys' : ''), style: { '--rowh': rowh + 'px', '--headh': head + 'px', '--n': String(n) } }, sheet, ...keyEls, track, count);
+  const el = h('div', { class: 'pscore' + (keys ? ' keys' : ''), style: { '--rowh': rowh + 'px', '--headh': head + 'px', '--n': String(n) } }, sheet, ...keyEls, track);
   let bars = [], beats = 8, px = 0;
   const api = {
     el, keys: keyEls, lanes,
     set(notes, total) {
       beats = total;
       for (const l of lanes) l.inner.replaceChildren();
-      grid.replaceChildren(...Array.from({ length: total + 1 }, (_, k) => h('i', { class: k % 4 === 0 ? 'bar4' : '', style: { left: `${(k / total) * 100}%` } })));
+      grid.replaceChildren(...Array.from({ length: total + 1 }, (_, k) => h('i', { style: { left: `${(k / total) * 100}%` } })));
       bars = notes.map(nt => {
         const b = h('div', { class: 'ps-bar' + (nt.d >= 2 ? ' long' : ''), style: { left: `calc(${(nt.b / total) * 100}% + 5px)`, width: `calc(${(nt.d / total) * 100}% - 10px)` } });
         lanes[nt.r].inner.append(b);
@@ -121,9 +121,7 @@ function score(kit, n, { keys = false, rowh = 140, head = 70 } = {}) {
       line.style.transform = `translateX(${(beat * px).toFixed(1)}px)`;
     },
     measure() { px = lanes[0].inner.clientWidth / beats; },
-    count(t) { count.textContent = t || ''; },
-    say(t, k) { word.textContent = t; word.dataset.k = k || ''; word.classList.remove('pop'); void word.offsetWidth; if (t) word.classList.add('pop'); },
-    pose(p) { kit.setPose(turtle.firstChild, 'turtle', p); },
+    pose(p) { pose(kit, turtle.firstChild, 'turtle', p); },
     showHead(on) { line.hidden = !on; },
   };
   return api;
@@ -146,7 +144,7 @@ export default {
     const n = rowsFor(kit), T = kit.timers(), V = voice(engine);
     let raf = 0;
     ui.say('막대가 위에 있으면 높은 소리, 길면 긴 소리예요');
-    const S = score(kit, n, { rowh: n === 3 ? 70 : 96, head: 76 });
+    const S = score(kit, n, { rowh: n === 3 ? 60 : 84, head: 72 });
     const exs = SHOW[n].map(d => ({ ...d, ...toBars(d, n) }));
     function play(ex) {
       cancelAnimationFrame(raf); T.clear(); V.hush();
@@ -166,16 +164,16 @@ export default {
       const loop = () => {
         const b = (ac.currentTime - outLat - t0) / beat;
         S.headAt(Math.max(0, Math.min(endB, b)));
-        if (b < endB + 0.2) raf = requestAnimationFrame(loop); else S.pose('happy');
+        if (b < endB + 0.2) raf = requestAnimationFrame(loop); else { S.pose('happy'); nowCard(cards, null); }
       };
       raf = requestAnimationFrame(loop);
     }
     const cards = exs.map(ex => {
       const btn = h('button', { type: 'button', class: 'excard' }, h('b', {}, ex.name), h('span', {}, ex.sub));
-      onPress(btn, () => { play(ex); btn.classList.add('heard'); });
+      onPress(btn, () => { nowCard(cards, btn); play(ex); btn.classList.add('heard'); });
       return btn;
     });
-    ui.stage.append(h('div', { class: 'ps-show' }, S.el, h('div', { class: 'ps-cards' }, ...cards)));
+    ui.stage.append(h('div', { class: 'ps-show' }, S.el, exGroup(kit, cards, 'ps-cards')));
     requestAnimationFrame(() => { S.set(exs[2].notes, Math.max(8, exs[2].beats)); });   // 처음엔 '길고 짧게' 악보를 그려 둠
     let k = 0;
     kit.setAuto(() => { if (k < cards.length) cards[k++].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); else kit.next(); });
@@ -187,12 +185,10 @@ export default {
     const { h, onPress, engine } = kit;
     const n = rowsFor(kit), T = kit.timers(), V = voice(engine), rnd = kit.rng();
     const R = ROWS[n], beat = 60 / FOLLOW_BPM;
-    ui.say('지금 막대가 있는 줄의 단추를 눌러요');
-    const S = score(kit, n, { keys: true, rowh: n === 3 ? 92 : 128, head: 76 });
+    const ASK = n === 3 ? '막대가 위 · 가운데 · 아래 어디에 있나요? 그 단추를 눌러요' : '막대가 위에 있나요, 아래에 있나요? 그쪽 단추를 눌러요';
+    ui.say(ASK);
+    const S = score(kit, n, { keys: true, rowh: n === 3 ? 96 : 128, head: 76 });
     let streak = 0, notes = [], bars = [], idx = 0, busy = true, passed = false;
-    const msg = h('p', { class: 'fmsg' });
-    const dots = h('span', { class: 'streak' }, ...[0, 1, 2].map(() => h('i')));
-    const paint = () => [...dots.children].forEach((d, i) => d.classList.toggle('on', i < streak));
     function phrase() {
       const lens = [[1, 1, 2], [2, 1, 1], [1, 2, 1]][Math.floor(rnd() * 3)];
       let rows;
@@ -213,25 +209,26 @@ export default {
         V.note(INST, R.p[r], t, len * 0.92, 0.6);
         bar.classList.remove('now'); bar.classList.add('on');
         S.headAt(nt.b + nt.d, len); S.pose('play');
-        streak++; paint();
-        msg.textContent = `맞아요 — ${R.name[r]}를 ${nt.d >= 2 ? '길게' : '짧게'}`;
+        streak++; ui.practice(streak);
+        ui.tell('맞아요', 'good'); ui.say(`${R.at[r]}에 있는 막대 — ${R.name[r]}를 ${nt.d >= 2 ? '길게' : '짧게'}`);
         T.after(len * 1000 + 80, () => {
           bar.classList.remove('on'); bar.classList.add('g'); S.pose('idle');
           if (streak >= 3) { passed = true; kit.pass(); return; }
           idx++;
+          ui.say(ASK);
           if (idx >= notes.length) T.after(500, phrase);
           else { busy = false; mark(); }
         });
       } else {
-        kit.sfx.oops(engine); streak = 0; paint(); S.pose('oops');
-        msg.textContent = `이 막대는 ${R.name[nt.r]} 줄에 있어요. 다시 눌러 봐요`;
+        kit.sfx.oops(engine); streak = 0; ui.practice(0); S.pose('oops');
+        ui.tell('다시 눌러 봐요', 'oops'); ui.say(`이 막대는 ${R.at[nt.r]}에 있어요 — ${R.name[nt.r]} 단추예요`);
         bar.classList.remove('nope'); void bar.offsetWidth; bar.classList.add('nope');
         busy = true; T.after(450, () => { busy = false; S.pose('idle'); });
       }
     }
     S.keys.forEach((k, r) => onPress(k, () => press(r)));
     S.lanes.forEach((l, r) => l.lane.addEventListener('pointerdown', e => { if (e.button > 0) return; press(r); }));
-    ui.stage.append(h('div', { class: 'ps-follow' }, S.el, h('div', { class: 'row' }, dots, msg)));
+    ui.stage.append(h('div', { class: 'ps-follow' }, S.el));
     requestAnimationFrame(phrase);
     kit.setAuto(() => { if (!busy && !passed && notes.length) press(notes[idx].r); });
     const onKey = e => { if (e.repeat) return; const r = keyRow(e, n); if (r >= 0) { e.preventDefault(); press(r); } };
@@ -245,16 +242,15 @@ export default {
     const n = rowsFor(kit), T = kit.timers(), V = voice(engine);
     const R = ROWS[n];
     const lines = LINES[n].map(d => toBars(d, n));
-    let li = -1, run = null, mode = 'ready', raf = 0, gone = false, rushed = 0;
+    let li = -1, run = null, mode = 'ready', raf = 0, gone = false, rushed = 0, cnt = -1;
     const all = [];                                   // 막대마다 { st, long, afterLong }
-    ui.say('');
-    const S = score(kit, n, { keys: true, rowh: n === 3 ? 128 : 156, head: 84 });
-    const counter = h('div', { class: 'ak-count' });
-    const scene = h('div', { class: 'ak-scene' }, S.el, counter);
+    ui.say('거북이 막대에 닿으면 그 높이 단추를 눌러요');
+    const S = score(kit, n, { keys: true, rowh: n === 3 ? 104 : 156, head: 84 });
+    const scene = h('div', { class: 'ak-scene' }, S.el);
     const start = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
       h('h2', {}, '그림 악보 따라 연주'),
-      h('p', { class: 'sub' }, '넷 세고, 거북이 막대에 닿으면 그 줄 단추를 눌러요'),
-      h('p', { class: 'sub' }, `네 줄 · 키보드 ${R.keys} 도 돼요`)));
+      h('p', { class: 'sub' }, '악보 네 개 · 하나, 둘, 셋, 넷 세고 시작해요'),
+      h('p', { class: 'sub' }, '키보드 ', ...R.keys.flatMap((k, j) => [j ? ' ' : null, h('span', { class: 'kbd' }, k)]), ' 도 돼요')));
     ui.stage.append(scene, start);
     S.set(lines[0].notes, lines[0].beats);
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
@@ -268,7 +264,7 @@ export default {
       const L = lines[li];
       const bars = S.set(L.notes, L.beats);
       S.measure();
-      counter.textContent = `${li + 1} / ${lines.length} 줄`;
+      ui.count(li + 1, lines.length); cnt = -1;
       const ac = engine.ensure(), beat = 60 / L.bpm, t0 = ac.currentTime + 0.5, tStart = t0 + 4 * beat;
       for (let k = 0; k < 4; k++) V.click(t0 + k * beat, k === 0);
       for (let k = 0; k < L.beats; k++) engine.drum('hat', tStart + k * beat, 0.22, V.out);   // 박 소리(작게)
@@ -278,7 +274,7 @@ export default {
         win: windows('low', beat * 1000),
         notes: L.notes.map((nt, k) => ({ ...nt, t: tStart + nt.b * beat, st: null, k })),
       };
-      S.pose('idle'); S.say('');
+      S.pose('idle');
       mode = 'play';
     }
     function press(r, ms) {
@@ -306,11 +302,11 @@ export default {
         best.st = bestAbs <= run.win.great ? 'great' : 'ok';
         bar.classList.add(best.st === 'great' ? 'gg' : 'g', 'on');
         T.after(len * 1000, () => bar.classList.remove('on'));
-        S.say(best.st === 'great' ? '딱!' : '좋아', best.st); S.pose('play');
+        ui.tell(best.st === 'great' ? '딱!' : '좋아', 'good', 700); S.pose('play');
       } else {
         best.st = 'wrong';
         bar.classList.add('m');
-        S.say('삐끗', 'oops'); S.pose('oops');
+        ui.tell('삐끗', 'oops', 700); S.pose('oops');
       }
     }
     function loop() {
@@ -319,23 +315,24 @@ export default {
         const now = run.ac.currentTime - run.outLat;
         const b = (now - run.tStart) / run.beat;
         S.headAt(Math.max(0, Math.min(run.L.beats, b)));
+        // 넷 세기 — 맨 위 말풍선에 1 2 3 4(박마다 한 번만 바꿈)
         const ci = Math.floor((now - run.t0) / run.beat);
-        S.count(ci >= 0 && ci < 4 ? String(ci + 1) : '');
+        if (ci !== cnt && ci >= 0 && ci <= 4) { cnt = ci; ui.tell(ci < 4 ? String(ci + 1) : null, 'count', 0); }
         const lateS = (run.win.late + run.lat) / 1000;
         for (const nt of run.notes) {
-          if (!nt.st && now > nt.t + lateS) { nt.st = 'miss'; run.bars[nt.k].classList.add('m'); S.say('놓쳤어요', 'oops'); S.pose('oops'); }
+          if (!nt.st && now > nt.t + lateS) { nt.st = 'miss'; run.bars[nt.k].classList.add('m'); ui.tell('놓쳤어요', 'oops', 700); S.pose('oops'); }
         }
         if (now > run.end + 0.35) {
           mode = 'between';
           run.notes.forEach((nt, k) => all.push({ st: nt.st, long: nt.d >= 2, afterLong: k > 0 && run.notes[k - 1].d >= 2 }));
-          S.say(''); S.pose('happy');
+          S.pose('happy');
           T.after(900, nextLine);
         }
       }
       raf = requestAnimationFrame(loop);
     }
     function end() {
-      mode = 'done'; S.count(''); S.pose('happy');
+      mode = 'done'; ui.tell(null); S.pose('happy');
       const results = all.map(x => x.st === 'great' || x.st === 'ok');
       const s = kit.scoreChoices(results, 6);
       const great = all.filter(x => x.st === 'great').length;
@@ -343,10 +340,15 @@ export default {
       const missAfterLong = all.filter(x => x.st === 'miss' && x.afterLong).length;
       let tip;
       if (!wrongRow && !missed) tip = '막대 높이를 읽고, 긴 막대는 기다렸다가 다음 막대를 제때 눌렀어요.';
-      else if (wrongRow >= missed) tip = `줄을 바꿔 누른 막대가 ${wrongRow}개 있었어요. 막대가 위 줄에 있으면 높은 소리예요.`;
+      else if (wrongRow >= missed) tip = `위아래를 바꿔 누른 막대가 ${wrongRow}개 있었어요. 막대가 위에 있으면 높은 소리예요.`;
       else if (rushed || missAfterLong * 2 >= missed) tip = `긴 막대 다음에서 놓친 적이 ${missAfterLong}번 있었어요. 긴 막대는 거북이 막대 끝까지 갈 때까지 기다려요.`;
       else tip = `놓친 막대가 ${missed}개 있었어요. 거북이 막대 앞 끝에 닿을 때 눌러요.`;
-      T.after(700, () => kit.finish({ title: `막대 ${s.total}개 중 ${s.kept}개 맞혔어요`, replay: results, facts: [`가장 길게 이어서 ${s.streak}개`, `딱 맞은 막대 ${great}개`], starOn: s.starOn, rules: s.rules.map(t => t.replace('번', '개')), tip }));
+      // 기준 둘 — 높이(맞는 단추를 제때 누름) · 박자(그중 '딱' 맞춘 것)
+      const hi = s.kept === s.total ? `높이 ${s.total}개 다 맞힘` : `높이 ${s.kept}개 맞힘`;
+      T.after(700, () => {
+        S.showHead(false); ui.count(null);           // 결과 옆 친구는 칸 화면이 붙임
+        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`${hi} · 박자 맞춤 ${great}개`, `가장 길게 이어서 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+      });
     }
 
     // 자동 시험 — 다음 막대의 때가 판정 창 안에 들면 그 줄을 누름

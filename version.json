@@ -1,5 +1,5 @@
 {
- "v": "1a67ccbaa8e9",
+ "v": "0af421c24d25",
  "files": [
   "app/css/app.css",
   "app/css/cells/_mel.css",
@@ -51,6 +51,7 @@
   "app/js/screens/teacher.js",
   "app/js/util.js",
   "engine/cells.js",
+  "engine/edit.js",
   "engine/judge.js",
   "engine/measure.js",
   "engine/song.js",

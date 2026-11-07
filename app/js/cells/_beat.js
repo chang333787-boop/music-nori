@@ -207,6 +207,25 @@ export function palmSVG(size = 64) {
 <rect x="17" y="6" width="9" height="34" rx="4.5" ${S}/><rect x="27" y="2" width="9" height="38" rx="4.5" ${S}/><rect x="37" y="5" width="9" height="35" rx="4.5" ${S}/><rect x="47" y="12" width="8" height="29" rx="4" ${S}/>
 <path d="M6 36 Q4 30 9 29 Q13 29 16 36 L17 30 H55 V48 Q55 68 36 68 Q20 68 13 54 Z" ${S}/></svg>`;
 }
+// 스피커(보기 카드 — 누르면 소리가 난다는 표시)
+export const speakerSVG = (size = 26) => `<svg viewBox="0 0 28 24" width="${size * 28 / 24}" height="${size}" aria-hidden="true"><path d="M3 9h5l6-5v16l-6-5H3z" fill="${INK}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><path d="M18 8.5q2.5 3.5 0 7M21.5 5.5q5 6.5 0 13" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+// 보기 카드 묶음 — 위에 "눌러서 들어 봐요" + 카드마다 스피커(카드 오른쪽 위)
+export function exampleGroup(kit, cards, cls = '') {
+  const { h } = kit;
+  for (const c of cards) c.append(h('span', { class: 'bspk', html: speakerSVG(24) }));
+  return h('div', { class: ('bexgroup ' + cls).trim() }, h('p', { class: 'bexhead' }, '눌러서 들어 봐요'), h('div', { class: 'bexgrid' }, ...cards));
+}
+// 준비 박 세기를 말풍선으로(1 2 3 4) — n = 지금 준비 박 번호(1~4) · 0이면 지움(한 번만)
+export function countTeller(ui) {
+  let last = -1;
+  return n => {
+    if (n === last) return;
+    const was = last; last = n;
+    if (n >= 1 && n <= 4) ui.tell(String(n), 'count', 0);
+    else if (was >= 1 && was <= 4) ui.tell(null);
+  };
+}
+
 // 박자표(위 숫자 = 한 마디의 박 수 · 아래 4 = 4분음표가 한 박)
 export const meterSVG = (top, size = 96) => `<svg viewBox="0 0 40 80" width="${size / 2}" height="${size}" aria-hidden="true"><text x="20" y="35" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="40" fill="${INK}">${top}</text><text x="20" y="74" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="40" fill="${INK}">4</text></svg>`;
 

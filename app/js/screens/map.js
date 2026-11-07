@@ -25,6 +25,10 @@ export default function mount(root, ctx) {
         return btn;
       })));
   });
+  // 곰(셈여림·빠르기) 갈래 — 다음 판에서 열림(무대에 있는 친구가 지도에서 사라지지 않게)
+  rows.push(h('div', { class: 'mrow later', style: { '--a': 'var(--bear)', '--a-t': 'var(--bear-t)' } },
+    h('div', { class: 'mlane' }, friendImg('bear', 'face', { label: false }), h('b', {}, '셈여림·빠르기')),
+    h('div', { class: 'mpath' }, h('span', { class: 'mlater' }, '다음에 열려요'))));
   root.append(h('div', { class: 'map' }, ...rows));
   void CELLS;
 }

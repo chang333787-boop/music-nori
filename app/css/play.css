@@ -1,0 +1,131 @@
+/* 놀이터(app/js/screens/play.js) — 정본 docs/playground.md · 화면 약속 docs/ui.md
+   1366×768 스크롤 0: 왼쪽 무대(머리줄 48 + 자 32 + 그림 악보 13줄 × 36) · 오른쪽 340(부탁 카드 · 곡 전체) · 아래 선반 84
+   주황 단추는 '듣기' 하나. 넘친 마디 빗금만 주황 무늬(명세 · 빨강 X). 계이름 색은 theory.js colorOf */
+.play{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr) 84px;gap:12px 16px;height:100%}
+.ptitle{font-family:var(--head);font-size:24px;max-width:460px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── 무대 ── */
+.pstage{grid-column:1;grid-row:1;position:relative;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:6px 10px}
+.phead{flex:none;display:flex;align-items:center;gap:16px;min-height:48px}
+.pview{flex:none;gap:8px}
+.pview button{min-height:46px;padding:4px 16px;font-size:20px}
+.pline1{flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:20px;line-height:1.3;white-space:nowrap;overflow:hidden}
+.pline1 b{font-family:var(--head);font-weight:400;font-size:24px;overflow:hidden;text-overflow:ellipsis}
+.pline1 .kbd{font-size:16px}
+.pdot-c{flex:none;display:inline-block;width:20px;height:20px;border-radius:50%;background:var(--c);border:2px solid var(--ink)}
+.proll{flex:1;min-height:0;display:flex}
+.proll[hidden]{display:none}
+
+/* 줄 이름(왼쪽 고정) */
+.plabels{flex:none;width:58px;display:flex;flex-direction:column}
+.plab-ruler{flex:none;height:32px}
+.plab{flex:none;height:36px;display:flex;align-items:center;justify-content:center}
+.plab .chip{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:28px;border-radius:10px;background:var(--c);border:2px solid var(--ink);font-family:var(--head);font-size:20px;line-height:1}
+.plab .oct{position:absolute;left:50%;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--ink)}
+.plab .oct.up{top:-6px}.plab .oct.dn{bottom:-6px}
+.plab.dim .chip{opacity:.3}
+
+/* 편집판(가로로 길면 이 안에서만 밀림) */
+.pscroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;position:relative}
+.pcanvas{position:relative;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.prow{position:absolute;left:0;right:0;height:36px;border-bottom:1px solid var(--line)}
+.prow::before{content:'';position:absolute;inset:0;background:var(--c);opacity:.13}
+.prow.dim::before{opacity:.04}
+/* 마디 상자 — 양쪽 진한 선(이웃 상자 선과 같은 자리에 겹침) · 박마다 옅은 선 */
+.pbox{position:absolute;top:32px;bottom:0;margin-left:-1.5px;box-sizing:border-box;border-left:3px solid var(--ink);border-right:3px solid var(--ink);pointer-events:none}
+.pbox.fresh{background:rgba(255,255,255,.5)}
+.pbeat{position:absolute;top:32px;bottom:0;margin-left:-1px;border-left:2px solid rgba(59,42,30,.16);pointer-events:none}
+/* 자 — 마디 번호 · 박 점(센박 = 큰 검은 점) */
+.pnum{position:absolute;top:0;font-family:var(--head);font-size:18px;line-height:20px;color:var(--ink-2);pointer-events:none}
+.pdot{position:absolute;top:21px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);pointer-events:none}
+.pdot.down{top:17px;width:15px;height:15px;margin-left:-7.5px;background:var(--ink)}
+/* 넘친 만큼(상자 밖 주황 빗금) · 모자란 만큼(상자 안 빈 박) */
+.phatch{position:absolute;top:32px;bottom:0;background:repeating-linear-gradient(135deg,rgba(196,81,26,.42) 0 7px,rgba(196,81,26,.08) 7px 15px);pointer-events:none}
+.pempty{position:absolute;top:32px;bottom:0;background:repeating-linear-gradient(135deg,rgba(107,90,74,.22) 0 6px,rgba(255,255,255,.4) 6px 14px)}
+.ptag{position:absolute;bottom:8px;z-index:4;transform:translateX(-50%);font-family:var(--head);font-size:18px;line-height:1;white-space:nowrap;background:var(--surface);border:2px solid var(--ink);border-radius:10px;padding:6px 10px;pointer-events:none}
+.ptag.over{border-color:var(--go-d);color:var(--go-d)}
+.ptag.left{border-style:dashed;color:var(--ink-2)}
+.ptag.fresh{top:38px;bottom:auto;background:var(--ink);color:var(--paper)}
+
+/* 음 블록 — 길이 = 가로 길이 · 높이 = 줄 · 셈여림 = 굵기 */
+.pblk{position:absolute;z-index:2;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:var(--c);border:3px solid var(--ink);border-radius:10px;font-family:var(--head);font-size:19px;line-height:1;white-space:nowrap;overflow:hidden;cursor:pointer;transition:transform 120ms ease-out,box-shadow 120ms ease-out}
+.pblk.rest{background:rgba(255,255,255,.75);border:3px dashed var(--ink-2)}
+.pblk.tieout{border-top-right-radius:0;border-bottom-right-radius:0;border-right-width:0}
+.pblk.cont{border-top-left-radius:0;border-bottom-left-radius:0;border-left:3px dotted rgba(255,255,255,.95)}
+.pblk.sel{z-index:3;box-shadow:0 0 0 3px var(--surface),0 0 0 6px var(--ink)}
+.pblk.mark{outline:3px dashed var(--ink);outline-offset:6px}
+.pblk.sel.mark{outline-offset:9px}
+.pblk.now{transform:translateY(-4px);box-shadow:inset 0 0 0 3px rgba(255,255,255,.9),0 4px 0 var(--ink)}
+.pblk.sel.now{box-shadow:inset 0 0 0 3px rgba(255,255,255,.9),0 0 0 3px var(--surface),0 0 0 6px var(--ink)}
+.pmarktag{position:absolute;z-index:5;transform:translateX(-50%);font-family:var(--head);font-size:18px;line-height:1;white-space:nowrap;background:var(--ink);color:var(--paper);border-radius:10px;padding:6px 10px;pointer-events:none}
+.pmarktag::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:var(--ink)}
+.pplayline{position:absolute;top:0;bottom:0;left:0;z-index:6;width:3px;margin-left:-1.5px;background:var(--ink);pointer-events:none;will-change:transform}
+.pplayline::before{content:'';position:absolute;top:0;left:-6px;border:7.5px solid transparent;border-bottom:0;border-top:10px solid var(--ink)}
+
+/* 오선(보기만) */
+.pstaff{flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:10px 4px}
+.pstaff .st-note.sel .st-head{fill:#2F6DB5;stroke:#3B2A1E;stroke-width:2}
+
+/* ── 오른쪽: 부탁 카드 · 곡 전체 ── */
+.pside{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;gap:12px;min-height:0}
+.pcard{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:14px 18px 16px;overflow:hidden}
+.pc-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pc-no{font-family:var(--head);font-size:20px;line-height:1.3;border:3px solid var(--ink);border-radius:12px;padding:0 12px}
+.pc-dots{display:flex;gap:6px}
+.pc-dots i{display:block;width:14px;height:14px;border-radius:50%;border:2.5px solid var(--ink);background:var(--surface)}
+.pc-dots i.on{background:var(--ink)}
+.pc-dots i.now{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+.pc-text{margin:0;font-family:var(--head);font-size:26px;line-height:1.3}
+.pc-hint{margin:0;font-size:19px;line-height:1.45;padding:8px 12px;border-radius:12px;background:var(--panel);border-left:6px solid var(--line2)}
+.pc-hint[data-k="ready"]{border-left-color:var(--ink);font-weight:700}
+.pc-hint[data-k="wrong"]{border-left-color:var(--oops)}
+.pc-hint[data-k="diff"]{border-left-color:var(--bird)}
+.pc-hint[data-k="done"]{border-left-color:var(--good);color:var(--good);font-weight:700}
+.pc-scene{flex:none;display:flex;align-items:flex-end;gap:12px;height:104px}
+.pc-scene .pbear{height:100%;width:auto;object-fit:contain;filter:saturate(.45);transition:filter 200ms}
+.pc-scene.awake .pbear{filter:none}
+.pc-scene .zz{font-family:var(--head);font-size:24px;color:var(--ink-2);margin-bottom:56px}
+.pc-scene.awake .zz{color:var(--ink)}
+.pc-act{margin-top:auto;display:flex;justify-content:flex-end}
+.pc-act button{min-height:64px;font-size:24px}
+
+.pglobal{flex:none;display:flex;flex-direction:column;gap:8px}
+.pg-lab{display:flex;align-items:center;gap:10px;margin:0 0 4px 2px;font-family:var(--head);font-size:19px;color:var(--ink-2)}
+.pseg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;width:100%}
+.pseg button{min-width:0;min-height:56px;padding:4px 6px;font-size:20px;flex-direction:column;gap:2px;line-height:1.1}
+.pseg button span{font-size:18px}
+.pseg .feet{width:44px;height:16px;display:block}
+.pseg .dyn{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:24px;line-height:1}
+.pvol{display:inline-flex;align-items:flex-end;gap:3px;height:20px}
+.pvol i{display:block;width:8px;border:2px solid var(--ink);border-radius:2px;background:var(--surface);transition:background-color 120ms}
+.pvol i:nth-child(1){height:8px}.pvol i:nth-child(2){height:13px}.pvol i:nth-child(3){height:19px}
+.pvol i.on{background:var(--bear)}
+
+/* ── 아래 선반 ── */
+.pshelf{grid-column:1;grid-row:2;display:flex;align-items:center;gap:16px;min-width:0}
+.ptools{flex:1;min-width:0;display:flex;gap:10px}
+.ptool{flex:1;min-width:0;min-height:72px;padding:6px 10px;font-size:22px;gap:8px}
+.ptool .ico svg{display:block;width:20px;height:20px}
+.pplay{flex:none;min-width:180px;min-height:72px;font-size:30px}
+
+/* ── 곡 바꾸기 ── */
+.ppick-ov{z-index:20}
+.ppick{width:min(1060px,94%);max-height:94%;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.ppick-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:4px}
+.ppick h2{font-size:32px}
+.ppick h3{margin:6px 0 0;font-size:22px;color:var(--ink-2)}
+.ppick-acts{display:flex;gap:10px}
+.ppick-acts button{min-height:56px;font-size:20px}
+.plist{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.plist button{min-height:56px;padding:6px 12px;font-size:19px;box-shadow:0 3px 0 var(--ink)}
+.plist button[aria-current="true"]{background:var(--ink);color:var(--paper)}
+.pempty-t{margin:0;font-size:18px;color:var(--ink-2)}
+
+/* 좁은 화면(세로 휴대폰) — 한 줄로 쌓음 */
+@media (max-width:900px){
+  .play{grid-template-columns:1fr;grid-template-rows:auto auto auto;height:auto}
+  .pstage{min-height:600px}
+  .pside{grid-column:1;grid-row:auto}
+  .pshelf{grid-row:auto;flex-wrap:wrap}
+  .plist{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

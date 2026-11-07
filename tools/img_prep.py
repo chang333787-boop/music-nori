@@ -2,7 +2,7 @@
 # 그림 손질 — 코덱스가 그린 PNG(흰 바탕) → 앱용 webp
 #  캐릭터·돌: 테두리에서 이어진 흰 바탕만 투명하게(토끼 흰 털처럼 외곽선 안쪽 흰색은 그대로) → 여백 자르기 → 긴 변 512px
 #  배경(bg_*): 가로 1600px로 비율 그대로 줄임
-#  쓰는 법: python3 tools/img_prep.py <코덱스 out 폴더> app/img/band
+#  쓰는 법: python3 tools/img_prep.py <코덱스 out 폴더> app/img/band [긴 변 px · 기본 512 · 장면 소품은 900]
 import sys, os
 from collections import deque
 from PIL import Image
@@ -47,7 +47,7 @@ def trim(im, margin=8):
     x0, y0, x1, y1 = bb
     return im.crop((max(0, x0 - margin), max(0, y0 - margin), min(im.width, x1 + margin), min(im.height, y1 + margin)))
 
-def main(src, dst):
+def main(src, dst, big=512):
     os.makedirs(dst, exist_ok=True)
     for f in sorted(os.listdir(src)):
         if not f.lower().endswith('.png'): continue
@@ -59,10 +59,10 @@ def main(src, dst):
             im.save(os.path.join(dst, name + '.webp'), 'WEBP', quality=80, method=6)
         else:
             im = trim(cut_white(im))
-            s = 512 / max(im.size)
+            s = big / max(im.size)
             if s < 1: im = im.resize((round(im.width * s), round(im.height * s)), Image.LANCZOS)
             im.save(os.path.join(dst, name + '.webp'), 'WEBP', quality=86, method=6)
         print(name, im.size, os.path.getsize(os.path.join(dst, name + '.webp')) // 1024, 'KB')
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 512)

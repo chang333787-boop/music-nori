@@ -3,9 +3,11 @@
 //  실로폰 · 피아노처럼 저절로 사라지는 소리는 길이가 안 들려 쓰지 않는다 — 플루트 · 리코더 · 목소리 · 바이올린(이어지는 소리)만.
 //  근거: 아이는 소리를 못 듣는 게 아니라 이름을 못 붙인다. 길이는 높낮이와 함께 가장 약한 성질이라(Taebel 1974)
 //  몸으로 늘이기(긴 소리 = 팔을 쭉 · 짧은 소리 = 톡)를 그림 옆에 붙여 보여 준다.
-//  보기: 예시 넷(악기 넷 · 짧게→길게 / 길게→짧게) → 따라 하기: 세 번 이어서 맞히면 지남 → 확인 게임 '다람쥐 기차' 12판
-//  따라 하기 · 확인 게임에서는 소리가 나는 동안 아무것도 움직이지 않는다(움직임이 길이를 알려 주면 귀 대신 눈으로 풀게 됨) — 고른 뒤에 막대로 보여 줌.
-import { voice } from './_snd.js';
+//  보기: 예시 넷(악기 넷 · 짧게→길게 / 길게→짧게) → 연습: 세 번 이어서 맞히면 지남 → 확인 게임 '다람쥐 기차' 12판
+//  연습 · 확인 게임에서는 소리가 나는 동안 길이를 그림으로 보여 주지 않는다(막대가 자라면 귀 대신 눈으로 풀게 됨) — 고른 뒤에 막대로 보여 줌.
+//  11-07 평가 2차: 연습 판 = 보기와 같은 길이 줄(들은 소리가 한 줄씩 쌓여 견줄 수 있게) · 답은 오른쪽 답 묶음 · 길잡이 토끼는 판 밖
+//   게임 = 코덱스 그림 기차(기관차 · 긴 칸 창 6 · 짧은 칸 창 2 + 지붕 자리 4) · 다람쥐는 손님
+import { voice, exGroup, nowCard, pal, pose } from './_snd.js';
 
 const MAXD = 1.5;                                     // 줄 끝까지 = 1.5초
 const LONG = 0.6;                                     // 이보다 길면 '긴 소리'
@@ -28,59 +30,52 @@ const PLAN = [
 ];
 const isLong = d => d >= LONG;
 const pct = d => Math.min(100, (d / MAXD) * 100);
+const SCENE = 'app/img/scene/';
 
-// 몸 동작 말 — 그림 옆에 붙인다
-const BODY = d => (isLong(d) ? '길게 — 팔을 쭉' : '짧게 — 톡');
-// 막대 아이콘(단추 · 예시 카드) — 짧은 막대 / 긴 막대
+// 몸 동작 말 — 막대 위에 붙인다
+const BODY = d => (isLong(d) ? '길게 — 쭈욱' : '짧게 — 톡');
+// 막대 아이콘(답 단추 · 예시 카드) — 짧은 막대 / 긴 막대
 const barIcon = (kit, long) => kit.h('span', { class: 'ln-icon ' + (long ? 'l' : 's'), 'aria-hidden': 'true' }, kit.h('i'));
+const press = el => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+const keyPick = e => ({ ArrowLeft: 'long', ArrowUp: 'long', 1: 'long', ArrowRight: 'short', ArrowDown: 'short', 2: 'short' })[e.key];
 
-// 가로 길이 줄 — 줄마다 막대 하나. 토끼가 자라는 막대 끝을 따라간다.
-function lanes(kit, n) {
+// 가로 길이 줄 — 줄마다 막대 하나 · 막대 위에 몸 동작 말 · 고르기 전에는 막대 시작 자리에 '?'
+function lanes(kit, n, { nums = false } = {}) {
   const { h } = kit;
   const rows = [];
   for (let i = 0; i < n; i++) {
-    const bar = h('div', { class: 'ln-bar' });
+    const bar = h('div', { class: 'ln-bar off' });
     const tag = h('span', { class: 'ln-tag' });
     const ask = h('span', { class: 'ln-ask', hidden: true }, '?');
     const track = h('div', { class: 'ln-track' }, bar, tag, ask);
-    rows.push({ el: h('div', { class: 'ln-row' }, n > 1 ? h('span', { class: 'ln-num' }, `${i + 1}`) : null, track), bar, tag, ask, track });
+    rows.push({ el: h('div', { class: 'ln-row' }, nums ? h('span', { class: 'ln-num' }, `${i + 1}`) : null, track), bar, tag, ask, track });
   }
-  const bunny = h('div', { class: 'ln-bunny' }, kit.friendImg('bunny', 'idle', { label: false }));
-  const el = h('div', { class: 'lanes n' + n }, ...rows.map(r => r.el), bunny);
-  const pose = p => kit.setPose(bunny.firstChild, 'bunny', p);
-  // 토끼 자리 = i번째 줄 막대 끝(d초 만큼 자란 곳)
-  const bunnyTo = (i, d, sec) => {
-    const r = rows[i], x = r.track.offsetLeft + r.track.clientWidth * pct(d) / 100, y = r.track.offsetTop + 6;
-    bunny.style.transition = sec ? `left ${sec}s linear, top 180ms ease-out` : 'top 180ms ease-out';
-    bunny.style.left = `${x}px`; bunny.style.top = `${y}px`;
-  };
-  const api = {
+  const el = h('div', { class: 'lanes n' + n + (nums ? ' nums' : '') }, ...rows.map(r => r.el));
+  const clearRow = r => { r.bar.style.transition = 'none'; r.bar.style.width = '0'; r.bar.classList.add('off'); r.tag.textContent = ''; r.tag.classList.remove('on'); r.ask.hidden = true; r.ask.classList.remove('live'); r.el.classList.remove('cur'); };
+  const tagOn = (r, d) => { r.tag.textContent = BODY(d); r.tag.classList.add('on'); };
+  return {
     el,
-    reset() {
-      for (const r of rows) { r.bar.style.transition = 'none'; r.bar.style.width = '0'; r.bar.classList.add('off'); r.tag.textContent = ''; r.tag.classList.remove('on'); r.ask.hidden = true; }
-      bunnyTo(0, 0, 0); pose('idle');
-    },
-    // 소리와 함께 자라기(sec = 자라는 시간 · 소리 길이와 같게) — 다 자라면 몸 동작 말
+    reset() { rows.forEach(clearRow); },
+    clear(i) { clearRow(rows[i]); },
+    // 소리와 함께 자라기(sec = 자라는 시간) — 다 자라면 몸 동작 말
     grow(i, d, sec = d, T = null) {
       const r = rows[i];
-      r.ask.hidden = true;
+      r.ask.hidden = true; r.ask.classList.remove('live');
       r.bar.style.transition = 'none'; r.bar.style.width = '0'; r.bar.classList.remove('off');
       void r.bar.offsetWidth;                         // 0에서 다시 자라게
       r.bar.style.transition = `width ${sec}s linear`;
       r.bar.style.width = pct(d) + '%';
       r.bar.classList.toggle('long', isLong(d));
-      bunnyTo(i, 0, 0);
-      void bunny.offsetLeft;                          // 막대 시작에서 출발하게
-      bunnyTo(i, d, sec);
-      pose('play');
-      // 긴 막대는 막대 위 왼쪽에, 짧은 막대는 막대 끝 뒤에(줄 밖으로 넘치지 않게)
-      const show = () => { r.tag.textContent = BODY(d); r.tag.style.left = pct(d) > 45 ? '14px' : `calc(${pct(d)}% + 14px)`; r.tag.classList.add('on'); };
-      if (T) T.after(sec * 1000 + 60, show); else show();
+      r.tag.classList.remove('on');
+      if (T) T.after(sec * 1000 + 60, () => tagOn(r, d)); else tagOn(r, d);
     },
-    ask(i) { rows[i].ask.hidden = false; },
-    pose,
+    // 바로 그림(지난 소리)
+    set(i, d) { const r = rows[i]; clearRow(r); r.bar.classList.remove('off'); r.bar.style.width = pct(d) + '%'; tagOn(r, d); },
+    ask(i) { const r = rows[i]; clearRow(r); r.ask.hidden = false; r.el.classList.add('cur'); },
+    // 소리가 나는 동안 '?'가 또렷해짐(늘 같은 모양 — 길이를 알려 주지 않음)
+    live(i, on) { rows[i].ask.classList.toggle('live', on); },
+    rows,
   };
-  return api;
 }
 
 export default {
@@ -89,7 +84,9 @@ export default {
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     ui.say('소리가 길면 막대가 길게, 짧으면 짧게 자라요');
-    const ln = lanes(kit, 2);
+    const ln = lanes(kit, 2, { nums: true });
+    const bunny = h('div', { class: 'ln-pal' }, pal(kit, 'bunny'));
+    const setP = p => pose(kit, bunny.firstChild, 'bunny', p);
     const cards = EXAMPLES.map(ex => {
       const up = ex.b > ex.a;
       const btn = h('button', { type: 'button', class: 'excard' },
@@ -97,42 +94,48 @@ export default {
         h('span', { class: 'ln-pair' }, barIcon(kit, !up), up ? '짧게 → 길게' : '길게 → 짧게', barIcon(kit, up)));
       onPress(btn, () => {
         T.clear(); V.hush();
-        ln.reset();
+        ln.reset(); nowCard(cards, btn);
         const s = V.play([{ p: ex.p, d: ex.a, gap: 0.5 }, { p: ex.p, d: ex.b }], { inst: ex.inst });
-        T.after(kit.msUntil(s.ac, s.starts[0]), () => ln.grow(0, ex.a, ex.a, T));
+        T.after(kit.msUntil(s.ac, s.starts[0]), () => { ln.grow(0, ex.a, ex.a, T); setP('play'); });
         T.after(kit.msUntil(s.ac, s.starts[1]), () => ln.grow(1, ex.b, ex.b, T));
-        T.after(kit.msUntil(s.ac, s.end) + 200, () => ln.pose('happy'));
+        T.after(kit.msUntil(s.ac, s.end) + 200, () => { setP('happy'); nowCard(cards, null); });
         btn.classList.add('heard');
       });
       return btn;
     });
     const hint = h('p', { class: 'ln-hint' }, '몸으로 따라 해요: 긴 소리는 팔을 쭉, 짧은 소리는 손뼉 톡');
-    ui.stage.append(h('div', { class: 'cols' }, h('div', { class: 'ln-left' }, ln.el, hint), h('div', { class: 'exgrid' }, ...cards)));
-    requestAnimationFrame(() => ln.reset());
+    ui.stage.append(h('div', { class: 'ln-show' }, hint, h('div', { class: 'ln-main' }, bunny, ln.el, exGroup(kit, cards))));
+    ln.set(0, EXAMPLES[0].a); ln.set(1, EXAMPLES[0].b);   // 처음엔 첫 예시(짧게 → 길게)를 그림으로
     let k = 0;
-    kit.setAuto(() => { if (k < cards.length) cards[k++].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); else kit.next(); });
+    kit.setAuto(() => { if (k < cards.length) press(cards[k++]); else kit.next(); });
     return () => { T.clear(); V.hush(); };
   },
 
-  // ── 따라 하기: 이 소리는 길어요? 짧아요? — 세 번 이어서 맞히면 지남 ──
+  // ── 연습: 이 소리는 길어요? 짧아요? — 들은 소리가 한 줄씩 쌓인다 · 세 번 이어서 맞히면 지남 ──
   follow(ui, kit) {
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine), r = kit.rng();
-    ui.say('이 소리는 길어요, 짧아요?');
-    const ln = lanes(kit, 1);
+    const ASK = '이 소리는 길어요, 짧아요?';
+    ui.say(ASK);
+    const N = 3, ln = lanes(kit, N);
+    const bunny = h('div', { class: 'ln-pal' }, pal(kit, 'bunny'));
+    const setP = p => pose(kit, bunny.firstChild, 'bunny', p);
     let streak = 0, cur = null, busy = true, last = null;
-    const msg = h('p', { class: 'fmsg' });
-    const longBtn = h('button', { type: 'button', class: 'pick ln-pick' }, barIcon(kit, true), '길어요');
-    const shortBtn = h('button', { type: 'button', class: 'pick ln-pick' }, barIcon(kit, false), '짧아요');
+    const hist = [];                                  // 지난 소리 길이(위에서부터)
+    const A = kit.answers([
+      { key: 'long', label: '길어요', chip: barIcon(kit, true) },
+      { key: 'short', label: '짧아요', chip: barIcon(kit, false) },
+    ], k => answer(k === 'long'));
     const again = h('button', { type: 'button' }, '다시 듣기');
-    const dots = h('span', { class: 'streak' }, ...[0, 1, 2].map(() => h('i')));
-    const paint = () => [...dots.children].forEach((d, i) => d.classList.toggle('on', i < streak));
+    ui.setBar(again);
+    const row = () => hist.length - 1;
     // 소리 하나 — show = 막대를 보며 듣기(틀린 뒤 다시 들려줄 때)
     function play(show) {
       busy = true; T.clear(); V.hush();
-      ln.reset(); if (!show) ln.ask(0);
+      if (!show) ln.ask(row());
       const s = V.play([{ p: cur.p, d: cur.d }], { inst: 'flute' });
-      if (show) T.after(kit.msUntil(s.ac, s.starts[0]), () => ln.grow(0, cur.d, cur.d, T));
+      if (show) T.after(kit.msUntil(s.ac, s.starts[0]), () => ln.grow(row(), cur.d, cur.d, T));
+      else { T.after(kit.msUntil(s.ac, s.starts[0]), () => { ln.live(row(), true); setP('play'); }); T.after(kit.msUntil(s.ac, s.ends[0]), () => { ln.live(row(), false); setP('idle'); }); }
       return s;
     }
     function ask() {
@@ -141,7 +144,10 @@ export default {
       if (last && last.n >= 2 && last.long === long) long = !long;
       last = last && last.long === long ? { long, n: last.n + 1 } : { long, n: 1 };
       cur = { d: long ? [1.2, 1.0, 0.9][Math.floor(r() * 3)] : [0.25, 0.3][Math.floor(r() * 2)], p: [67, 72, 64][Math.floor(r() * 3)] };
-      msg.textContent = '';
+      // 판이 차면 맨 위 줄을 밀어 올림(바로 앞 소리들과 견줄 수 있게)
+      if (hist.length >= N) { hist.shift(); hist.forEach((d, k) => ln.set(k, d)); }
+      hist.push(cur.d);
+      A.clear(); ui.say(ASK); setP('idle');
       const s = play(false);
       // 긴 소리는 다 듣기 전에도 길다는 게 들리니 0.65초가 지나면 고를 수 있게(짧은 소리는 끝난 뒤)
       T.after(kit.msUntil(s.ac, s.starts[0] + Math.min(cur.d, LONG + 0.05)), () => { busy = false; });
@@ -150,70 +156,72 @@ export default {
       if (busy || !cur) return;
       busy = true;
       const want = isLong(cur.d), right = long === want;
-      ln.grow(0, cur.d, 0.35, T);                     // 고른 뒤에 길이를 막대로
-      ln.pose(right ? 'happy' : 'oops');
+      ln.live(row(), false);
+      ln.grow(row(), cur.d, 0.35, T);                // 고른 뒤에 길이를 막대로
+      setP(right ? 'happy' : 'oops');
       if (right) {
-        kit.sfx.good(engine); streak++; paint();
-        msg.textContent = want ? '맞아요 — 길게 이어진 소리예요' : '맞아요 — 톡 짧게 끝난 소리예요';
+        kit.sfx.good(engine); streak++; ui.practice(streak);
+        A.mark(long ? 'long' : 'short', 'right');
+        ui.tell('맞아요', 'good');
         if (streak >= 3) { kit.pass(); return; }
-        T.after(1000, ask);
+        T.after(1100, ask);
       } else {
-        kit.sfx.oops(engine); streak = 0; paint();
-        msg.textContent = want ? '길게 이어진 소리였어요. 막대를 보며 다시 들어 봐요' : '짧게 끝난 소리였어요. 막대를 보며 다시 들어 봐요';
+        kit.sfx.oops(engine); streak = 0; ui.practice(0);
+        A.mark(long ? 'long' : 'short', 'wrong'); A.btn(want ? 'long' : 'short').classList.add('right');
+        ui.tell('다시 들어 봐요', 'oops', 2400);
+        ui.say(want ? '길게 이어진 소리였어요 — 막대를 보며 다시 들어요' : '톡 짧게 끝난 소리였어요 — 막대를 보며 다시 들어요');
         // 막대가 자라는 것을 보며 한 번 더 듣고 → 새 소리
         T.after(1300, () => { const s = play(true); T.after(kit.msUntil(s.ac, s.end) + 900, ask); });
       }
     }
-    onPress(longBtn, () => answer(true)); onPress(shortBtn, () => answer(false));
     onPress(again, () => { if (!busy && cur) { const s = play(false); T.after(kit.msUntil(s.ac, s.end), () => { busy = false; }); } });
-    ui.stage.append(h('div', { class: 'cols' }, h('div', { class: 'ln-left' }, ln.el), h('div', { class: 'pickcol' }, longBtn, shortBtn, h('div', { class: 'row' }, again, dots), msg)));
-    requestAnimationFrame(() => ln.reset());
+    ui.stage.append(h('div', { class: 'ln-follow' }, bunny, ln.el, A.el));
     T.after(450, ask);
     kit.setAuto(() => { if (!busy && cur) answer(isLong(cur.d)); });
-    const onKey = e => {
-      if (e.repeat) return;
-      if (e.key === 'ArrowLeft' || e.key === '1') answer(true);
-      else if (e.key === 'ArrowRight' || e.key === '2') answer(false);
-    };
+    const onKey = e => { if (e.repeat) return; const k = keyPick(e); if (k) { e.preventDefault(); answer(k === 'long'); } };
     window.addEventListener('keydown', onKey);
     return () => { T.clear(); V.hush(); window.removeEventListener('keydown', onKey); };
   },
 
-  // ── 확인 게임: 다람쥐 기차 — 긴 소리면 긴 칸, 짧은 소리면 짧은 칸 · 12판 ──
+  // ── 확인 게임: 다람쥐 기차 — 긴 소리 손님은 긴 칸, 짧은 소리 손님은 짧은 칸 · 12판 ──
   game(ui, kit) {
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [], picks = [];
     let i = -1, cur = null, open = false, gone = false;
-    ui.say('');
-    const seats = n => Array.from({ length: n }, () => h('i', { class: 'tr-seat' }));
-    const longSeats = seats(6), shortSeats = seats(6);
-    const wheels = n => h('div', { class: 'tr-wheels' }, ...Array.from({ length: n }, () => h('i')));
-    const longCar = h('button', { type: 'button', class: 'tr-car long', 'aria-label': '긴 칸 — 긴 소리' },
-      h('div', { class: 'tr-win' }, ...longSeats), h('span', { class: 'tr-name' }, '긴 칸'), wheels(3));
-    const shortCar = h('button', { type: 'button', class: 'tr-car short', 'aria-label': '짧은 칸 — 짧은 소리' },
-      h('div', { class: 'tr-win' }, ...shortSeats), h('span', { class: 'tr-name' }, '짧은 칸'), wheels(2));
-    const driver = h('div', { class: 'tr-driver' }, kit.friendImg('bunny', 'idle', { label: false }));
-    const loco = h('div', { class: 'tr-loco' }, h('div', { class: 'tr-cab' }, driver), h('div', { class: 'tr-boiler' }, h('i', { class: 'tr-chim' })), wheels(3));
+    ui.say('들은 소리를 맞는 기차에 태워요');
+    const img = (f, cls) => h('img', { src: SCENE + f + '.webp', alt: '', draggable: 'false', class: cls });
+    // 자리 — 그림 속 창 자리(%) · 짧은 칸은 창 둘 + 지붕 위 넷
+    const seat = (l, t, w, hh) => h('i', { class: 'tr-seat', style: { left: l + '%', top: t + '%', width: w + '%', height: hh + '%' } });
+    const longSeats = [65, 200, 335, 468, 602, 735].map(x => seat(x / 9, 29.5, 11.1, 27.9));
+    const shortSeats = [175, 501].map(x => seat(x / 8.82, 26.9, 23.4, 33.7));
+    const roof = Array.from({ length: 4 }, () => h('i', { class: 'tr-roofseat' }));
+    shortSeats.push(...roof);
+    const longCar = h('div', { class: 'tr-car long' }, img('prop_train_long', 'tr-img'), ...longSeats, h('span', { class: 'tr-name' }, '긴 소리'));
+    const shortCar = h('div', { class: 'tr-car short' }, img('prop_train_short', 'tr-img'), ...shortSeats.slice(0, 2), h('div', { class: 'tr-roof' }, ...roof), h('span', { class: 'tr-name' }, '짧은 소리'));
+    const loco = h('div', { class: 'tr-car loco' }, img('prop_train_engine', 'tr-img'));
     const train = h('div', { class: 'tr-train' }, longCar, h('i', { class: 'tr-link' }), shortCar, h('i', { class: 'tr-link' }), loco);
-    const sq = h('div', { class: 'tr-sq', html: SQUIRREL });
+    const bunny = h('div', { class: 'tr-bunny' }, pal(kit, 'bunny'));
+    const sq = h('div', { class: 'tr-sq' }, img('prop_squirrel', ''));
     const laneBar = h('div', { class: 'tr-lbar' }), laneTag = h('span', { class: 'tr-ltag' });
     const lane = h('div', { class: 'tr-lane' }, laneBar, laneTag);
-    const counter = h('div', { class: 'tr-count' });
-    const word = h('div', { class: 'tr-word' });
-    const scene = h('div', { class: 'tr-scene' }, h('div', { class: 'tr-ground' }), h('div', { class: 'tr-rail' }), lane, train, sq, counter, word);
+    const scene = h('div', { class: 'tr-scene' }, h('div', { class: 'tr-hills' }), h('div', { class: 'tr-ground' }), h('div', { class: 'tr-rail' }), train, lane, bunny, sq);
+    const A = kit.answers([
+      { key: 'long', label: '긴 소리', chip: barIcon(kit, true) },
+      { key: 'short', label: '짧은 소리', chip: barIcon(kit, false) },
+    ], k => answer(k === 'long'));
     const start = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
       h('h2', {}, '다람쥐 기차'),
-      h('p', { class: 'sub' }, '긴 소리면 긴 칸, 짧은 소리면 짧은 칸을 눌러요'),
-      h('p', { class: 'sub' }, '12번 · 키보드 ← → 도 돼요')));
-    ui.stage.append(scene, start);
-    const pose = p => kit.setPose(driver.firstChild, 'bunny', p);
+      h('p', { class: 'sub' }, '다람쥐 손님 12명이 소리를 하나씩 들려줘요'),
+      h('p', { class: 'sub' }, '키보드 ', h('span', { class: 'kbd' }, '1'), ' ', h('span', { class: 'kbd' }, '2'), ' 도 돼요')));
+    ui.stage.append(h('div', { class: 'tr-wrap' }, scene, A.el), start);
+    const setP = p => pose(kit, bunny.firstChild, 'bunny', p);
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
     onPress(startBtn, () => { start.remove(); ui.setBar(); T.after(300, next); });
     ui.setBar(startBtn);
-    kit.setAuto(() => { if (start.isConnected) startBtn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); else if (open) answer(isLong(cur.d)); });
+    kit.setAuto(() => { if (start.isConnected) press(startBtn); else if (open) answer(isLong(cur.d)); });
 
-    // 긴 칸 너비 = 1.2초 막대(소리 막대와 기차 칸 길이가 같은 자로 보이게)
+    // 긴 칸 너비 = 1.2초 막대(소리 막대와 기차 칸 길이가 같은 자로 보이게) · 막대는 긴 칸 왼쪽 끝에서 시작
     const pxPerSec = () => longCar.offsetWidth / 1.2;
     function next() {
       if (gone) return;
@@ -221,12 +229,13 @@ export default {
       if (i >= PLAN.length) return end();
       const [d, inst, p] = PLAN[i];
       cur = { d, inst, p };
-      counter.textContent = `${i + 1} / ${PLAN.length}`;
-      word.textContent = '';
+      ui.count(i + 1, PLAN.length);
+      A.clear();
       lane.classList.remove('on'); laneBar.style.width = '0'; laneTag.textContent = '';
+      lane.style.left = `${train.offsetLeft + longCar.offsetLeft}px`;
       sq.className = 'tr-sq'; sq.style.transform = '';
       void sq.offsetWidth; sq.classList.add('in');   // 다음 다람쥐가 톡 나타남
-      pose('idle');
+      setP('idle');
       open = false;
       T.after(550, () => {
         if (gone) return;
@@ -244,28 +253,32 @@ export default {
       lane.classList.add('on');
       laneBar.style.width = `${Math.round(cur.d * pxPerSec())}px`;
       laneTag.textContent = want ? '긴 소리' : '짧은 소리';
-      if (right) { kit.sfx.good(engine); pose('happy'); word.textContent = '좋아'; word.dataset.k = 'good'; }
+      if (right) { kit.sfx.good(engine); setP('happy'); A.mark(want ? 'long' : 'short', 'right'); ui.tell('맞아요', 'good'); }
       else {
-        kit.sfx.oops(engine); pose('oops'); word.textContent = long == null ? '놓쳤어요' : '삐끗'; word.dataset.k = 'oops';
-        if (long != null) { const wrongCar = long ? longCar : shortCar; wrongCar.classList.remove('nope'); void wrongCar.offsetWidth; wrongCar.classList.add('nope'); }
+        kit.sfx.oops(engine); setP('oops');
+        if (long != null) A.mark(long ? 'long' : 'short', 'wrong');
+        A.btn(want ? 'long' : 'short').classList.add('right');
+        ui.tell(long == null ? '놓쳤어요' : '삐끗', 'oops');
       }
       // 다람쥐는 맞는 칸으로 폴짝
-      const seat = (want ? longSeats : shortSeats).find(s => !s.classList.contains('on'));
+      const st = (want ? longSeats : shortSeats).find(s => !s.classList.contains('on'));
       T.after(right ? 250 : 650, () => {
-        if (gone || !seat) return;
-        const a = sq.getBoundingClientRect(), b = seat.getBoundingClientRect();
+        if (gone || !st) return;
+        const a = sq.getBoundingClientRect(), b = st.getBoundingClientRect();
         sq.classList.add('hop');
-        sq.style.transform = `translate(${(b.left + b.width / 2 - (a.left + a.width / 2)).toFixed(0)}px, ${(b.top + b.height / 2 - (a.top + a.height / 2)).toFixed(0)}px) scale(.62)`;
-        T.after(380, () => { seat.classList.add('on'); seat.innerHTML = SQUIRREL; sq.className = 'tr-sq gone'; });
+        const k = Math.min(b.width / a.width, b.height / a.height);
+        sq.style.transform = `translate(${(b.left + b.width / 2 - (a.left + a.width / 2)).toFixed(0)}px, ${(b.top + b.height / 2 - (a.top + a.height / 2)).toFixed(0)}px) scale(${k.toFixed(2)})`;
+        T.after(380, () => { st.classList.add('on'); st.replaceChildren(img('prop_squirrel', '')); sq.className = 'tr-sq gone'; });
       });
       T.after(right ? 1100 : 1700, next);
     }
     function end() {
       open = false;
-      lane.classList.remove('on'); word.textContent = '';
-      pose('happy');
+      lane.classList.remove('on'); ui.tell(null); A.clear();
+      setP('happy');
       train.classList.add('leave');                   // 다람쥐를 다 태우고 떠남 → 결과
       T.after(1500, () => {
+        bunny.hidden = true; ui.count(null);          // 결과 옆 친구는 칸 화면이 붙임
         const s = kit.scoreChoices(results, 5);
         const wrong = results.filter(x => !x).length;
         const missL = PLAN.filter((p, k) => !results[k] && isLong(p[0])).length;
@@ -281,16 +294,10 @@ export default {
         kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`가장 길게 이어서 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
       });
     }
+    // 기차 칸을 직접 눌러도 됨
     onPress(longCar, () => answer(true)); onPress(shortCar, () => answer(false));
-    const onKey = e => {
-      if (e.repeat) return;
-      if (e.key === 'ArrowLeft' || e.key === '1') answer(true);
-      else if (e.key === 'ArrowRight' || e.key === '2') answer(false);
-    };
+    const onKey = e => { if (e.repeat) return; const k = keyPick(e); if (k) { e.preventDefault(); answer(k === 'long'); } };
     window.addEventListener('keydown', onKey);
     return () => { gone = true; T.clear(); V.hush(); window.removeEventListener('keydown', onKey); };
   },
 };
-
-// 다람쥐(납작한 단색 · 잉크 외곽선) — 확인 게임 손님
-const SQUIRREL = `<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M50 70 C78 66 80 34 66 20 C57 11 43 16 48 28 C54 40 63 50 47 60 Z" fill="#A85A2A" stroke="#3B2A1E" stroke-width="3.2" stroke-linejoin="round"/><path d="M60 26 C66 32 68 44 62 54" fill="none" stroke="#7E4320" stroke-width="3" stroke-linecap="round"/><ellipse cx="33" cy="56" rx="16" ry="16" fill="#C9773D" stroke="#3B2A1E" stroke-width="3.2"/><ellipse cx="32" cy="60" rx="9" ry="10" fill="#F3E6CF"/><path d="M19 24 L21 11 L30 21 Z" fill="#C9773D" stroke="#3B2A1E" stroke-width="3" stroke-linejoin="round"/><circle cx="29" cy="34" r="14" fill="#C9773D" stroke="#3B2A1E" stroke-width="3.2"/><ellipse cx="25" cy="39" rx="7" ry="5.5" fill="#F3E6CF"/><circle cx="24" cy="32" r="2.6" fill="#3B2A1E"/><circle cx="34" cy="32" r="2.6" fill="#3B2A1E"/><ellipse cx="25" cy="38" rx="2.4" ry="1.9" fill="#3B2A1E"/></svg>`;

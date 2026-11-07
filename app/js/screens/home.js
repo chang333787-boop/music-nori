@@ -5,7 +5,6 @@ import { BAND, friendImg, setPose, friendSound, preload, IMG_DIR } from '../band
 import { cellById, LANES, nextCell, ORDER } from '../../../engine/cells.js';
 import { getProg } from '../cellkit.js';
 
-let tapped = false;                         // 첫 탭 뒤 말풍선 숨김(이 창에서만)
 
 export default function mount(root, ctx) {
   preload(BAND.map(f => [f.key, 'play']));
@@ -14,15 +13,13 @@ export default function mount(root, ctx) {
   bg.className = 'bg'; bg.alt = ''; bg.src = IMG_DIR + 'bg_stage.webp';
   bg.onerror = () => bg.replaceWith(h('div', { class: 'floor' }));
   stage.append(bg);
-  const bubble = h('div', { class: 'bubble' }, '친구를 눌러 보세요');
-  if (!tapped) stage.append(bubble);
+  // 말풍선은 친구 머리 위를 가려서 뺌(평가 2차) — 이름표가 누르는 곳임을 보여 줌
   const timers = [];
   for (const f of BAND) {
     const pic = friendImg(f.key, 'idle', { label: false });
     const btn = h('button', { class: 'friend', type: 'button', 'aria-label': `${f.name} — ${f.lane}` }, pic, h('span', { class: 'tag' }, f.name));
     onPress(btn, () => {
       friendSound(ctx.engine, f.key);
-      if (!tapped) { tapped = true; bubble.remove(); }
       btn.classList.remove('nod'); void btn.offsetWidth; btn.classList.add('nod');
       setPose(pic, f.key, 'play');
       timers.push(setTimeout(() => setPose(pic, f.key, 'idle'), 650));
@@ -39,7 +36,7 @@ export default function mount(root, ctx) {
     main = h('a', { class: 'btn acard wide', href: '#/' + (c.route || 'cell/' + nx), style: { '--a-t': `var(--${fr}-t)` } },
       h('span', { class: 'art' }, friendImg(fr, 'play', { label: false })),
       h('span', { class: 'txt' },
-        h('small', { class: 'kicker' }, done ? '다음 칸' : '처음 칸'),
+        h('small', { class: 'kicker' }, done ? '다음 놀이' : '처음 놀이'),
         h('b', {}, c.name),
         h('small', {}, c.game),
         h('span', { class: 'gotag' }, '시작')));
@@ -51,8 +48,8 @@ export default function mount(root, ctx) {
   const cards = h('div', { class: 'cards', style: { gridTemplateColumns: 'repeat(4,minmax(0,1fr))' } },
     main,
     h('a', { class: 'btn acard', href: '#/map', style: { '--a-t': 'var(--bird-t)' } },
-      h('span', { class: 'art' }, friendImg('bird', 'idle', { label: false })),
-      h('span', { class: 'txt' }, h('b', {}, '마을 지도'), h('small', {}, `13칸 중 ${done}칸 지남`))),
+      h('span', { class: 'art' }, h('span', { class: 'faces' }, ...['bunny', 'bird', 'hog', 'turtle'].map(k => friendImg(k, 'face', { label: false })))),
+      h('span', { class: 'txt' }, h('b', {}, '마을 지도'), h('small', {}, `13개 중 ${done}개 했어요`))),
     h('a', { class: 'btn acard', href: '#/songs', style: { '--a-t': 'var(--turtle-t)' } },
       h('span', { class: 'art' }, friendImg('turtle', 'idle', { label: false })),
       h('span', { class: 'txt' }, h('b', {}, '곡 듣기'), h('small', {}, '노래를 듣고 악보를 따라가요'))));

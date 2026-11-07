@@ -1,4 +1,12 @@
 /* 소5 한 가지만 바뀌는 짝 — 소리 그림(세로 자리 = 높이 · 가로 길이 = 길이 · 굵기 = 크기) · 확인 게임 '무엇이 바뀌었나' */
+/* 보기 카드 묶음(_snd.js exGroup) — 위에 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 · 지금 소리 나는 카드 = 잉크 테두리 + 작은 세모 */
+.snd-exwrap{display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0}
+.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:22px;color:var(--ink)}
+.snd-spk{position:absolute;top:10px;right:12px;width:30px;height:30px;pointer-events:none}
+.snd-spk.in{position:static;width:30px;height:30px}
+.snd-spk svg{display:block;width:100%;height:100%}
+.excard.now{outline:4px solid var(--ink);outline-offset:3px}
+.excard.now::after{content:'';position:absolute;left:50%;top:-19px;margin-left:-9px;border:9px solid transparent;border-top:10px solid var(--ink);border-bottom:0}
 .sp-cols{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr)}
 .sp-left{display:flex;flex-direction:column;gap:12px;min-height:0}
 .spic{position:relative;flex:1;min-height:0;border:3px solid var(--ink);border-radius:24px;background:var(--bunny-t);padding:58px 18px 10px 84px}
@@ -22,23 +30,13 @@
 .sp-ic svg{width:100%;height:100%}
 .sp-legend{display:flex;gap:12px;flex-wrap:wrap}
 .sp-legend>span{display:inline-flex;align-items:center;gap:8px;font-family:var(--head);font-size:20px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 16px 3px 8px}
-.sp-ex b{font-size:26px}
-/* 고르는 카드 — 높이(세로 화살표) · 길이(가로 막대) · 크기(작은 원 → 큰 원) */
-.sp-card{min-height:110px;font-size:40px;border-radius:24px;justify-content:flex-start;gap:22px;padding-left:34px}
-.sp-card .sp-ic{width:62px;height:62px}
-.sp-card.g5{min-height:118px;width:300px;justify-content:center;padding-left:20px}
-.sp-card.new{animation:g5-pop 360ms ease-out}
-@keyframes g5-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.05);opacity:1}100%{transform:none}}
-/* 확인 게임 */
-.g5-scene{position:absolute;inset:0;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:22px;padding:74px 40px 30px}
-.g5-mid{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;gap:20px;align-items:center;min-height:0}
-.g5-mid .spic{height:100%}
-.g5-bunny{width:150px;height:150px;align-self:end}
-.g5-bunny img,.g5-bunny svg{width:100%;height:100%;object-fit:contain}
-.g5-cards{display:flex;justify-content:center;gap:26px}
-.g5-count:empty{display:none}
-.g5-count{position:absolute;left:24px;top:22px;font-family:var(--head);font-size:26px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:4px 14px;pointer-events:none}
-.g5-word{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--head);font-size:42px;pointer-events:none}
-.g5-word[data-k="good"]{color:var(--good)}.g5-word[data-k="oops"]{color:var(--ink-2)}
-.g5-banner{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:3;display:flex;align-items:center;gap:14px;font-family:var(--head);font-size:40px;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:16px 34px;box-shadow:0 8px 0 var(--ink);animation:g5-pop 360ms ease-out}
-.g5-banner .sp-ic{width:60px;height:60px}
+.sp-ex{padding-right:48px}
+.sp-ex b{font-size:24px;line-height:1.2}
+/* 연습 · 확인 게임 배치 — 소리 그림 + 오른쪽 답 묶음(높이 · 길이 · 크기) */
+.sp-follow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;width:100%;min-height:0}
+.g5-wrap{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:20px;width:100%;min-height:0}
+.g5-bunny{align-self:end;width:130px}
+.g5-bunny img,.g5-bunny svg{display:block;width:100%;height:auto;max-height:160px;object-fit:contain;object-position:50% 100%}
+.ans .sp-ic,.ans .chip svg{width:52px;height:52px}
+.ans.new{animation:g5-pop 360ms ease-out}
+@keyframes g5-pop{0%{transform:scale(.7)}70%{transform:scale(1.05)}100%{transform:none}}

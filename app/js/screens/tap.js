@@ -32,6 +32,11 @@ export default function mount(root, ctx) {
   let mode = 'ready', run = null, raf = 0, oopsAt = -9;
   preload(['jump', 'oops', 'happy', 'idle'].map(p => ['hog', p]));
   const stoneImg = new Image(); stoneImg.src = IMG_DIR + 'stone.webp';
+  const SCENE = 'app/img/scene/';
+  const bankL = new Image(); bankL.src = SCENE + 'prop_bank_left.webp';
+  const bankR = new Image(); bankR.src = SCENE + 'prop_bank_right.webp';
+  const hills = new Image(); hills.src = SCENE + 'bg_hills_strip.webp';
+  const ok = im => im.complete && im.naturalWidth > 0;
 
   // ── 그릇 ──
   const canvas = h('canvas', { 'aria-hidden': 'true' });
@@ -46,7 +51,7 @@ export default function mount(root, ctx) {
 
   const stepsUI = () => h('span', { class: 'steps', 'aria-label': `${step}단계` },
     ...[1, 2, 3, 4].map(s => h('span', { class: 'd' + (best[s] >= 1 ? ' done' : '') + (s === step ? ' now' : '') })),
-    h('span', { class: 'lab' }, `${step}단계`));
+    h('span', { class: 'lab' }, `${step}단계 · ${STEPS[step - 1].name}`));
 
   // ── 그리기 상태 ──
   const g = canvas.getContext('2d');
@@ -69,7 +74,7 @@ export default function mount(root, ctx) {
     overlay.className = 'overlay clear';
     overlay.replaceChildren(h('div', { class: 'panelcard startcard' },
       h('h2', {}, '박에 맞춰 톡!'),
-      h('p', { class: 'sub' }, '넷 세고, 박마다 톡! 하면 돌이 놓여요'),
+      h('p', { class: 'sub' }, st.helper ? '1 · 2 · 3 · 4 세고, 박 점이 닿을 때 톡!' : '1 · 2 · 3 · 4 세고, 박마다 톡!'),
       h('div', { class: 'row' }, stepBtns, h('span', { style: { fontFamily: 'var(--head)', fontSize: '24px' } }, st.name))));
     overlay.hidden = false;
     const go = h('button', { type: 'button', class: 'go huge' }, '시작');
@@ -111,24 +116,24 @@ export default function mount(root, ctx) {
     for (let i = WARM; i < BEATS; i++) {
       if (i > WARM && (i - WARM) % 4 === 0) replay.append(h('span', { class: 'gap' }));
       const c = st[i] === 'great' ? 'g' : st[i] === 'miss' ? 'm' : '';
-      replay.append(h('i', { class: (c + (bs >= 0 && i >= bs && i < bs + bl ? ' run' : '')).trim() }));
+      replay.append(h('i', { class: c }));
     }
     const misses = [];
     for (let i = WARM; i < BEATS; i++) if (st[i] === 'miss') misses.push(i - WARM + 1);
     const hits = r.offs.filter((o, i) => o != null && i >= WARM);
     const mean = hits.length ? hits.reduce((a, b) => a + b, 0) / hits.length : 0;
     let tip = '';
-    if (misses.length) tip = `놓친 박: ${misses.slice(0, 4).map(n => n + '째').join(', ')}${misses.length > 4 ? ` 외 ${misses.length - 4}번` : ''}.`;
-    if (hits.length >= 4) tip += (tip ? ' ' : '') + (mean < -35 ? '박보다 조금 먼저 누르는 편이에요. 소리를 듣고 눌러요.' : mean > 35 ? '박보다 조금 늦게 누르는 편이에요. 다음 박을 미리 느껴 봐요.' : '박과 거의 같은 때에 눌렀어요.');
+    if (misses.length) tip = `${misses.slice(0, 4).map(n => n + '번째').join(' · ')}${misses.length > 4 ? ` 외 ${misses.length - 4}개` : ''} 박을 놓쳤어요.`;
+    if (hits.length >= 4) tip += (tip ? ' 누른 박은 ' : '누른 박은 ') + (mean < -35 ? '조금 빠른 편이에요 — 소리를 듣고 눌러요.' : mean > 35 ? '조금 늦은 편이에요 — 다음 박을 미리 느껴 봐요.' : '박과 거의 같은 때였어요.');
     if (!hits.length) tip = '톡!을 박마다 한 번씩 눌러요. 화면 아무 곳이나 눌러도 돼요.';
     if (r.stars > (best[step] || 0)) { best[step] = r.stars; lsSet('tap.best', best); }
     saveStars('ri1', r.stars);                  // 마을 지도 '일정박' 칸 별
     bar.mid(stepsUI());
     overlay.className = 'overlay';
     overlay.replaceChildren(h('div', { class: 'panelcard resultcard', role: 'dialog', 'aria-label': '결과' },
-      h('h2', {}, `${r.total}번 중 ${r.kept}번 맞았어요`),
+      h('h2', {}, `${r.total}번 중 ${r.kept}번 맞혔어요`),
       replay,
-      h('div', { class: 'facts' }, `가장 길게 이어서 ${r.streak}번`, h('br'), `딱 맞은 박 ${r.great}번`),
+      h('div', { class: 'facts' }, `가장 길게 이어서 ${r.streak}번`, h('br'), `그중 딱 맞은 박 ${r.great}번`),
       h('div', { class: 'stars' }, ...STAR_RULES.map((t, k) => h('div', { class: 'star' + (r.starOn[k] ? ' on' : ''), html: STAR(r.starOn[k]) + `<span>${t}</span>` }))),
       tip ? h('div', { class: 'tip' }, tip) : null));
     overlay.hidden = false;
@@ -242,10 +247,16 @@ export default function mount(root, ctx) {
     g.clearRect(0, 0, W, H);
     // 하늘 · 먼 언덕(느리게 지나감) · 물
     g.fillStyle = '#F4EBD3'; g.fillRect(0, 0, W, sky);
-    g.fillStyle = '#B9D3A0'; g.strokeStyle = '#3B2A1E'; g.lineWidth = 3;
-    g.beginPath(); g.moveTo(0, sky);
-    for (let x = 0; x <= W + 40; x += 40) { const wx = x + camX * 0.3; g.lineTo(x, sky - 26 - Math.sin(wx / 160) * 18 - Math.sin(wx / 63) * 6); }
-    g.lineTo(W, sky); g.closePath(); g.fill(); g.stroke();
+    if (ok(hills)) {                                    // 먼 언덕 띠(코덱스 그림 · 가로로 이어 붙임 · 느리게 지나감)
+      const hh = sky, hw = hh * hills.naturalWidth / hills.naturalHeight, off = -((camX * 0.3) % hw);
+      for (let x = off; x < W; x += hw - 1) g.drawImage(hills, x, 0, hw, hh);
+    } else {
+      g.fillStyle = '#B9D3A0'; g.strokeStyle = '#3B2A1E'; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(0, sky);
+      for (let x = 0; x <= W + 40; x += 40) { const wx = x + camX * 0.3; g.lineTo(x, sky - 26 - Math.sin(wx / 160) * 18 - Math.sin(wx / 63) * 6); }
+      g.lineTo(W, sky); g.closePath(); g.fill(); g.stroke();
+    }
+    g.strokeStyle = '#3B2A1E'; g.lineWidth = 3;
     g.fillStyle = '#7FB7DA'; g.fillRect(0, sky, W, H - sky);
     g.beginPath(); g.moveTo(0, sky); g.lineTo(W, sky); g.stroke();
     // 짧은 물결
@@ -262,11 +273,17 @@ export default function mount(root, ctx) {
       g.beginPath(); g.rect(x0, top, x1 - x0, H - top + 4); g.fill(); g.stroke();
       g.fillStyle = '#5E9B4F'; g.beginPath(); g.rect(x0, top - 4, x1 - x0, 22); g.fill(); g.stroke();
     };
-    bank(-10 - camX, BANK_L - camX);
-    bank(WORLD_W - BANK_R - camX, WORLD_W + 10 - camX);
-    // 도착 깃발
+    // 둑 그림(코덱스) — 풀 윗면이 돌길보다 조금 위 · 없으면 코드 그림
+    const bankImg = (im, xEdge, left) => {
+      const top = py - 34, hgt = H - top + 8, w = hgt * im.naturalWidth / im.naturalHeight;
+      const x = left ? xEdge - w : xEdge;
+      g.drawImage(im, x - camX, top - hgt * 0.08, w, hgt * 1.08);
+    };
+    if (ok(bankL)) bankImg(bankL, BANK_L + 24, true); else bank(-10 - camX, BANK_L - camX);
+    if (ok(bankR)) bankImg(bankR, WORLD_W - BANK_R - 24, false); else bank(WORLD_W - BANK_R - camX, WORLD_W + 10 - camX);
+    // 도착 깃발(둑 그림에 깃발이 있으면 그리지 않음)
     const fx = WORLD_W - BANK_R + 150 - camX;
-    if (fx > -40 && fx < W + 80) {
+    if (!ok(bankR) && fx > -40 && fx < W + 80) {
       g.strokeStyle = '#3B2A1E'; g.lineWidth = 4; g.beginPath(); g.moveTo(fx, py - 34); g.lineTo(fx, py - 150); g.stroke();
       g.fillStyle = '#C4511A'; g.lineWidth = 3; g.beginPath(); g.moveTo(fx, py - 150); g.lineTo(fx + 56, py - 132); g.lineTo(fx, py - 114); g.closePath(); g.fill(); g.stroke();
     }
@@ -292,9 +309,10 @@ export default function mount(root, ctx) {
           if (x < -30 || x > W + 30) continue;
           const t = run.t0 + (COUNT + i) * beatS, d = now - t;
           const near = Math.max(0, 1 - Math.abs(d) / (beatS * 0.45));
-          g.fillStyle = i < WARM ? '#FFFFFF' : d > beatS * 0.45 ? 'rgba(59,42,30,.25)' : '#3B2A1E';
-          g.beginPath(); g.arc(x, py + 48, 9 + near * 7, 0, Math.PI * 2); g.fill();
-          if (near > 0) { g.strokeStyle = '#C4511A'; g.lineWidth = 4; g.beginPath(); g.arc(x, py + 48, 16 + near * 6, 0, Math.PI * 2); g.stroke(); }
+          const past = d > -beatS * 0.45;
+          g.fillStyle = past ? '#3B2A1E' : '#FFFFFF'; g.strokeStyle = '#3B2A1E'; g.lineWidth = 3;
+          g.beginPath(); g.arc(x, py + 50, 9 + near * 7, 0, Math.PI * 2); g.fill(); g.stroke();
+          if (near > 0) { g.lineWidth = 4; g.beginPath(); g.arc(x, py + 50, 17 + near * 6, 0, Math.PI * 2); g.stroke(); }
         }
         // 다음 돌의 줄어드는 고리 — 한 박 앞에서 두 배 → 박에 맞춰 닫힘
         for (let i = 0; i < BEATS; i++) {
@@ -302,7 +320,7 @@ export default function mount(root, ctx) {
           const t = run.t0 + (COUNT + i) * beatS, left = (t - now) / beatS;
           if (left > 1 || left < -0.15) continue;
           const k = 1 + Math.max(0, left), x = stoneWX(i) - camX;
-          g.strokeStyle = '#C4511A'; g.lineWidth = 5;
+          g.strokeStyle = '#3B2A1E'; g.lineWidth = 5;
           g.beginPath(); g.ellipse(x, py, rx * k + 4, ry * k + 4, 0, 0, Math.PI * 2); g.stroke();
           break;
         }
@@ -323,12 +341,14 @@ export default function mount(root, ctx) {
         if (age < 0 || age > 0.45) continue;
         const word = s === 'great' ? '딱!' : s === 'ok' ? '좋아' : '삐끗';
         g.globalAlpha = 1 - age / 0.45;
-        g.font = '36px Jua, "Noto Sans KR", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.lineWidth = 7; g.strokeStyle = '#FFFFFF'; g.lineJoin = 'round';
-        const x = (s === 'miss' ? stoneWX(i) : hogWX) - camX, y = py - Math.min(170, H * 0.36) - 20 - age * 50;
-        g.strokeText(word, x, y);
-        g.fillStyle = s === 'great' ? '#9A6E00' : s === 'ok' ? '#2F6F4E' : '#6B5A4A';
-        g.fillText(word, x, y);
+        g.font = '34px Jua, "Noto Sans KR", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        const x = (s === 'miss' ? stoneWX(i) : hogWX) - camX, y = py - Math.min(170, H * 0.36) - 24 - age * 40;
+        const tw = g.measureText(word).width + 30;
+        g.fillStyle = '#FFFFFF'; g.strokeStyle = '#3B2A1E'; g.lineWidth = 3;
+        g.beginPath(); g.roundRect ? g.roundRect(x - tw / 2, y - 24, tw, 48, 16) : g.rect(x - tw / 2, y - 24, tw, 48); g.fill(); g.stroke();
+        g.fillStyle = s === 'miss' ? '#6B5A4A' : '#3B2A1E';
+        g.fillText(word, x, y + 1);
+        if (s === 'great') { g.fillStyle = '#E0A100'; g.beginPath(); g.arc(x + tw / 2 - 6, y - 22, 7, 0, Math.PI * 2); g.fill(); g.stroke(); }
         g.globalAlpha = 1;
       }
     }
