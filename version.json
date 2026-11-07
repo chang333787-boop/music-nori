@@ -1,0 +1,29 @@
+{
+ "v": "e345dad79935",
+ "files": [
+  "app/css/app.css",
+  "app/css/measure.css",
+  "app/js/audio.js",
+  "app/js/band.js",
+  "app/js/clock.js",
+  "app/js/device.js",
+  "app/js/eq.js",
+  "app/js/main.js",
+  "app/js/notation.js",
+  "app/js/recorder.js",
+  "app/js/screens/calib.js",
+  "app/js/screens/credits.js",
+  "app/js/screens/home.js",
+  "app/js/screens/songs.js",
+  "app/js/screens/speaker.js",
+  "app/js/screens/tap.js",
+  "app/js/screens/teacher.js",
+  "app/js/util.js",
+  "engine/judge.js",
+  "engine/measure.js",
+  "engine/song.js",
+  "engine/songs/index.js",
+  "engine/songs/ledger.js",
+  "engine/theory.js"
+ ]
+}

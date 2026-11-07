@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>합성음 높이 시험</title>
+<style>
+  :root{--paper:#FAF6EE;--ink:#1F1B16;--mute:#5E554B;--line:#E7DFD2;--panel:#F3EEE4;--ok:#2E7D4F;--miss:#B4361F;--miss-t:#FBE3DD}
+  body{margin:0;padding:20px 24px;background:var(--paper);color:var(--ink);font:15px/1.5 'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+  h1{font-size:22px;margin:0 0 6px}
+  p{margin:4px 0;color:var(--mute)}
+  #sum{font-size:18px;font-weight:700;color:var(--ink);margin:10px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin-top:10px}
+  th,td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left;white-space:nowrap}
+  th{background:var(--panel)}
+  td.n{text-align:right;font-variant-numeric:tabular-nums}
+  tr.bad td{background:var(--miss-t)}
+  .ok{color:var(--ok);font-weight:700}.no{color:var(--miss);font-weight:700}
+</style>
+</head>
+<body>
+<h1>합성음 높이 시험</h1>
+<p>audio.js 악기마다 여러 음을 OfflineAudioContext로 그려, 소리가 자리 잡은 구간의 기본 주파수를 재고 freq(p)와 센트 차이를 봐요. 관문: |센트| ≤ 6.</p>
+<p>재는 법: 차이 함수(YIN 계열)로 거친 주기를 찾고, 토막마다 주기 여러 개 떨어진 곳에서 다시 재어 포물선으로 다듬은 뒤 센트로 평균. 주소 뒤 <code>?sr=48000,44100</code>으로 표본율을 고른다.</p>
+<div id="sum">재는 중…</div>
+<table><thead><tr><th>악기</th><th>음</th><th>표본율</th><th>기대 Hz</th><th>잰 Hz</th><th>센트</th><th>흔들림(센트)</th><th>잰 구간</th><th>판정</th></tr></thead><tbody id="rows"></tbody></table>
+<script type="module" src="pitch.js"></script>
+</body>
+</html>
