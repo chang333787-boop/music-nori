@@ -1,0 +1,47 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$room": {
+        ".validate": "$room.matches(/^[0-9]{4}$/)",
+        "own": {
+          ".read": false,
+          ".write": "!data.exists() || now - data.child('at').val() > 43200000",
+          ".validate": "newData.hasChildren(['tok', 'at']) && newData.child('tok').isString() && newData.child('tok').val().length >= 16 && newData.child('tok').val().length <= 40 && newData.child('at').isNumber() && newData.child('at').val() <= now + 60000 && newData.child('at').val() > now - 600000"
+        },
+        "t": {
+          ".write": "root.child('rooms/' + $room + '/own/tok').val() === newData.child('tok').val() && now - root.child('rooms/' + $room + '/own/at').val() < 43200000",
+          ".validate": "newData.hasChildren(['tok', 'pub'])",
+          "tok": { ".read": false, ".validate": "newData.isString()" },
+          "pub": {
+            ".read": true,
+            ".validate": "newData.hasChildren(['cell', 'phase', 'at'])",
+            "cell": { ".validate": "newData.isString() && newData.val().matches(/^[a-z]{2,4}[0-9]{1,2}$/)" },
+            "phase": { ".validate": "newData.isString() && newData.val().matches(/^(wait|show|follow|game|done)$/)" },
+            "at": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "$other": { ".validate": false }
+          },
+          "$other": { ".validate": false }
+        },
+        "res": {
+          ".read": true,
+          "$dev": {
+            ".write": "root.child('rooms/' + $room + '/own').exists() && now - root.child('rooms/' + $room + '/own/at').val() < 43200000",
+            ".validate": "$dev.matches(/^[a-z0-9]{8,16}$/) && newData.hasChildren(['a', 'no', 'c', 's', 'k', 'n', 'at'])",
+            "a": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 12" },
+            "no": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 40" },
+            "c": { ".validate": "newData.isString() && newData.val().matches(/^[a-z]{2,4}[0-9]{1,2}$/)" },
+            "s": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3" },
+            "k": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "n": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "at": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "$other": { ".validate": false }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    },
+    "$other": { ".validate": false }
+  }
+}
