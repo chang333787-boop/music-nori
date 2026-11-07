@@ -10,7 +10,7 @@
 | 폴더 | 하는 일 |
 |---|---|
 | `engine/` | 화면 · 소리 없는 계산(node로 시험) — `theory.js` 음 이름 · 음계 · 화음 · 틱(4분음표 = 12틱) · `song.js` 곡 적는 법과 마디 검사 · `measure.js` 마디 채우기 · 분수 보기 · `judge.js` 박 판정 창 · 이어 지킨 박 · 지연 재기 · `songs/` 곡 권리 대장과 곡 |
-| `app/` | 화면 — `audio.js` Web Audio 합성(소리 파일 0개) · `notation.js` 오선 SVG · `band.js` 음악대(그림 `img/band/` · 코덱스 일러스트) · `screens/` 처음 · 마을 지도 · 칸 화면 · 징검다리 · 곡 듣기 · 선생님 칸(지연 맞추기 · 스피커 점검 · 시작 칸 · 출처) · `cells/` 개념 칸 13(약속 [docs/cells.md](docs/cells.md)) |
+| `app/` | 화면 — `audio.js` Web Audio 합성(소리 파일 0개) · `notation.js` 오선 SVG · `band.js` 음악대(그림 `img/band/` · 코덱스 일러스트) · `screens/` 처음 · 마을 지도 · 칸 화면 · 징검다리 · 놀이터(`docs/playground.md`) · 곡 듣기 · 선생님 칸(지연 맞추기 · 스피커 점검 · 시작 칸 · 출처) · `cells/` 개념 칸 13(약속 [docs/cells.md](docs/cells.md)) |
 | `tests/` | `npm test`(엔진 · 칸 지도 · 박 칸 판정 · 곡 대장) · `npm run test:browser`(화면 · 12칸 자동으로 끝까지 · 합성음 높이 ±6센트) |
 | `docs/` | 목표(`goal.md`) · 계획 요약(`plan.md`) · 화면 약속(`ui.md`) · 칸 약속(`cells.md`) · 곡 넣는 규칙(`rights.md`) · 기기 측정(`measure.md`) |
 

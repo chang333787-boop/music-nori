@@ -100,18 +100,18 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .bubble::after{content:'';position:absolute;left:50%;bottom:-11px;width:16px;height:16px;margin-left:-8px;background:var(--surface);border-right:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:rotate(45deg)}
 .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;min-height:0}
 .acard{display:grid;grid-template-rows:140px minmax(0,1fr);align-items:stretch;justify-content:stretch;align-content:stretch;justify-items:stretch;text-align:left;padding:0;border-radius:24px;overflow:hidden;min-height:0;font-family:var(--body);font-size:18px}
-.acard.wide{grid-column:span 2;grid-template-rows:none;grid-template-columns:250px minmax(0,1fr)}
+.acard.wide{grid-column:span 2;grid-template-rows:none;grid-template-columns:170px minmax(0,1fr)}
 .acard .art{background:var(--a-t,var(--panel));border-bottom:3px solid var(--ink);display:flex;align-items:center;justify-content:center;min-height:0}
 .acard.wide .art{border-bottom:0;border-right:3px solid var(--ink)}
 .acard .art img,.acard .art svg{height:96px;width:auto}
-.acard.wide .art img,.acard.wide .art svg{height:180px}
+.acard.wide .art img,.acard.wide .art svg{height:160px;max-width:92%}
 .acard .txt{display:flex;flex-direction:column;gap:6px;padding:14px 20px 16px;min-width:0}
-.acard.wide .txt{justify-content:center;padding:20px 30px;gap:10px}
+.acard.wide .txt{justify-content:center;padding:18px 24px;gap:8px}
 .acard b{font-family:var(--head);font-weight:400;font-size:26px;line-height:1.2}
-.acard.wide b{font-size:36px}
+.acard.wide b{font-size:32px}
 .acard small{font-size:18px;color:var(--ink-2);line-height:1.4}
 .acard.wide small{font-size:20px}
-.acard .gotag{align-self:flex-start;margin-top:10px;display:inline-flex;align-items:center;justify-content:center;min-width:220px;min-height:72px;font-family:var(--head);font-size:32px;color:#fff;background:var(--go);border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink)}
+.acard .gotag{align-self:flex-start;margin-top:10px;display:inline-flex;align-items:center;justify-content:center;min-width:180px;max-width:100%;min-height:72px;font-family:var(--head);font-size:32px;color:#fff;background:var(--go);border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink)}
 .acard .faces{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:8px}
 .acard .faces img,.acard .faces svg{width:56px;height:56px;object-fit:contain}
 

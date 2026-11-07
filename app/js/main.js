@@ -11,6 +11,7 @@ const ROUTES = {
   tap: { load: () => import('./screens/tap.js'), title: '징검다리 박 놀이', friend: 'hog', parent: 'map' },
   songs: { load: () => import('./screens/songs.js'), title: '곡 듣기', friend: 'turtle' },
   map: { load: () => import('./screens/map.js'), title: '음악 마을 지도', friend: 'bird' },
+  play: { load: () => import('./screens/play.js'), title: '놀이터', friend: 'turtle' },
   cell: { load: () => import('./screens/cell.js'), title: '', parent: 'map' },
   teacher: { load: () => import('./screens/teacher.js'), title: '선생님' },
   calib: { load: () => import('./screens/calib.js'), title: '지연 맞추기', parent: 'teacher' },
