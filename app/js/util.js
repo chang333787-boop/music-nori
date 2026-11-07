@@ -42,3 +42,14 @@ export function onPress(el, fn) {
   el.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); fn(e); } });
   return el;
 }
+
+// 조사 고르기 — josa('높게·낮게', '을/를') → '높게·낮게를' · 괄호 뒤는 괄호 앞 글자로 판단
+export function josa(word, pair) {
+  const [a, b] = pair.split('/');
+  const w = String(word).replace(/\([^)]*\)\s*$/, '').trim();
+  const c = w.charCodeAt(w.length - 1);
+  if (c < 0xAC00 || c > 0xD7A3) return word + b;
+  const jong = (c - 0xAC00) % 28;
+  if (pair === '으로/로') return word + (jong === 0 || jong === 8 ? b : a);
+  return word + (jong ? a : b);
+}

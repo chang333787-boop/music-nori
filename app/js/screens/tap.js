@@ -8,6 +8,7 @@ import { h, onPress, lsGet, lsSet } from '../util.js';
 import { friendImg, setPose, preload, IMG_DIR } from '../band.js';
 import { audioToPerf } from '../clock.js';
 import { windows, judgeTaps, BANDS, STAR_RULES } from '../../../engine/judge.js';
+import { saveStars } from '../cellkit.js';
 
 const TEMPI = { low: [100, 110, 120], mid: [84, 100, 116], high: [76, 96, 120] };
 const STEPS = [
@@ -121,6 +122,7 @@ export default function mount(root, ctx) {
     if (hits.length >= 4) tip += (tip ? ' ' : '') + (mean < -35 ? '박보다 조금 먼저 누르는 편이에요. 소리를 듣고 눌러요.' : mean > 35 ? '박보다 조금 늦게 누르는 편이에요. 다음 박을 미리 느껴 봐요.' : '박과 거의 같은 때에 눌렀어요.');
     if (!hits.length) tip = '톡!을 박마다 한 번씩 눌러요. 화면 아무 곳이나 눌러도 돼요.';
     if (r.stars > (best[step] || 0)) { best[step] = r.stars; lsSet('tap.best', best); }
+    saveStars('ri1', r.stars);                  // 마을 지도 '일정박' 칸 별
     bar.mid(stepsUI());
     overlay.className = 'overlay';
     overlay.replaceChildren(h('div', { class: 'panelcard resultcard', role: 'dialog', 'aria-label': '결과' },

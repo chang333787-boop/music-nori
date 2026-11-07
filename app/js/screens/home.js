@@ -1,7 +1,9 @@
-// 처음 화면 — 위: 숲속 공연장(친구를 누르면 바로 소리 · 계획서 '첫 10초') · 아래: 놀이 카드(추천 하나만 크게 + 주황 '시작')
-//  선생님 도구(지연 · 스피커 · 출처)는 머리띠 오른쪽 톱니 안으로 뺐다(11-07 처음 보는 눈 평가).
-import { h, onPress, lsGet } from '../util.js';
+// 처음 화면 — 위: 숲속 공연장(친구를 누르면 바로 소리 · 계획서 '첫 10초') · 아래: 카드(추천 '다음 칸' 하나만 크게 + 주황 '시작')
+//  선생님 도구(지연 · 스피커 · 출처)는 머리띠 오른쪽 톱니 안(11-07 처음 보는 눈 평가).
+import { h, onPress } from '../util.js';
 import { BAND, friendImg, setPose, friendSound, preload, IMG_DIR } from '../band.js';
+import { cellById, LANES, nextCell, ORDER } from '../../../engine/cells.js';
+import { getProg } from '../cellkit.js';
 
 let tapped = false;                         // 첫 탭 뒤 말풍선 숨김(이 창에서만)
 
@@ -28,22 +30,32 @@ export default function mount(root, ctx) {
     stage.append(btn);
   }
 
-  const best = lsGet('tap.best', {});        // { 단계: 별 } — 징검다리 카드의 단계 점
-  const stepDots = h('span', { class: 'steps', 'aria-label': '단계' },
-    ...[1, 2, 3, 4].map(s => h('span', { class: 'd' + (best[s] >= 1 ? ' done' : '') })));
-  const cards = h('div', { class: 'cards', style: { gridTemplateColumns: 'repeat(3,minmax(0,1fr))' } },
-    h('a', { class: 'btn acard wide', href: '#/tap', style: { '--a-t': 'var(--hog-t)' } },
-      h('span', { class: 'art' }, friendImg('hog', 'play', { label: false })),
+  const prog = getProg();
+  const nx = nextCell(prog);
+  const done = ORDER.filter(id => prog[id] && prog[id].stars >= 1).length;
+  let main;
+  if (nx) {
+    const c = cellById(nx), fr = LANES[c.lane].friend;
+    main = h('a', { class: 'btn acard wide', href: '#/' + (c.route || 'cell/' + nx), style: { '--a-t': `var(--${fr}-t)` } },
+      h('span', { class: 'art' }, friendImg(fr, 'play', { label: false })),
       h('span', { class: 'txt' },
-        h('b', {}, '징검다리 박 놀이'),
-        h('small', {}, '박에 맞춰 톡! 하면 돌이 놓여요. 고슴도치가 강을 건너요.'),
-        stepDots,
-        h('span', { class: 'gotag' }, '시작'))),
+        h('small', { class: 'kicker' }, done ? '다음 칸' : '처음 칸'),
+        h('b', {}, c.name),
+        h('small', {}, c.game),
+        h('span', { class: 'gotag' }, '시작')));
+  } else {
+    main = h('a', { class: 'btn acard wide', href: '#/map', style: { '--a-t': 'var(--hog-t)' } },
+      h('span', { class: 'art' }, friendImg('hog', 'happy', { label: false })),
+      h('span', { class: 'txt' }, h('b', {}, '13칸을 모두 지났어요'), h('small', {}, '마을 지도에서 별을 더 모아 봐요'), h('span', { class: 'gotag' }, '지도')));
+  }
+  const cards = h('div', { class: 'cards', style: { gridTemplateColumns: 'repeat(4,minmax(0,1fr))' } },
+    main,
+    h('a', { class: 'btn acard', href: '#/map', style: { '--a-t': 'var(--bird-t)' } },
+      h('span', { class: 'art' }, friendImg('bird', 'idle', { label: false })),
+      h('span', { class: 'txt' }, h('b', {}, '마을 지도'), h('small', {}, `13칸 중 ${done}칸 지남`))),
     h('a', { class: 'btn acard', href: '#/songs', style: { '--a-t': 'var(--turtle-t)' } },
       h('span', { class: 'art' }, friendImg('turtle', 'idle', { label: false })),
-      h('span', { class: 'txt' },
-        h('b', {}, '곡 듣기'),
-        h('small', {}, '노래를 듣고 악보를 따라가요'))));
+      h('span', { class: 'txt' }, h('b', {}, '곡 듣기'), h('small', {}, '노래를 듣고 악보를 따라가요'))));
   root.append(h('div', { class: 'home' }, stage, cards));
   return () => timers.forEach(clearTimeout);
 }

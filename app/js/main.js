@@ -8,8 +8,10 @@ import './eq.js';                       // 스피커 점검 값(음높이별 크
 
 const ROUTES = {
   '': { load: () => import('./screens/home.js') },
-  tap: { load: () => import('./screens/tap.js'), title: '징검다리 박 놀이', friend: 'hog' },
+  tap: { load: () => import('./screens/tap.js'), title: '징검다리 박 놀이', friend: 'hog', parent: 'map' },
   songs: { load: () => import('./screens/songs.js'), title: '곡 듣기', friend: 'turtle' },
+  map: { load: () => import('./screens/map.js'), title: '음악 마을 지도', friend: 'bird' },
+  cell: { load: () => import('./screens/cell.js'), title: '', parent: 'map' },
   teacher: { load: () => import('./screens/teacher.js'), title: '선생님' },
   calib: { load: () => import('./screens/calib.js'), title: '지연 맞추기', parent: 'teacher' },
   speaker: { load: () => import('./screens/speaker.js'), title: '스피커 점검', parent: 'teacher' },
@@ -60,7 +62,7 @@ async function route() {
   document.body.dataset.screen = key || 'home';
   parent = r.parent || '';
   back.hidden = !key;
-  back.setAttribute('aria-label', parent ? '선생님 칸으로' : '처음으로');
+  back.setAttribute('aria-label', parent === 'teacher' ? '선생님 칸으로' : parent === 'map' ? '마을 지도로' : '처음으로');
   bar.title(r.title || '음악 놀이터', r.friend);
   bar.mid(null);
   bar.right(key ? null : gearBtn());
