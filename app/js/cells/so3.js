@@ -7,7 +7,9 @@
 //  연습 · 확인 게임에서는 소리가 나는 동안 길이를 그림으로 보여 주지 않는다(막대가 자라면 귀 대신 눈으로 풀게 됨) — 고른 뒤에 막대로 보여 줌.
 //  11-07 평가 2차: 연습 판 = 보기와 같은 길이 줄(들은 소리가 한 줄씩 쌓여 견줄 수 있게) · 답은 오른쪽 답 묶음 · 길잡이 토끼는 판 밖
 //   게임 = 코덱스 그림 기차(기관차 · 긴 칸 창 6 · 짧은 칸 창 2 + 지붕 자리 4) · 다람쥐는 손님
-import { voice, exGroup, nowCard, pal, pose } from './_snd.js';
+//  11-07 평가 3차: 다람쥐는 땅 위 승강장에서 기다림(하늘에 뜨지 않게) · 듣는 동안 답 묶음 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기'
+//   게임도 연습처럼 소리를 들어야 고를 수 있음(짧은 소리는 끝까지 · 긴 소리는 0.65초) · 막대는 transform으로 자람(_snd.js growBar)
+import { voice, exGroup, nowCard, pal, pose, growBar, slide, pop } from './_snd.js';
 
 const MAXD = 1.5;                                     // 줄 끝까지 = 1.5초
 const LONG = 0.6;                                     // 이보다 길면 '긴 소리'
@@ -44,14 +46,14 @@ function lanes(kit, n, { nums = false } = {}) {
   const { h } = kit;
   const rows = [];
   for (let i = 0; i < n; i++) {
-    const bar = h('div', { class: 'ln-bar off' });
+    const { el: bar, fill } = growBar(h, 'ln-bar off');
     const tag = h('span', { class: 'ln-tag' });
     const ask = h('span', { class: 'ln-ask', hidden: true }, '?');
     const track = h('div', { class: 'ln-track' }, bar, tag, ask);
-    rows.push({ el: h('div', { class: 'ln-row' }, nums ? h('span', { class: 'ln-num' }, `${i + 1}`) : null, track), bar, tag, ask, track });
+    rows.push({ el: h('div', { class: 'ln-row' }, nums ? h('span', { class: 'ln-num' }, `${i + 1}`) : null, track), bar, fill, tag, ask, track });
   }
   const el = h('div', { class: 'lanes n' + n + (nums ? ' nums' : '') }, ...rows.map(r => r.el));
-  const clearRow = r => { r.bar.style.transition = 'none'; r.bar.style.width = '0'; r.bar.classList.add('off'); r.tag.textContent = ''; r.tag.classList.remove('on'); r.ask.hidden = true; r.ask.classList.remove('live'); r.el.classList.remove('cur'); };
+  const clearRow = r => { slide(r.fill, 0); r.bar.style.width = '0'; r.bar.classList.add('off'); r.tag.textContent = ''; r.tag.classList.remove('on'); r.ask.hidden = true; r.ask.classList.remove('live'); r.el.classList.remove('cur'); };
   const tagOn = (r, d) => { r.tag.textContent = BODY(d); r.tag.classList.add('on'); };
   return {
     el,
@@ -61,16 +63,13 @@ function lanes(kit, n, { nums = false } = {}) {
     grow(i, d, sec = d, T = null) {
       const r = rows[i];
       r.ask.hidden = true; r.ask.classList.remove('live');
-      r.bar.style.transition = 'none'; r.bar.style.width = '0'; r.bar.classList.remove('off');
-      void r.bar.offsetWidth;                         // 0에서 다시 자라게
-      r.bar.style.transition = `width ${sec}s linear`;
-      r.bar.style.width = pct(d) + '%';
-      r.bar.classList.toggle('long', isLong(d));
+      r.bar.style.width = pct(d) + '%'; r.bar.classList.remove('off');
+      slide(r.fill, sec);                             // 다 자란 길이 상자 안에서 막대가 소리와 함께 밀려 나옴
       r.tag.classList.remove('on');
       if (T) T.after(sec * 1000 + 60, () => tagOn(r, d)); else tagOn(r, d);
     },
     // 바로 그림(지난 소리)
-    set(i, d) { const r = rows[i]; clearRow(r); r.bar.classList.remove('off'); r.bar.style.width = pct(d) + '%'; tagOn(r, d); },
+    set(i, d) { const r = rows[i]; clearRow(r); r.bar.classList.remove('off'); r.bar.style.width = pct(d) + '%'; tagOn(r, d); },   // 바로 그림
     ask(i) { const r = rows[i]; clearRow(r); r.ask.hidden = false; r.el.classList.add('cur'); },
     // 소리가 나는 동안 '?'가 또렷해짐(늘 같은 모양 — 길이를 알려 주지 않음)
     live(i, on) { rows[i].ask.classList.toggle('live', on); },
@@ -147,10 +146,10 @@ export default {
       // 판이 차면 맨 위 줄을 밀어 올림(바로 앞 소리들과 견줄 수 있게)
       if (hist.length >= N) { hist.shift(); hist.forEach((d, k) => ln.set(k, d)); }
       hist.push(cur.d);
-      A.clear(); ui.say(ASK); setP('idle');
+      A.clear(); ui.say(ASK); setP('idle'); A.busy(true);
       const s = play(false);
       // 긴 소리는 다 듣기 전에도 길다는 게 들리니 0.65초가 지나면 고를 수 있게(짧은 소리는 끝난 뒤)
-      T.after(kit.msUntil(s.ac, s.starts[0] + Math.min(cur.d, LONG + 0.05)), () => { busy = false; });
+      T.after(kit.msUntil(s.ac, s.starts[0] + Math.min(cur.d, LONG + 0.05)), () => { busy = false; A.busy(false); });
     }
     function answer(long) {
       if (busy || !cur) return;
@@ -174,7 +173,7 @@ export default {
         T.after(1300, () => { const s = play(true); T.after(kit.msUntil(s.ac, s.end) + 900, ask); });
       }
     }
-    onPress(again, () => { if (!busy && cur) { const s = play(false); T.after(kit.msUntil(s.ac, s.end), () => { busy = false; }); } });
+    onPress(again, () => { if (!busy && cur) { A.busy(true); const s = play(false); T.after(kit.msUntil(s.ac, s.starts[0] + Math.min(cur.d, LONG + 0.05)), () => { busy = false; A.busy(false); }); } });
     ui.stage.append(h('div', { class: 'ln-follow' }, bunny, ln.el, A.el));
     T.after(450, ask);
     kit.setAuto(() => { if (!busy && cur) answer(isLong(cur.d)); });
@@ -188,7 +187,7 @@ export default {
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [], picks = [];
-    let i = -1, cur = null, open = false, gone = false;
+    let i = -1, cur = null, open = false, gone = false, listen = 0, laneX = null, pps = 0;
     ui.say('들은 소리를 맞는 기차에 태워요');
     const img = (f, cls) => h('img', { src: SCENE + f + '.webp', alt: '', draggable: 'false', class: cls });
     // 자리 — 그림 속 창 자리(%) · 짧은 칸은 창 둘 + 지붕 위 넷
@@ -203,9 +202,12 @@ export default {
     const train = h('div', { class: 'tr-train' }, longCar, h('i', { class: 'tr-link' }), shortCar, h('i', { class: 'tr-link' }), loco);
     const bunny = h('div', { class: 'tr-bunny' }, pal(kit, 'bunny'));
     const sq = h('div', { class: 'tr-sq' }, img('prop_squirrel', ''));
-    const laneBar = h('div', { class: 'tr-lbar' }), laneTag = h('span', { class: 'tr-ltag' });
+    const { el: laneBar, fill: laneFill } = growBar(h, 'tr-lbar');
+    const laneTag = h('span', { class: 'tr-ltag' });
     const lane = h('div', { class: 'tr-lane' }, laneBar, laneTag);
-    const scene = h('div', { class: 'tr-scene' }, h('div', { class: 'tr-hills' }), h('div', { class: 'tr-ground' }), h('div', { class: 'tr-rail' }), train, lane, bunny, sq);
+    // 승강장 — 길잡이 토끼와 손님 다람쥐가 땅 위에 서서 기다림(평가 3차: 하늘에 뜬 다람쥐 X)
+    const plat = h('div', { class: 'tr-plat' }, h('i', { class: 'tr-plat-top' }));
+    const scene = h('div', { class: 'tr-scene' }, h('div', { class: 'tr-hills' }), h('div', { class: 'tr-ground' }), h('div', { class: 'tr-rail' }), plat, train, lane, bunny, sq);
     const A = kit.answers([
       { key: 'long', label: '긴 소리', chip: barIcon(kit, true) },
       { key: 'short', label: '짧은 소리', chip: barIcon(kit, false) },
@@ -217,12 +219,22 @@ export default {
     ui.stage.append(h('div', { class: 'tr-wrap' }, scene, A.el), start);
     const setP = p => pose(kit, bunny.firstChild, 'bunny', p);
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
-    onPress(startBtn, () => { start.remove(); ui.setBar(); T.after(300, next); });
+    const again = h('button', { type: 'button' }, '다시 듣기');
+    onPress(startBtn, () => { start.remove(); ui.setBar(again); T.after(300, next); });
+    onPress(again, () => { if (open) hear(); });       // 고르기 전이면 언제든 한 번 더(놓침 시계도 다시)
     ui.setBar(startBtn);
     kit.setAuto(() => { if (start.isConnected) press(startBtn); else if (open) answer(isLong(cur.d)); });
 
     // 긴 칸 너비 = 1.2초 막대(소리 막대와 기차 칸 길이가 같은 자로 보이게) · 막대는 긴 칸 왼쪽 끝에서 시작
-    const pxPerSec = () => longCar.offsetWidth / 1.2;
+    //  자리 · 자는 첫 판에 한 번만 잼(판마다 레이아웃을 강제로 다시 계산하지 않게)
+    // 지금 손님 소리 듣기(처음 · 다시 듣기) — 짧은 소리는 끝까지, 긴 소리는 0.65초 들어야 고를 수 있음(연습과 같게)
+    function hear() {
+      const my = ++listen;
+      open = false; A.busy(true); V.hush();            // 앞 소리가 아직 울려도 겹치지 않게
+      const s = V.play([{ p: cur.p, d: cur.d }], { inst: cur.inst });
+      T.after(kit.msUntil(s.ac, s.starts[0] + Math.min(cur.d, LONG + 0.05)), () => { if (my !== listen || gone) return; open = true; A.busy(false); });
+      T.after(kit.msUntil(s.ac, s.end) + 3000, () => { if (my === listen && open) answer(null); });   // 3초 넘게 고르지 않으면 놓침
+    }
     function next() {
       if (gone) return;
       i++;
@@ -230,28 +242,24 @@ export default {
       const [d, inst, p] = PLAN[i];
       cur = { d, inst, p };
       ui.count(i + 1, PLAN.length);
-      A.clear();
-      lane.classList.remove('on'); laneBar.style.width = '0'; laneTag.textContent = '';
-      lane.style.left = `${train.offsetLeft + longCar.offsetLeft}px`;
+      A.clear(); A.busy(true);
+      lane.classList.remove('on');                    // 이름 글은 사라지는 동안 그대로(빈 말풍선이 비치지 않게)
+      if (laneX == null) { laneX = train.offsetLeft + longCar.offsetLeft; pps = longCar.offsetWidth / 1.2; lane.style.transform = `translateX(${laneX}px)`; }
       sq.className = 'tr-sq'; sq.style.transform = '';
-      void sq.offsetWidth; sq.classList.add('in');   // 다음 다람쥐가 톡 나타남
+      pop(sq);                                        // 다음 다람쥐가 승강장에 톡 나타남
       setP('idle');
       open = false;
-      T.after(550, () => {
-        if (gone) return;
-        const s = V.play([{ p, d }], { inst });
-        T.after(kit.msUntil(s.ac, s.starts[0]), () => { open = true; });
-        T.after(kit.msUntil(s.ac, s.end) + 3000, () => { if (open) answer(null); });   // 3초 넘게 고르지 않으면 놓침
-      });
+      T.after(550, () => { if (!gone) hear(); });
     }
     function answer(long) {
       if (!open) return;
-      open = false;
+      open = false; listen++;
       const want = isLong(cur.d), right = long === want;
       results.push(right); picks.push(long);
       // 소리 길이를 막대로(긴 칸과 같은 자) + 이름
       lane.classList.add('on');
-      laneBar.style.width = `${Math.round(cur.d * pxPerSec())}px`;
+      laneBar.style.width = `${Math.round(cur.d * pps)}px`;
+      slide(laneFill, 0.32, 'ease-out');
       laneTag.textContent = want ? '긴 소리' : '짧은 소리';
       if (right) { kit.sfx.good(engine); setP('happy'); A.mark(want ? 'long' : 'short', 'right'); ui.tell('맞아요', 'good'); }
       else {
@@ -273,8 +281,8 @@ export default {
       T.after(right ? 1100 : 1700, next);
     }
     function end() {
-      open = false;
-      lane.classList.remove('on'); ui.tell(null); A.clear();
+      open = false; listen++;
+      lane.classList.remove('on'); ui.tell(null); A.clear(); A.busy(false); ui.setBar();
       setP('happy');
       train.classList.add('leave');                   // 다람쥐를 다 태우고 떠남 → 결과
       T.after(1500, () => {
@@ -291,7 +299,7 @@ export default {
         else if (dev >= Math.ceil(wrong / 2)) tip = '길이 차이가 줄었을 때(5~8번째) 헷갈렸어요. 소리가 나는 동안 팔을 쭉 펴 보면 잘 느껴져요.';
         else if (missL > missS) tip = '긴 소리를 짧은 칸에 더 많이 넣었어요. 소리가 끝날 때까지 기다렸다가 골라요.';
         else tip = '짧은 소리를 긴 칸에 더 많이 넣었어요. 톡 하고 바로 끝나면 짧은 소리예요.';
-        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`가장 길게 이어서 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
       });
     }
     // 기차 칸을 직접 눌러도 됨

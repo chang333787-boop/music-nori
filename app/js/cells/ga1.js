@@ -5,6 +5,7 @@
 //  확인 게임 메아리 언덕(언덕 = 코덱스 장면 그림 prop_hill): 참새가 부른 차례대로 솔 · 미 답 단추 누르기 12판
 //   소개(솔-미 · 미-솔: 오르내림만 들어도 됨) → 발전(솔-솔 · 미-미 섞임) → 비틀기(세 음 · 리코더 · 피아노) → 마무리(세 음)
 //  11-07 평가 2차: 지시 한 줄 · 번호 ui.count · 맞음 말 ui.tell · 연습 점 ui.practice · 답 단추 kit.answers(솔 위 · 미 아래 = 메아리 길 높이와 같은 줄)
+//  11-07 평가 3차: 듣는 동안 A.busy('잘 들어요') · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 틀린 판은 맞는 음을 초록 테두리 + ✓로(점선 X) · 노래 그림 동전 26px
 import { SOL, MI, nameOf, josa, colorOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge } from './_mel.js';
 
 const S = SOL, M = MI;
@@ -45,7 +46,7 @@ export default {
       return btn;
     });
     const song = songNotes('ga1-insa');
-    const spic = heightPic(song.notes, { rows: [M, S], height: 104, unit: 38, r: 18, pill: true });
+    const spic = heightPic(song.notes, { rows: [M, S], height: 104, unit: 40, r: 13, pill: true });
     const sbtn = exCard(kit, { name: `노래 「${song.title}」`, pic: spic.el, wide: true });
     quiet.push(() => spic.lit(-1));
     onPress(sbtn, () => {
@@ -69,7 +70,7 @@ export default {
     const board = heightBoard(kit, { notes: [M, S], rh: 68 });
     let streak = 0, cur = null, busy = false, prev = '';
     const msg = h('p', { class: 'm-why' });
-    const A = noteAnswers(kit, [S, M], p => answer(p));
+    const A = noteAnswers(kit, [S, M], p => answer(p), 'm-busy');
     const again = h('button', { type: 'button' }, '다시 듣기');
     ui.setBar(again);
     function ask(newOne = true) {
@@ -78,12 +79,12 @@ export default {
         do { a = r() < 0.5 ? S : M; b = r() < 0.5 ? S : M; } while (`${a}${b}` === prev);
         prev = `${a}${b}`; cur = { a, b };
       }
-      busy = true; V.cut(); T.clear(); A.clear();
+      busy = true; V.cut(); T.clear(); A.clear(); A.busy(true);
       ui.say(`처음은 ${nameOf(cur.a)}. 두 번째 소리는 솔일까요, 미일까요?`);
       msg.textContent = '';
       const s = V.play(kit, [{ p: cur.a, d: 0.55, gap: 0.3 }, { p: cur.b, d: 0.6 }], { inst: 'xylo' });
       board.move(cur.a, 'idle');
-      T.after(kit.msUntil(s.ac, s.end), () => { busy = false; });
+      T.after(kit.msUntil(s.ac, s.end), () => { busy = false; A.busy(false); });
     }
     function answer(p) {
       if (busy || !cur) return;
@@ -123,19 +124,20 @@ export default {
     const slot = () => h('div', { class: 'e1-slot' }, h('i', { class: 'e1-row hi', style: { '--c': colorOf(S) } }), h('i', { class: 'e1-row lo', style: { '--c': colorOf(M) } }));
     const path = h('div', { class: 'e1-path' }, slot(), slot());
     const axis = h('div', { class: 'e1-axis', 'aria-hidden': 'true' }, badge(h, S, 'hi'), badge(h, M, 'lo'));
-    const A = noteAnswers(kit, [S, M], p => tap(p), 'e1-ans wait');
+    const A = noteAnswers(kit, [S, M], p => tap(p), 'e1-ans');
+    const again = h('button', { type: 'button' }, '다시 듣기');
     const scene = h('div', { class: 'e1-scene' }, hill, bird, h('div', { class: 'e1-mid' }, axis, path), A.el);
     ui.stage.append(scene);
     const sc = startCard(ui, kit, {
       title: '메아리 언덕',
       lines: ['참새가 부른 차례대로 솔, 미를 눌러 메아리를 돌려줘요', '12번'],
-      onStart: toneSet,
+      onStart: () => { ui.setBar(again); toneSet(); },
     });
     ui.stage.append(sc.card);
-    const listen = on => A.el.classList.toggle('wait', on);
 
     // 시작 — '이게 솔, 이게 미'(기준 소리) 한 번 들려준 뒤 첫 판
     function toneSet() {
+      A.busy(true);
       const s = V.play(kit, [{ p: S, d: 0.5, gap: 0.25 }, { p: M, d: 0.5 }], { inst: 'xylo' });
       const glow = p => [S, M].forEach(q => A.btn(q).classList.toggle('glow', q === p));
       T.after(kit.msUntil(s.ac, s.starts[0]), () => glow(S));
@@ -155,16 +157,23 @@ export default {
       i++;
       if (i >= PLAN.length) return end();
       const [ps, inst] = PLAN[i];
-      const mine = cur = { ps, inst, k: 0 };
+      cur = { ps, inst, k: 0, tok: 0, done: false };
       ui.count(i + 1, PLAN.length);
       path.replaceChildren(...ps.map(slot));
-      A.clear(); pose('play'); open = false; V.cut(); listen(true);
-      const s = V.play(kit, ps.map(p => ({ p, d: 0.42, gap: 0.2 })), { inst });
-      ps.forEach((p, k) => T.after(kit.msUntil(s.ac, s.starts[k]), () => { if (cur === mine) nowSlot(k); }));
-      T.after(kit.msUntil(s.ac, s.starts[ps.length - 1]), () => { if (cur === mine) { open = true; listen(false); } });
-      T.after(kit.msUntil(s.ac, s.end) + 120, () => { if (cur !== mine) return; pose('idle'); nowSlot(open ? mine.k : -1); });
-      T.after(kit.msUntil(s.ac, s.end) + 1800 + ps.length * 800, () => { if (cur === mine && open) fail(mine.k, true); });
+      A.clear();
+      hear(cur);
     }
+    // 참새 노래(처음 · '다시 듣기') — 마지막 음이 나기 시작하면 누를 수 있음 · 다시 들으면 기다리는 시간도 새로(앞 타이머는 tok로 무름)
+    function hear(mine) {
+      const tok = ++mine.tok, live = () => cur === mine && mine.tok === tok && !mine.done && !gone;
+      open = false; A.busy(true); pose('play'); V.cut();
+      const s = V.play(kit, mine.ps.map(p => ({ p, d: 0.42, gap: 0.2 })), { inst: mine.inst });
+      mine.ps.forEach((p, k) => T.after(kit.msUntil(s.ac, s.starts[k]), () => { if (live()) nowSlot(k); }));
+      T.after(kit.msUntil(s.ac, s.starts[mine.ps.length - 1]), () => { if (live()) { open = true; A.busy(false); } });
+      T.after(kit.msUntil(s.ac, s.end) + 120, () => { if (live()) { pose('idle'); nowSlot(mine.k); } });
+      T.after(kit.msUntil(s.ac, s.end) + 1800 + mine.ps.length * 800, () => { if (live() && open) fail(mine.k, true); });
+    }
+    onPress(again, () => { if (open && cur && !cur.done) hear(cur); });
     function tap(p) {
       if (!open || !cur) return;
       const k = cur.k;
@@ -173,22 +182,23 @@ export default {
       put(k, p);
       cur.k++;
       if (cur.k < cur.ps.length) { nowSlot(cur.k); return; }
-      open = false; nowSlot(-1);
+      open = false; cur.done = true; nowSlot(-1);
       results.push(true);
       T.after(260, () => kit.sfx.good(engine));
       judge(ui, true); pose('happy');
       T.after(1000, next);
     }
-    // 틀림 · 놓침 — 맞는 음을 점선으로 보여 주고 바른 메아리를 한 번 더
+    // 틀림 · 놓침 — 맞는 음을 초록 테두리 + ✓로 보여 주고(잘못 누른 음은 회색) 바른 메아리를 한 번 더
     function fail(k, missed) {
-      open = false; nowSlot(-1);
+      open = false; cur.done = true; nowSlot(-1);
       results.push(false);
       kit.sfx.oops(engine);
       judge(ui, false, { missed }); pose('oops');
       const ps = cur.ps;
-      for (let j = k; j < ps.length; j++) put(j, ps[j], 'ghost');
+      for (let j = k; j < ps.length; j++) put(j, ps[j], 'fix');
       T.after(700, () => {
         if (gone) return;
+        A.busy(true);
         const s = V.play(kit, ps.map(p => ({ p, d: 0.38, gap: 0.16 })), { inst: 'marimba' });
         ps.forEach((p, j) => T.after(kit.msUntil(s.ac, s.starts[j]), () => nowSlot(j)));
         T.after(kit.msUntil(s.ac, s.end) + 500, () => { nowSlot(-1); next(); });
@@ -201,11 +211,11 @@ export default {
       const three = bad.filter(ps => ps.length === 3).length;
       let tip;
       if (!bad.length) tip = '같은 음이 이어질 때도, 세 음일 때도 모두 메아리로 돌려줬어요.';
-      else if (same >= three && same >= bad.length / 2) tip = '같은 음이 두 번(솔-솔 · 미-미) 나올 때 헷갈렸어요. 첫 소리가 높은 솔인지 낮은 미인지 먼저 떠올려 봐요.';
+      else if (same >= three && same >= bad.length / 2) tip = '같은 음이 두 번(솔-솔·미-미) 나올 때 헷갈렸어요. 첫 소리가 높은 솔인지 낮은 미인지 먼저 떠올려 봐요.';
       else if (three >= bad.length / 2) tip = '세 음 메아리(9번째부터)에서 헷갈렸어요. 따라 부르며 손을 올리고 내리면 차례가 잘 남아요.';
       else tip = '솔-미, 미-솔 메아리에서 헷갈렸어요. 내려가면 솔 → 미, 올라가면 미 → 솔이에요.';
       bird.hidden = true; A.el.hidden = true; path.hidden = true; axis.hidden = true; ui.count(null);   /* 결과 뒤에는 언덕만(친구 그림은 칸 화면이 붙임) */
-      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`가장 길게 이어서 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
     }
     kit.setAuto(() => { if (sc.waiting()) press(sc.btn); else if (open && cur) tap(cur.ps[cur.k]); });
     const onKey = e => { if (e.key === 'ArrowUp') tap(S); else if (e.key === 'ArrowDown') tap(M); };

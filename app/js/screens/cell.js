@@ -78,7 +78,7 @@ export default function mount(root, ctx) {
       clearTimeout(tellTimer);
       if (!t) { tellEl.hidden = true; return; }
       tellEl.hidden = false; tellEl.textContent = t; tellEl.dataset.k = kind;
-      tellEl.classList.remove('pop'); void tellEl.offsetWidth; tellEl.classList.add('pop');
+      if (tellEl.animate) tellEl.animate([{ transform: 'scale(.85)' }, { transform: 'none' }], { duration: 220, easing: 'ease-out' });   /* 강제 레이아웃 X(성능) */
       if (ms) tellTimer = setTimeout(() => { tellEl.hidden = true; }, ms);
     },
     setBar: (...nodes) => barSlot.replaceChildren(...nodes.flat().filter(Boolean)),
@@ -108,7 +108,7 @@ export default function mount(root, ctx) {
     resultShown = false;
     phase = i; auto = null;
     if (troom) room.teacher.pub(cell.id, PHASES[i][0]).then(r => { if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
-    overlay.hidden = true; overlay.replaceChildren();
+    overlay.hidden = true; overlay.replaceChildren(); overlay.classList.remove('result');
     body.replaceChildren(); ui.say(''); ui.count(null); ui.tell(null); ui.practice(i === 1 && !tv ? 0 : null);
     setGuide(PHASES[i][0]);
     bar.mid(steps());
@@ -192,7 +192,8 @@ export default function mount(root, ctx) {
         sentP = room.kid.send(cell.id, stars, k, n);
       }
       ui.tell(null); ui.say(''); ui.count(null); ui.practice(null);
-      const pose = friend === 'hog' ? 'happy' : 'play';
+      const pose = stars >= 3 ? 'happy' : stars >= 1 ? 'play' : 'idle';   /* 평가 3차: 점수와 상관없는 만세 X */
+      overlay.classList.add('result');
       overlay.replaceChildren(h('div', { class: 'resultwrap' }, K.resultCard(r), friendImg(friend, pose, { label: false, cls: 'resultpal' })));
       overlay.hidden = false;
       bar.mid(h('span', { class: 'steps labeled' }, ...PHASES.map(([, name]) => h('span', { class: 'st done' }, h('span', { class: 'd' }), name))));
@@ -201,7 +202,7 @@ export default function mount(root, ctx) {
         setGuide('predict');
         if (troom) room.teacher.pub(cell.id, 'done');
         drawStrip();
-        ui.setBar(subBtn('한 번 더', () => runPhase(2), 'again'), goBtn('놀이터에서 바꿔 보기', () => ctx.go('play')));
+        ui.setBar(subBtn('한 번 더', () => runPhase(2), 'again'), goBtn('곡 바꾸기에서 해 보기', () => ctx.go('play')));
         auto = null;
         window.__cellResult = { id: cell.id, stars, ...r };
         return;
@@ -216,10 +217,12 @@ export default function mount(root, ctx) {
         return;
       }
       const nx = nextCell(K.getProg(), cell.id);
-      const fwd = nx && nx !== cell.id
-        ? goBtn('다음 놀이', () => { const c = cellById(nx); ctx.go(c.route || 'cell/' + nx); })
-        : goBtn('마을 지도', () => ctx.go('map'));
-      ui.setBar(again, fwd);
+      const goNext = () => { const c = cellById(nx); ctx.go(c.route || 'cell/' + nx); };
+      if (stars === 0) {                            // 별 0개 — 주황(지금 누를 것)은 '한 번 더' · 다음은 흰 단추(평가 3차)
+        ui.setBar(subBtn(nx && nx !== cell.id ? '다음 놀이' : '마을 지도', () => (nx && nx !== cell.id ? goNext() : ctx.go('map'))), goBtn('한 번 더', () => runPhase(2)));
+      } else {
+        ui.setBar(again, nx && nx !== cell.id ? goBtn('다음 놀이', goNext) : goBtn('마을 지도', () => ctx.go('map')));
+      }
       auto = null;
       window.__cellResult = { id: cell.id, stars, ...r };
     },
@@ -258,7 +261,7 @@ export default function mount(root, ctx) {
 
   return () => {
     gone = true; clearTimeout(tellTimer); if (cleanup) try { cleanup(); } catch { /* */ }
-    window.__cellAuto = null; css.remove();
+    window.__cellAuto = null; window.__cellPhase = null; css.remove();
     if (stripLoop) stripLoop.stop();
     if (room.here.cur && room.here.cur.cell === cell.id) room.here.cur = null;
   };

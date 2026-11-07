@@ -7,6 +7,11 @@ import { freq } from '../../engine/theory.js';
 
 export class Engine {
   constructor() { this.ctx = null; this._ks = new Map(); this._pk = new Map(); }
+  // 첫 두드림 전에 쉬는 틈에 미리 짓기(멈춘 채로) — 첫 소리 때 소리 장치 · 잔향 준비가 한꺼번에 몰리지 않게(성능 11-07)
+  prepare() {
+    if (this.ctx) return;
+    try { const AC = window.AudioContext || window.webkitAudioContext; this._setup(new AC({ latencyHint: 'interactive' })); } catch { /* 소리 없는 기기 */ }
+  }
   ensure() {
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -23,7 +28,7 @@ export class Engine {
     comp.threshold.value = -16; comp.knee.value = 14; comp.ratio.value = 3.5; comp.attack.value = 0.004; comp.release.value = 0.18;
     this.master.connect(comp).connect(ctx.destination);
     this.dry = ctx.createGain(); this.dry.connect(this.master);
-    this.verb = ctx.createConvolver(); this.verb.buffer = this._impulse(2.4, 2.8);
+    this.verb = ctx.createConvolver(); this.verb.buffer = this._impulse(1.2, 2.8);   // 잔향 2.4 → 1.2초(소리 스레드 비용 · 이 앱 11-07)
     this.wet = ctx.createGain(); this.wet.gain.value = 0.12;
     this.verb.connect(this.wet).connect(this.master);
     this.noise = this._noiseBuf();

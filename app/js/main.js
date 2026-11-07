@@ -12,7 +12,7 @@ const ROUTES = {
   tap: { load: () => import('./screens/tap.js'), title: '징검다리 박 놀이', friend: 'hog', parent: 'map' },
   songs: { load: () => import('./screens/songs.js'), title: '곡 듣기', friend: 'turtle' },
   map: { load: () => import('./screens/map.js'), title: '음악 마을 지도', friend: 'bird' },
-  play: { load: () => import('./screens/play.js'), title: '놀이터', friend: 'turtle' },
+  play: { load: () => import('./screens/play.js'), title: '곡 바꾸기', friend: 'bear' },
   tv: { load: () => import('./screens/tvpick.js'), title: 'TV로 다같이', parent: 'teacher' },
   join: { load: () => import('./screens/join.js'), title: '방 들어가기' },
   tvcell: { load: () => import('./screens/cell.js'), title: '', parent: 'tv' },
@@ -55,7 +55,6 @@ export const ctx = {
 
 function gearBtn() {
   const b = h('a', { class: 'btn icon-btn', href: '#/teacher', 'aria-label': '선생님', html: GEAR });
-  if (!device.latency) b.append(h('span', { class: 'dot', 'aria-hidden': 'true' }));
   return b;
 }
 
@@ -125,4 +124,6 @@ async function route() {
 back.addEventListener('click', () => ctx.go(parent));
 window.addEventListener('hashchange', route);
 route();
+// 첫 화면이 뜬 뒤 쉬는 틈에 소리 장치를 미리 지어 둠(첫 두드림에서는 resume만)
+(window.requestIdleCallback || ((f) => setTimeout(f, 900)))(() => engine.prepare());
 room.startKid(ctx.go);                 // 방에 들어가 있던 아이 기기면 선생님 놀이를 따라가기 시작

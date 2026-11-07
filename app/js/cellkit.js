@@ -79,7 +79,7 @@ export const shuffle = (a, r = Math.random) => { a = [...a]; for (let i = a.leng
 
 // 답 단추 묶음(11-07 평가 2차 — 모든 고르기 칸이 같은 모양 · 같은 자리: 무대 오른쪽 세로 한 줄)
 //  items = [{ key, label, chip(그림 html 또는 노드), locked }] · onPick(key)
-//  게임 중에 고를 것이 늘어나는 칸은 처음부터 다 깔고 locked로 흐리게 잠가 둔다(자리가 밀리지 않게)
+//  게임 중에 고를 것이 늘어나는 칸은 처음부터 다 깔고 locked로 둔다 — 잠긴 단추는 보이지 않지만 자리는 지킴(자리가 밀리지 않게 · 평가 3차)
 export function answers(items, onPick, { cls = '' } = {}) {
   const btns = new Map();
   const el = h('div', { class: ('answers ' + cls).trim(), role: 'group' }, ...items.map(it => {
@@ -98,5 +98,9 @@ export function answers(items, onPick, { cls = '' } = {}) {
     // 고른 뒤 표시 — 'right' 금 테두리 · 'wrong' 점선(빨강 X)
     mark(k, kind) { for (const b of btns.values()) b.classList.remove('right', 'wrong'); if (k != null) { const b = btns.get(k); if (b) b.classList.add(kind); } },
     clear() { for (const b of btns.values()) b.classList.remove('right', 'wrong'); },
+    // 틀린 뒤 맞는 답도 함께 보이기(고른 단추 회색은 그대로 두고 맞는 단추에 초록 ✓)
+    reveal(k) { const b = btns.get(k); if (b) b.classList.add('right'); },
+    // 듣는 동안 — 단추는 70%로 흐리게(누를 수 없음) · 묶음 위 '잘 들어요'(평가 3차: 회색 단추로 꺼 두지 않음)
+    busy(on = true) { el.classList.toggle('busy', on); },
   };
 }

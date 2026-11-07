@@ -7,22 +7,23 @@
 //  11-07 평가 2차: 상자 = 코덱스 그림(prop_box_open · prop_box_closed — 무늬 없는 세로 띠만 가로로 늘림) · 박 자리 넷은 코드로 겹쳐 그림
 //   블록 판 = 오른쪽 세로 한 줄(kit.answers · 다섯 블록을 처음부터 깔고 판마다 잠금) · 번호는 ui.count · 맞음/틀림 말은 말풍선(ui.tell)
 //   연습에서는 고르기 전에 '몇 박 찼나' 글과 박 점을 숨김 · 블록 색 = 나무 빛(계이름 색과 다른 계열) · '박 칸' → '박 자리'
+//  11-07 평가 3차: 박 자리는 상자 입구 안(블록 아랫부분은 앞 날개가 가림) · 블록 판은 큰 음표(온음표 머리 30px 넘게) + 길이 막대 · 이 판에 안 쓰는 블록은 숨김
 //  셈은 engine/measure.js fillBar · 분수 보기는 리7(여기선 끔)
 import { fillBar } from '../../../engine/measure.js';
 import { DUR } from '../../../engine/theory.js';
 import { newBus, killBus, noteSVG, NAME, SYL, exampleGroup } from './_beat.js';
 
-const C = 132, HB = 340, PAD = 8;                             // 상자 안 박 자리 하나(px) · 상자 그림 높이 · 앞면 안쪽 여백
-const CT = 50;                                                // 블록 판(오른쪽 답 묶음) 박 하나(px)
+const C = 120, HB = 360, PAD = 8;                             // 상자 안 박 자리 하나(px) · 상자 그림 높이 · 안쪽 벽 좌우 여백
+const CT = 44;                                                // 블록 판(오른쪽 답 묶음) 길이 막대 박 하나(px)
 const LEN = { q: 1, h: 2, w: 4, qr: 1, ee: 1 };
 const TICK = { q: DUR.q, h: DUR.h, w: DUR.w, qr: DUR.q, ee: DUR.e * 2 };
 const ALL = ['q', 'h', 'w', 'qr', 'ee'];
 const SHORT = { q: '4분음표', h: '2분음표', w: '온음표', qr: '4분쉼표', ee: '8분음표' };
 const EXAMPLES = [
-  { blocks: ['q', 'q', 'q', 'q'], title: '4분음표 넷', sub: '한 자리씩 네 번', msg: "4분음표 '따' 하나 = 한 박 · 네 개로 4박" },
-  { blocks: ['h', 'h'], title: '2분음표 둘', sub: '두 자리씩 두 번', msg: "2분음표 '따아' 하나 = 두 박 · 두 개로 4박" },
-  { blocks: ['w'], title: '온음표', sub: '혼자 네 자리', isNew: true, msg: "온음표 '따아아아' = 네 박 · 혼자서 상자를 채워요" },
-  { blocks: ['ee', 'ee', 'h'], title: '8분음표 둘', sub: '둘이 합쳐 한 자리', isNew: true, msg: "8분음표 둘 '띠띠' = 한 박 · 짧은 소리 둘이 한 자리" },
+  { blocks: ['q', 'q', 'q', 'q'], title: '4분음표 넷', sub: '한 자리씩 네 번', msg: '4분음표 ‘따’ 하나 = 한 박·네 개로 4박' },
+  { blocks: ['h', 'h'], title: '2분음표 둘', sub: '두 자리씩 두 번', msg: '2분음표 ‘따아’ 하나 = 두 박·두 개로 4박' },
+  { blocks: ['w'], title: '온음표', sub: '혼자 네 자리', isNew: true, msg: '온음표 ‘따아아아’ = 네 박·혼자서 상자를 채워요' },
+  { blocks: ['ee', 'ee', 'h'], title: '8분음표 둘', sub: '둘이 합쳐 한 자리', isNew: true, msg: '8분음표 둘 ‘띠띠’ = 한 박·짧은 소리 둘이 한 자리' },
   { blocks: ['h', 'h', 'q'], title: '넘치면?', sub: '상자 밖으로 나와요' },
   { blocks: ['h', 'q'], title: '모자라면?', sub: '빈 자리는 쉬어요' },
 ];
@@ -42,13 +43,16 @@ const PLAN = [
 
 // ── 상자 그림(코덱스) — 무늬 없는 세로 띠 둘만 가로로 늘려 원하는 너비로(선 굵기 · 테이프 · 리본은 그대로) ──
 const SCENE = 'app/img/scene/';
+//  평가 3차: 박 자리는 상자 '입구 안'(안쪽 뒷벽 자리) — 블록은 상자 안에 선 것처럼 아랫부분이 앞 날개에 가려진다
+//   (앞 날개 · 앞면만 따로 한 장 더 그려 블록 위에 덮음). 상자 너비는 안쪽 뒷벽이 박 자리 넷 + 여백이 되게 늘린다.
 const BOX = {
-  open: { src: SCENE + 'prop_box_open.webp', w: 900, h: 703, cols: [[249, 389], [511, 651]], face: [172, 427, 728, 675], lip: [310, 408] },
+  open: { src: SCENE + 'prop_box_open.webp', w: 900, h: 703, cols: [[249, 389], [511, 651]], wall: [248, 652], wallTop: 167, lipTop: 291, lip: [310, 408] },
   closed: { src: SCENE + 'prop_box_closed.webp', w: 714, h: 680, cols: [[130, 247], [464, 582]] },
 };
 const imgs = {};
 const loadImg = src => { if (!imgs[src]) { const im = new Image(); im.src = src; imgs[src] = im; } return imgs[src]; };
-function paintStretched(canvas, spec, W, H) {
+// fromY = 그림의 이 줄부터 아래만 그림(앞 날개 덮개) — 위는 비워 둠
+function paintStretched(canvas, spec, W, H, fromY = 0) {
   const im = loadImg(spec.src);
   const draw = () => {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -58,57 +62,66 @@ function paintStretched(canvas, spec, W, H) {
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
     const s = H / spec.h, add = Math.max(0, W - spec.w * s) / spec.cols.length;
     let sx = 0, dx = 0;
-    const seg = (a, b, grow) => { if (b <= a) return; const dw = (b - a) * s + grow; g.drawImage(im, a, 0, b - a, spec.h, dx, 0, dw + 0.6, H); dx += dw; };
+    const seg = (a, b, grow) => { if (b <= a) return; const dw = (b - a) * s + grow; g.drawImage(im, a, fromY, b - a, spec.h - fromY, dx, fromY * s, dw + 0.6, (spec.h - fromY) * s); dx += dw; };
     for (const [a, b] of spec.cols) { seg(sx, a, 0); seg(a, b, add); sx = b; }
     seg(sx, spec.w, 0);
   };
   if (im.complete && im.naturalWidth) draw(); else im.addEventListener('load', draw, { once: true });
 }
 
-// ── 블록 하나(길이만큼 가로로 긴 판 · 음표 · 음절 · 박 점) ──
-function blockEl(kit, kind, cw, { tag = 'div', cls = '', syl = true, h: hh = 0 } = {}) {
+// ── 블록 하나(상자 안 — 길이만큼 가로로 긴 판 · 음표 · 음절 · 박 점) ──
+function blockEl(kit, kind, { tag = 'div', cls = '', h: hh = 0 } = {}) {
   const { h } = kit;
   const stick = kit.band === 'low' && (kind === 'q' || kind === 'ee');
-  const sz = cw >= C ? 50 : 30;
-  return h(tag, { class: `r6-blk k-${kind} ${cls}`.trim(), style: { width: `${LEN[kind] * cw - (cw >= C ? 8 : 6)}px`, ...(hh ? { height: `${hh}px` } : {}) }, ...(tag === 'button' ? { type: 'button' } : {}) },
-    h('span', { class: 'nt', html: noteSVG(kind, { stick, size: sz }) }),
-    syl ? h('b', { class: 'sy' }, SYL[kind]) : null,
+  return h(tag, { class: `r6-blk k-${kind} ${cls}`.trim(), style: { width: `${LEN[kind] * C - 8}px`, ...(hh ? { height: `${hh}px` } : {}) }, ...(tag === 'button' ? { type: 'button' } : {}) },
+    h('span', { class: 'nt', html: noteSVG(kind, { stick, size: kind === 'w' ? 30 : 48, tight: true }) }),
+    h('b', { class: 'sy' }, SYL[kind]),
     h('span', { class: 'bd' }, ...Array.from({ length: LEN[kind] }, () => h('i'))));
 }
+// 블록 판 그림 칩 — 큰 음표(평가 3차: 온음표 머리 8px → 30px 넘게) + 길이 막대(박 점)
+function trayChip(kit, kind) {
+  const { h } = kit;
+  const stick = kit.band === 'low' && (kind === 'q' || kind === 'ee');
+  return h('span', { class: 'r6-tchip' },
+    h('span', { class: 'nt', html: noteSVG(kind, { stick, size: kind === 'w' ? 30 : 50, tight: true }) }),
+    h('span', { class: `r6-tbar k-${kind}`, style: { width: `${LEN[kind] * CT - 6}px` } }, ...Array.from({ length: LEN[kind] }, () => h('i'))));
+}
 
-// ── 상자(그림 + 박 자리 넷 + 넘침 자리) ──
+// ── 상자(그림 + 입구 안 박 자리 넷 + 넘침 자리) ──
 function boxView(kit) {
   const { h } = kit;
   const sp = BOX.open, s = HB / sp.h;
-  const [fx0, fy0, fx1, fy1] = sp.face;
-  const W = Math.round(sp.w * s + (4 * C + 2 * PAD - (fx1 - fx0) * s));
-  const panelL = Math.round(fx0 * s + PAD), panelT = Math.round(fy0 * s), panelH = Math.round((fy1 - fy0) * s);   /* 앞면 안쪽을 위아래 꽉(테이프가 비치지 않게) */
+  const add = (4 * C + 2 * PAD - (sp.wall[1] - sp.wall[0]) * s) / sp.cols.length;   /* 안쪽 뒷벽 = 박 자리 넷 + 좌우 여백 */
+  const W = Math.round(sp.w * s + add * sp.cols.length);
+  const innerL = Math.round(sp.wall[0] * s + PAD), wallT = Math.round(sp.wallTop * s), lipT = Math.round(sp.lipTop * s);
+  const blkT = wallT - 18, BH = lipT + 16 - blkT;            // 블록은 뒷벽 위로 조금 솟고, 아래 16px은 앞 날개 뒤로 들어감
   const lipY = Math.round((sp.lip[0] + sp.lip[1]) / 2 * s);
   const cvOpen = h('canvas', { class: 'r6-cv open', 'aria-hidden': 'true' }), cvClosed = h('canvas', { class: 'r6-cv closed', 'aria-hidden': 'true' });
-  paintStretched(cvOpen, BOX.open, W, HB); paintStretched(cvClosed, BOX.closed, W, HB);
+  const cvFront = h('canvas', { class: 'r6-cv front', 'aria-hidden': 'true' });
+  paintStretched(cvOpen, BOX.open, W, HB); paintStretched(cvClosed, BOX.closed, W, HB); paintStretched(cvFront, BOX.open, W, HB, sp.lipTop - 1);
   const cells = [0, 1, 2, 3].map(i => h('i', { class: 'r6-cell', style: { left: `${i * C}px`, width: `${C}px` } }));
-  const over = h('i', { class: 'r6-over' });
-  const inner = h('div', { class: 'r6-inner', style: { left: `${panelL}px`, top: `${panelT}px`, width: `${4 * C}px`, height: `${panelH}px` } }, ...cells, over);
+  const inner = h('div', { class: 'r6-inner', style: { left: `${innerL}px`, top: `${wallT}px`, width: `${4 * C}px`, height: `${lipT - wallT + 10}px` } }, ...cells);
+  const over = h('i', { class: 'r6-over', style: { left: `${4 * C}px` } });
+  const layer = h('div', { class: 'r6-blocks', style: { left: `${innerL}px`, top: `${blkT}px`, width: `${4 * C}px`, height: `${BH}px` } }, over);
   // 박 점(앞 날개 위) — 찬 자리 = 진한 점 · 빈 자리 = 빈 동그라미
-  const beatDots = [0, 1, 2, 3].map(i => h('span', { class: 'r6-bdot', style: { left: `${panelL + i * C + C / 2}px`, top: `${lipY}px` } }, h('i'), h('b', {}, String(i + 1))));
-  const box = h('div', { class: 'r6-box', style: { width: `${W}px`, height: `${HB}px` } }, cvOpen, cvClosed, inner, ...beatDots);
+  const beatDots = [0, 1, 2, 3].map(i => h('span', { class: 'r6-bdot', style: { left: `${innerL + i * C + C / 2}px`, top: `${lipY}px` } }, h('i'), h('b', {}, String(i + 1))));
+  const box = h('div', { class: 'r6-box', style: { width: `${W}px`, height: `${HB}px` } }, cvOpen, cvClosed, inner, layer, cvFront, ...beatDots);
   const count = h('span', { class: 'r6-count' });
   const msg = h('span', { class: 'r6-msg' });
   const line = h('p', { class: 'r6-line', style: { width: `${W}px` } }, msg, count);
   const el = h('div', { class: 'r6-boxzone' }, box, line);
   let blocks = [], locked = 0, onRemove = null;
-  const BH = panelH - 10;
-  // 그리기 — popAt = 새로 들어온 블록 자리(튀어 오름)
+  // 그리기 — popAt = 새로 들어온 블록 자리(위에서 떨어져 들어옴)
   function render(popAt = -1) {
-    inner.querySelectorAll('.r6-blk').forEach(e => e.remove());
+    layer.querySelectorAll('.r6-blk').forEach(e => e.remove());
     const f = fillBar(blocks.map(k => TICK[k]));
     let t = 0;
     blocks.forEach((k, i) => {
       const lock = i < locked;
-      const e = blockEl(kit, k, C, { tag: lock ? 'div' : 'button', cls: (lock ? 'lock' : 'in') + (i === popAt ? ' pop' : ''), h: BH });
-      e.style.left = `${(t / DUR.q) * C + 4}px`;
+      const e = blockEl(kit, k, { tag: lock ? 'div' : 'button', cls: (lock ? 'lock' : 'in') + (i === popAt ? ' pop' : ''), h: BH });
+      e.style.left = `${(t / DUR.q) * C + 4}px`;                 /* 자리는 한 번 정함(움직임 X) — 튀어 들어옴 · 누름은 transform */
       if (!lock) { e.setAttribute('aria-label', `${NAME[k]} 빼기`); kit.onPress(e, () => onRemove && onRemove(i)); }
-      inner.append(e);
+      layer.append(e);
       t += TICK[k];
     });
     // 넘친 자리 — 상자 오른쪽 벽 밖으로 회갈 빗금
@@ -116,7 +129,7 @@ function boxView(kit) {
     box.classList.toggle('overflow', f.over > 0);
     beatDots.forEach((d, i) => d.classList.toggle('on', f.cells[i] >= 1));
     const usedBeats = f.used / DUR.q;
-    count.textContent = !blocks.length ? '빈 상자 — 박 자리 넷' : f.over ? `${usedBeats}박 — ${f.over / DUR.q}박이 넘쳤어요` : f.full ? '4박이 다 찼어요' : `${usedBeats}박 찼어요 · ${f.left / DUR.q}박 남았어요`;
+    count.textContent = !blocks.length ? '빈 상자 — 박 자리 넷' : f.over ? `${usedBeats}박 — ${f.over / DUR.q}박이 넘쳤어요` : f.full ? '4박이 다 찼어요' : `${usedBeats}박 찼어요·${f.left / DUR.q}박 남았어요`;
     count.dataset.k = f.over ? 'over' : f.full ? 'full' : '';
     return f;
   }
@@ -129,7 +142,7 @@ function boxView(kit) {
     onRemove(fn) { onRemove = fn; },
     state: () => fillBar(blocks.map(k => TICK[k])),
     lightCell(i, on) { if (cells[i]) cells[i].classList.toggle('lit', on); },
-    blinkEmpty(i) { if (!cells[i]) return; cells[i].classList.remove('rest'); void cells[i].offsetWidth; cells[i].classList.add('rest'); },
+    blinkEmpty(i) { if (cells[i] && cells[i].animate) cells[i].animate([{ backgroundColor: '#E3DCD2' }, { backgroundColor: 'transparent' }], { duration: 420, easing: 'ease-out' }); },   /* 강제 레이아웃 X(성능 · 평가 3차) */
     say(t) { msg.textContent = t || ''; },                     // 아래 한 줄 — 까닭이 있으면 '몇 박 찼나' 대신 보임
     quiz(on) { el.classList.toggle('quiz', on); },              // 연습: 고르기 전에는 '몇 박 찼나' 글 · 박 점을 숨김
     close() { box.classList.add('closed'); },
@@ -192,7 +205,7 @@ export default {
         T.after(150 + ex.blocks.length * 520 + 200, () => {
           const f = box.state();
           if (f.over) { box.say(`넘쳤어요 — 블록 ${ex.blocks.length}개가 ${f.used / DUR.q}박이라 상자에 안 들어가요`); return; }
-          if (f.full) { box.close(); closeSound(engine, bus); box.say(ex.msg || `블록 ${ex.blocks.length}개 · 4박 — 상자가 닫혔어요`); }
+          if (f.full) { box.close(); closeSound(engine, bus); box.say(ex.msg || `블록 ${ex.blocks.length}개·4박 — 상자가 닫혔어요`); }
           else box.say(`빈 자리 ${f.left / DUR.q}개는 쉬는 소리 — 아직 ${f.left / DUR.q}박이 비었어요`);
           T.after(f.full ? 450 : 100, () => playBox(kit, bus, ex.blocks, { T, onBeat: i => { lightOnly(box, i); if (f.cells[i] < 1) box.blinkEmpty(i); }, onEnd: () => lightOnly(box, -1) }));
         });
@@ -261,8 +274,8 @@ export default {
     const T = kit.timers();
     ui.say('음표 블록을 상자에 넣어 4박을 채워요');
     const box = boxView(kit);
-    // 블록 판 — 다섯 블록을 처음부터 깔고, 판마다 쓰지 않는 블록은 잠금(자리가 밀리지 않게)
-    const tray = kit.answers(ALL.map(k => ({ key: k, label: SHORT[k], chip: blockEl(kit, k, CT, { syl: false }), locked: true })), k => put(k), { cls: 'r6-ans r6-tray' });
+    // 블록 판 — 다섯 블록을 처음부터 깔고, 판마다 쓰지 않는 블록은 잠가서 숨김(평가 3차: 남은 블록은 세로 가운데로 모임)
+    const tray = kit.answers(ALL.map(k => ({ key: k, label: SHORT[k], chip: trayChip(kit, k), locked: true })), k => put(k), { cls: 'r6-ans r6-tray' });
     ALL.forEach(k => tray.btn(k).setAttribute('aria-label', `${NAME[k]} 넣기`));
     ui.stage.append(h('div', { class: 'r6 r6-play' }, box.el, tray.el));
     const listen = h('button', { type: 'button' }, '들어 보기');
@@ -274,7 +287,7 @@ export default {
     const card = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
       h('h2', {}, '택배 상자 채우기'),
       h('p', { class: 'sub' }, '음표 블록을 상자에 넣어 박 자리 넷을 채워요'),
-      h('p', { class: 'sub' }, `블록을 누르면 상자에 들어가요 · 상자 ${PLAN.length}개`)));
+      h('p', { class: 'sub' }, `블록을 누르면 상자에 들어가요·상자 ${PLAN.length}개`)));
     ui.stage.append(card);
     const go = h('button', { type: 'button', class: 'go huge' }, '시작');
     onPress(go, () => { card.remove(); ui.setBar(listen); next(); });
@@ -305,7 +318,7 @@ export default {
       insertSound(engine, bus, k, fromBeat);
       check(f, k);
     }
-    function nudge() { box.box.classList.remove('shake'); void box.box.offsetWidth; box.box.classList.add('shake'); }
+    function nudge() { if (box.box.animate) box.box.animate([{ transform: 'none' }, { transform: 'translateX(-8px)', offset: 0.25 }, { transform: 'translateX(6px)', offset: 0.6 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' }); }
     box.onRemove(idx => {
       if (busy || gone) return;
       const f = box.removeAt(idx);
@@ -371,7 +384,7 @@ export default {
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: res,
-        facts: [`상자 ${s.total}개 중 ${s.kept}개를 한 번에 채웠어요`, `가장 길게 이어서 ${s.streak}개 · 넘친 적 ${kinds.over}번`],
+        facts: [`상자 ${s.total}개 중 ${s.kept}개를 한 번에 채웠어요`, `이어서 맞힌 최고 기록 ${s.streak}번, 넘친 적은 ${kinds.over}번이에요`],
         starOn: s.starOn, rules: s.rules, tip,
       });
     }

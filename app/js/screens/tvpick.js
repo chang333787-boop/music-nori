@@ -19,9 +19,9 @@ export default function mount(root, ctx) {
       ctl),
     ...lanes.map(lane => h('div', { class: 'tvrow', style: { '--a-t': `var(--${LANES[lane].friend}-t)` } },
       h('div', { class: 'mlane' }, friendImg(LANES[lane].friend, 'face', { label: false }), h('b', {}, LANES[lane].name)),
-      h('div', { class: 'tvcells' }, ...ORDER.filter(id => cellById(id).lane === lane).map(id => {
+      h('div', { class: 'tvcells' }, ...ORDER.filter(id => cellById(id).lane === lane).map((id, k) => {
         const c = cellById(id);
-        const b = h('button', { type: 'button', class: 'tvcell' }, h('small', {}, c.label), c.name);
+        const b = h('button', { type: 'button', class: 'tvcell' }, h('small', {}, `${LANES[lane].name} ${k + 1}`), c.name);   /* 지도와 같은 번호(평가 3차) */
         onPress(b, () => ctx.go('tvcell/' + id));
         return b;
       })))),

@@ -2,6 +2,7 @@
 //  · 판정(순수 계산 · DOM 없음 · node 시험 tests/beatcells.test.mjs): 메기면 받기 · 길게 누르기 · 센박에만
 //  · 박 시계(오디오 시각 ↔ 화면 시각 — 징검다리 screens/tap.js와 같은 방법 · clock.js audioToPerf)
 //  · 음표 그림(쉬운 SVG 글 · 1~2학년은 머리 없는 막대 음표) · 두드림/누르기 입력 · 자동 시험 두드림
+//  · 마디 하나씩 예약(barPump) · 준비 박 세기 = 판 가운데 큰 숫자(countTeller)
 //  판정 창은 engine/judge.js windows(학년군 · 가장 짧은 음 간격의 35%까지). 기기 지연(device.latencyMs)은 두드림에서 뺀다.
 import { windows } from '../../../engine/judge.js';
 import { audioToPerf } from '../clock.js';
@@ -182,7 +183,9 @@ export function startCard(ui, kit, { title, sub = [], onStart }) {
 // ── 그림(SVG 글) — 굵은 잉크 외곽선 · 납작한 단색 ──────────────
 const INK = '#3B2A1E';
 // kind: q 4분음표 · h 2분음표 · w 온음표 · qr 4분쉼표 · ee 8분음표 둘 · stick = 머리 없는 막대 음표(1~2학년 · 4분 · 8분만)
-export function noteSVG(kind, { stick = false, size = 80, color = INK } = {}) {
+// tight = 둘레 여백 없이 음표만(블록 판처럼 좁은 자리에서 음표를 크게 · 평가 3차) — size는 그대로 높이
+const TIGHT = { q: '3 5 27 70', h: '2 5 28 71', w: '6 50 36 25', qr: '6 4 26 69', ee: '0 3 58 72', qs: '15 6 10 68', ees: '10 8 44 68' };
+export function noteSVG(kind, { stick = false, size = 80, color = INK, tight = false } = {}) {
   const S = `stroke="${color}" stroke-linecap="round" stroke-linejoin="round"`;
   const head = (cx, hollow) => `<ellipse cx="${cx}" cy="64" rx="11.5" ry="8.2" transform="rotate(-22 ${cx} 64)" fill="${hollow ? '#FFFFFF' : color}" ${S} stroke-width="${hollow ? 4 : 2}"/>`;
   const stem = x => `<line x1="${x}" y1="61" x2="${x}" y2="9" ${S} stroke-width="4"/>`;
@@ -197,6 +200,7 @@ export function noteSVG(kind, { stick = false, size = 80, color = INK } = {}) {
       ? `<path d="M14 72 V12 H50 V72" fill="none" ${S} stroke-width="6"/>`
       : head(12, false) + stem(22.5) + head(44, false) + stem(54.5) + `<path d="M22.5 9 H54.5" ${S} stroke-width="9" stroke-linecap="butt"/>`;
   }
+  if (tight) vb = TIGHT[stick && (kind === 'q' || kind === 'ee') ? kind + 's' : kind] || vb;
   const [, , vw, vh] = vb.split(' ').map(Number);
   return `<svg viewBox="${vb}" width="${(size * vw / vh).toFixed(0)}" height="${size}" aria-hidden="true">${body}</svg>`;
 }
@@ -209,21 +213,40 @@ export function palmSVG(size = 64) {
 }
 // 스피커(보기 카드 — 누르면 소리가 난다는 표시)
 export const speakerSVG = (size = 26) => `<svg viewBox="0 0 28 24" width="${size * 28 / 24}" height="${size}" aria-hidden="true"><path d="M3 9h5l6-5v16l-6-5H3z" fill="${INK}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><path d="M18 8.5q2.5 3.5 0 7M21.5 5.5q5 6.5 0 13" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/></svg>`;
-// 보기 카드 묶음 — 위에 "눌러서 들어 봐요" + 카드마다 스피커(카드 오른쪽 위)
+// 보기 카드 묶음 — 위에 스피커 + "눌러서 들어 봐요"(모든 칸 같은 모양 · 18px 잉크) + 카드마다 스피커(카드 오른쪽 위 · 글은 오른쪽 48px 안쪽까지)
 export function exampleGroup(kit, cards, cls = '') {
   const { h } = kit;
   for (const c of cards) c.append(h('span', { class: 'bspk', html: speakerSVG(24) }));
-  return h('div', { class: ('bexgroup ' + cls).trim() }, h('p', { class: 'bexhead' }, '눌러서 들어 봐요'), h('div', { class: 'bexgrid' }, ...cards));
+  return h('div', { class: ('bexgroup ' + cls).trim() }, h('p', { class: 'bexhead' }, h('span', { class: 'bexspk', html: speakerSVG(20) }), '눌러서 들어 봐요'), h('div', { class: 'bexgrid' }, ...cards));
 }
-// 준비 박 세기를 말풍선으로(1 2 3 4) — n = 지금 준비 박 번호(1~4) · 0이면 지움(한 번만)
-export function countTeller(ui) {
-  let last = -1;
+// 준비 박 세기(1 2 3 4) — 판 가운데 큰 숫자(120px)로 세는 동안만(평가 3차: 오른쪽 위 상자에 따로 띄우지 않음)
+//  host = 숫자를 띄울 판(position 있는 그릇) · n = 지금 준비 박 번호(1~4) · 0이면 지움(한 번만)
+export function countTeller(host) {
+  let last = -1, el = null;
   return n => {
     if (n === last) return;
-    const was = last; last = n;
-    if (n >= 1 && n <= 4) ui.tell(String(n), 'count', 0);
-    else if (was >= 1 && was <= 4) ui.tell(null);
+    last = n;
+    if (n >= 1 && n <= 4) {
+      if (!el) { el = document.createElement('span'); el.className = 'bcount'; el.setAttribute('aria-live', 'polite'); }
+      if (!el.isConnected && host) host.append(el);
+      el.textContent = String(n);
+      if (el.animate) el.animate([{ transform: 'translate(-50%,-50%) scale(.82)' }, { transform: 'translate(-50%,-50%)' }], { duration: 200, easing: 'ease-out' });
+    } else if (el) el.remove();
   };
+}
+
+// 마디 하나씩 예약(평가 3차 성능) — 마디 시작이 lead초 안으로 다가온 것만 소리를 건다.
+//  여러 마디를 한꺼번에 걸면 아직 안 울린 소리 노드가 수백 개 쌓인다(리5 523개). n = 마디 수(Infinity 가능) · startOf(i) = 마디 i 시작(오디오 초) · play(i) = 마디 i 소리 걸기
+//  돌려주는 stop()으로 더 걸지 않음(이미 건 한 마디는 버스를 끄는 쪽에서 멈춤)
+export function barPump(ac, T, n, startOf, play, lead = 0.3) {
+  let i = 0, on = true;
+  const pump = () => {
+    if (!on) return;
+    while (i < n && startOf(i) - ac.currentTime < lead) play(i++);
+    if (i < n) T.after(50, pump);
+  };
+  pump();
+  return { stop() { on = false; } };
 }
 
 // 박자표(위 숫자 = 한 마디의 박 수 · 아래 4 = 4분음표가 한 박)

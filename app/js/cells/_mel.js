@@ -79,18 +79,22 @@ export function heightBoard(kit, { notes, ghosts = [], hands = false, rh = 60, f
       badge(h, p), hands ? h('span', { class: 'm-hand' }, `손은 ${HAND[p]}`) : null);
     rungs.set(p, r); el.append(r);
   }
+  //  참새 길 = 판 높이 그대로인 투명 기둥 — 기둥을 transform(자기 높이의 % = 판 높이의 %)으로 올려 참새를 옮김(bottom 움직임 X · 평가 3차 성능)
   const bird = h('div', { class: 'm-bbird' }, kit.friendImg(friend, 'idle', { label: false }));
   el.append(bird);
   const pose = ps => kit.setPose(bird.firstChild, friend, ps);
   const lit = p => rungs.forEach((r, q) => r.classList.toggle('on', q === p));
+  const place = y => { bird.style.transform = `translateY(${(-y).toFixed(2)}%)`; };
+  const HOP = [{ transform: 'none' }, { transform: 'translateY(-16px)', offset: 0.45 }, { transform: 'none' }];
   function move(p, ps = 'play') {
     lit(p);
-    bird.style.bottom = `calc(${yOf(p).toFixed(2)}% - 48px)`;
-    bird.classList.remove('hop'); void bird.offsetWidth; bird.classList.add('hop');
+    place(yOf(p));
+    const img = bird.firstChild;
+    if (img && img.animate) img.animate(HOP, { duration: 220, easing: 'ease-out' });
     pose(ps);
   }
   const rest = () => { lit(null); pose('idle'); };
-  bird.style.bottom = `calc(${((yOf(notes[0]) + yOf(notes[notes.length - 1])) / 2).toFixed(2)}% - 48px)`;
+  place((yOf(notes[0]) + yOf(notes[notes.length - 1])) / 2);
   return { el, move, lit, rest, pose, rungs };
 }
 
@@ -99,6 +103,7 @@ export function heightBoard(kit, { notes, ghosts = [], hands = false, rh = 60, f
 //  rows = 사다리 띠를 깔 계이름(+ghosts 점선 빈 띠) · height = 그림 높이(px) — 띠 사이는 높이에 맞춰 저절로
 //  띠는 계이름 색을 옅게 깐 막대(높이 판 계단과 같은 말) — 가는 점선은 오선처럼 보여서 쓰지 않는다(평가 2차)
 //  그림은 1:1 크기로 둔다(줄여 보이면 동그라미 글자가 18px 아래로 작아짐)
+//  막대(pill)는 박 길이보다 8px 짧게 — 이웃 동전 사이가 늘 4px 넘게 벌어짐(평가 3차 '솔솔' '라라' 겹침) · r < 16이면 글자 18px(.sm)
 export function heightPic(items, { rows, ghosts = [], height = 90, unit = 46, r = 18, pill = false, join = false, pad = 6, guide = true, label = true }) {
   const all = [...rows, ...ghosts, ...items.map(n => n.p)].map(posOf);
   const lo = Math.min(...all), hi = Math.max(...all);
@@ -106,7 +111,7 @@ export function heightPic(items, { rows, ghosts = [], height = 90, unit = 46, r 
   const yOf = p => pad + r + (hi - posOf(p)) * step + (hi > lo ? 0 : (height - 2 * pad - 2 * r) / 2);
   const beats = Math.max(...items.map(n => n.t + (pill ? n.d : 0)));
   const W = pill ? pad * 2 + beats * unit : pad * 2 + 2 * r + beats * unit;
-  const root = svg('svg', { viewBox: `0 0 ${W.toFixed(1)} ${height}`, width: Math.round(W), height, class: 'm-pic' + (pill ? ' pill' : ''), 'aria-hidden': 'true' });
+  const root = svg('svg', { viewBox: `0 0 ${W.toFixed(1)} ${height}`, width: Math.round(W), height, class: 'm-pic' + (pill ? ' pill' : '') + (r < 16 ? ' sm' : ''), 'aria-hidden': 'true' });
   if (guide) {
     const ps = [...new Set([...rows, ...ghosts].map(posOf))].sort((a, b) => a - b);
     let near = Infinity;
@@ -121,7 +126,7 @@ export function heightPic(items, { rows, ghosts = [], height = 90, unit = 46, r 
   const marks = items.map(n => {
     const y = yOf(n.p), g = svg('g', { class: 'm-mark' });
     if (pill) {
-      const w = Math.max(2 * r, n.d * unit - 6);
+      const w = Math.max(2 * r, n.d * unit - 8);
       g.append(svg('rect', { x: pad + n.t * unit, y: y - r, width: w, height: 2 * r, rx: r, fill: colorOf(n.p), class: 'm-shape' }));
     } else g.append(svg('circle', { cx: cx(n), cy: y, r, fill: colorOf(n.p), class: 'm-shape' }));
     if (label) g.append(svg('text', { x: cx(n), y: y + 1, class: 'm-pl', 'text-anchor': 'middle', 'dominant-baseline': 'central' }, nameOf(n.p)));
@@ -134,7 +139,7 @@ export function heightPic(items, { rows, ghosts = [], height = 90, unit = 46, r 
 // ── 보기 카드 — 누를 수 있다는 스피커 그림 + 이름 + 그림(묶음 위에는 hearHead) ──
 const SPK = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 15h7l9-7v24l-9-7H6z" fill="#FFFFFF" stroke="#3B2A1E" stroke-width="3" stroke-linejoin="round"/><path d="M27 14.5c2.6 3.2 2.6 7.8 0 11M31.5 10.5c5 5.4 5 13.6 0 19" fill="none" stroke="#3B2A1E" stroke-width="3" stroke-linecap="round"/></svg>';
 export const speaker = h => h('span', { class: 'm-spk', html: SPK });
-export const hearHead = h => h('p', { class: 'm-hear' }, '눌러서 들어 봐요');
+export const hearHead = h => h('p', { class: 'm-hear' }, speaker(h), '눌러서 들어 봐요');   /* 모든 칸 같은 모양: 스피커 + 18px 잉크(평가 3차) */
 export function exCard(kit, { name, pic, sub = null, wide = false, cls = '' }) {
   const { h } = kit;
   return h('button', { type: 'button', class: ('excard m-ex ' + (wide ? 'm-song ' : '') + cls).trim(), 'aria-label': name + ' 들어 보기' },
@@ -146,7 +151,7 @@ export const dot = (h, p) => h('span', { class: 'm-dot', style: { '--c': colorOf
 export function noteAnswers(kit, ps, onPick, cls = '') {
   return kit.answers(ps.map(p => ({ key: p, label: nameOf(p), chip: dot(kit.h, p) })), onPick, { cls: ('m-ans ' + cls).trim() });
 }
-// 고른 뒤 표시 — 맞는 답은 금 테두리, 잘못 고른 답은 점선(빨강 X)
+// 고른 뒤 표시 — 맞는 답은 초록 테두리 + ✓, 잘못 고른 답은 회색으로 눌림(빨강 X · 모양은 app.css .ans.right · .ans.wrong)
 export function markPick(A, right, picked) {
   A.mark(right, 'right');
   if (picked != null && picked !== right) { const b = A.btn(picked); if (b) b.classList.add('wrong'); }

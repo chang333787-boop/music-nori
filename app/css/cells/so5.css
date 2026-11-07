@@ -1,9 +1,18 @@
 /* 소5 한 가지만 바뀌는 짝 — 소리 그림(세로 자리 = 높이 · 가로 길이 = 길이 · 굵기 = 크기) · 확인 게임 '무엇이 바뀌었나' */
 /* 보기 카드 묶음(_snd.js exGroup) — 위에 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 · 지금 소리 나는 카드 = 잉크 테두리 + 작은 세모 */
 .snd-exwrap{display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0}
-.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:22px;color:var(--ink)}
+.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:18px;line-height:1.2;color:#3B2A1E}
 .snd-spk{position:absolute;top:10px;right:12px;width:30px;height:30px;pointer-events:none}
-.snd-spk.in{position:static;width:30px;height:30px}
+.snd-spk.in{position:static;width:26px;height:26px}
+.snd-exwrap .excard{padding-right:48px}   /* 글이 오른쪽 위 스피커에 닿지 않게(평가 3차) */
+/* 듣는 동안 '잘 들어요'(A.busy) — 자리를 늘 잡아 둬서 켜고 끌 때 답 단추가 위아래로 밀리지 않게 */
+.answers::before{content:'잘 들어요';align-self:center;font-family:var(--head);font-size:22px;border:3px solid transparent;border-radius:999px;padding:4px 18px;visibility:hidden}
+.answers.busy::before{visibility:visible}
+.cbody .kbd{font-size:18px}   /* 18px 아래 글씨 X(평가 3차) */
+/* 자라는 막대(_snd.js growBar) — 바깥 = 다 자란 길이 · 넘침 숨김 · 안쪽 알약이 transform으로 밀려 나옴 · 왼쪽 반원(--cap = 굵기 절반)은 처음부터 */
+.snd-bar{overflow:hidden;border-radius:999px 0 0 999px;--cap:20px}
+.snd-bar>.snd-fill{position:absolute;inset:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box}
+.snd-bar::before{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--cap);z-index:1;background:var(--bunny);border:3px solid var(--ink);border-right:0;border-radius:999px 0 0 999px;box-sizing:border-box}
 .snd-spk svg{display:block;width:100%;height:100%}
 .excard.now{outline:4px solid var(--ink);outline-offset:3px}
 .excard.now::after{content:'';position:absolute;left:50%;top:-19px;margin-left:-9px;border:9px solid transparent;border-top:10px solid var(--ink);border-bottom:0}
@@ -20,7 +29,7 @@
 .sp-half+.sp-half::before{content:'';position:absolute;left:-11px;top:0;bottom:0;border-left:3px solid rgba(59,42,30,.25)}
 .sp-num{align-self:center;font-family:var(--head);font-size:20px;line-height:1.1;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 14px;margin-top:6px}
 .sp-field{position:relative;flex:1;min-height:0}
-.sp-pill{position:absolute;left:0;width:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box}
+.sp-pill{position:absolute;left:0;width:0}
 .sp-pill.off{visibility:hidden}
 .sp-ghost{position:absolute;left:0;border:3px dashed var(--ink);border-radius:999px;box-sizing:border-box;background:none;z-index:1}
 .sp-ask{position:absolute;left:calc(50% - 32px);top:calc(50% - 32px);width:64px;height:64px;border:3px dashed rgba(59,42,30,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:36px;color:var(--ink-2);background:var(--surface);transition:transform 120ms ease-out}
@@ -30,7 +39,6 @@
 .sp-ic svg{width:100%;height:100%}
 .sp-legend{display:flex;gap:12px;flex-wrap:wrap}
 .sp-legend>span{display:inline-flex;align-items:center;gap:8px;font-family:var(--head);font-size:20px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 16px 3px 8px}
-.sp-ex{padding-right:48px}
 .sp-ex b{font-size:24px;line-height:1.2}
 /* 연습 · 확인 게임 배치 — 소리 그림 + 오른쪽 답 묶음(높이 · 길이 · 크기) */
 .sp-follow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;width:100%;min-height:0}
@@ -38,5 +46,4 @@
 .g5-bunny{align-self:end;width:130px}
 .g5-bunny img,.g5-bunny svg{display:block;width:100%;height:auto;max-height:160px;object-fit:contain;object-position:50% 100%}
 .ans .sp-ic,.ans .chip svg{width:52px;height:52px}
-.ans.new{animation:g5-pop 360ms ease-out}
-@keyframes g5-pop{0%{transform:scale(.7)}70%{transform:scale(1.05)}100%{transform:none}}
+

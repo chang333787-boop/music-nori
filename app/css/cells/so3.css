@@ -1,12 +1,21 @@
 /* 소3 길게·짧게 — 가로 길이 줄(소리가 나는 동안 막대가 가로로 자람) · 확인 게임 '다람쥐 기차'(코덱스 그림) */
 /* 보기 카드 묶음(_snd.js exGroup) — 위에 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 · 지금 소리 나는 카드 = 잉크 테두리 + 작은 세모 */
 .snd-exwrap{display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0}
-.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:22px;color:var(--ink)}
+.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:18px;line-height:1.2;color:#3B2A1E}
 .snd-spk{position:absolute;top:10px;right:12px;width:30px;height:30px;pointer-events:none}
-.snd-spk.in{position:static;width:30px;height:30px}
+.snd-spk.in{position:static;width:26px;height:26px}
+.snd-exwrap .excard{padding-right:48px}   /* 글이 오른쪽 위 스피커에 닿지 않게(평가 3차) */
+/* 듣는 동안 '잘 들어요'(A.busy) — 자리를 늘 잡아 둬서 켜고 끌 때 답 단추가 위아래로 밀리지 않게 */
+.answers::before{content:'잘 들어요';align-self:center;font-family:var(--head);font-size:22px;border:3px solid transparent;border-radius:999px;padding:4px 18px;visibility:hidden}
+.answers.busy::before{visibility:visible}
+.cbody .kbd{font-size:18px}   /* 18px 아래 글씨 X(평가 3차) */
 .snd-spk svg{display:block;width:100%;height:100%}
 .excard.now{outline:4px solid var(--ink);outline-offset:3px}
 .excard.now::after{content:'';position:absolute;left:50%;top:-19px;margin-left:-9px;border:9px solid transparent;border-top:10px solid var(--ink);border-bottom:0}
+/* 자라는 막대(_snd.js growBar) — 바깥 = 다 자란 길이 · 넘침 숨김 · 안쪽 알약이 transform으로 밀려 나옴 · 왼쪽 반원은 처음부터 */
+.snd-bar{overflow:hidden;border-radius:999px 0 0 999px;--cap:20px}
+.snd-bar>.snd-fill{position:absolute;inset:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box}
+.snd-bar::before{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--cap);z-index:1;background:var(--bunny);border:3px solid var(--ink);border-right:0;border-radius:999px 0 0 999px;box-sizing:border-box}
 
 /* 길이 줄 */
 .ln-show{display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;width:100%;min-height:0}
@@ -21,7 +30,7 @@
 .lanes.nums .ln-row{grid-template-columns:48px minmax(0,1fr);gap:10px}
 .ln-num{width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:24px;margin-bottom:2px}
 .ln-track{position:relative;height:48px;border-bottom:3px solid rgba(59,42,30,.35)}
-.ln-bar{position:absolute;left:0;bottom:4px;height:40px;width:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box}
+.ln-bar{position:absolute;left:0;bottom:4px;height:40px;width:0}
 .ln-bar.off{visibility:hidden}
 .ln-tag{position:absolute;left:0;bottom:54px;font-family:var(--head);font-size:22px;line-height:1.1;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 14px;opacity:0;transition:opacity 160ms}
 .ln-tag.on{opacity:1}
@@ -45,9 +54,12 @@
 .tr-ground{position:absolute;left:0;right:0;bottom:0;height:64px;background:#B9D3A0;border-top:3px solid var(--ink)}
 .tr-train{position:absolute;right:14px;bottom:58px;display:flex;align-items:flex-end;transition:transform 1.4s ease-in}
 .tr-train.leave{transform:translateX(1100px)}
-.tr-car{position:relative;flex:none;height:128px;cursor:pointer;touch-action:manipulation}
-.tr-car.short{height:124px}
-.tr-car.loco{height:132px;cursor:default}
+.tr-car{position:relative;flex:none;height:116px;cursor:pointer;touch-action:manipulation}
+.tr-car.short{height:112px}
+.tr-car.loco{height:120px;cursor:default}
+/* 승강장 — 왼쪽 땅 위 · 토끼와 다람쥐 손님이 여기 서서 기다림(평가 3차) */
+.tr-plat{position:absolute;left:0;bottom:50px;width:196px;height:38px;background:#D9B98A;border:3px solid var(--ink);border-left:0;border-radius:0 12px 0 0;pointer-events:none}
+.tr-plat-top{position:absolute;left:0;right:10px;top:6px;border-top:4px dashed var(--great)}
 .tr-img{display:block;height:100%;width:auto;pointer-events:none;user-select:none;-webkit-user-select:none}
 .tr-car.long.press .tr-img,.tr-car.short.press .tr-img{filter:brightness(.94)}
 .tr-seat{position:absolute;display:block;pointer-events:none}
@@ -57,17 +69,16 @@
 .tr-seat.on,.tr-roofseat.on{animation:tr-pop 260ms ease-out}
 .tr-name{position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);font-family:var(--head);font-size:24px;line-height:1.1;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 16px;pointer-events:none}
 .tr-link{flex:none;width:12px;height:10px;margin-bottom:24px;background:var(--ink);border-radius:3px}
-.tr-bunny{position:absolute;left:8px;bottom:52px;width:120px;height:150px;pointer-events:none}
+.tr-bunny{position:absolute;left:4px;bottom:86px;width:100px;height:124px;pointer-events:none}
 .tr-bunny img,.tr-bunny svg{width:100%;height:100%;object-fit:contain;object-position:50% 100%}
-/* 손님 다람쥐 — 왼쪽 위에서 기다림 · 고르면 맞는 칸 자리로 폴짝 */
-.tr-sq{position:absolute;left:16px;top:66px;width:92px;height:100px;pointer-events:none;z-index:2;transform-origin:50% 50%}
-.tr-sq img{width:100%;height:100%;object-fit:contain;display:block}
-.tr-sq.in{animation:tr-pop 280ms ease-out}
+/* 손님 다람쥐 — 승강장 위에서 기다림 · 고르면 맞는 칸 자리로 폴짝 */
+.tr-sq{position:absolute;left:104px;bottom:86px;width:84px;height:92px;pointer-events:none;z-index:2;transform-origin:50% 50%}
+.tr-sq img{width:100%;height:100%;object-fit:contain;object-position:50% 100%;display:block}
 .tr-sq.hop{transition:transform 380ms cubic-bezier(.3,.7,.4,1)}
 .tr-sq.gone{visibility:hidden}
 @keyframes tr-pop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:none}}
 /* 소리 막대 — 긴 칸과 같은 자(긴 칸 너비 = 1.2초) · 긴 칸 왼쪽 끝에서 시작 */
-.tr-lane{position:absolute;top:92px;height:52px;display:flex;align-items:center;gap:14px;opacity:0;transition:opacity 160ms;pointer-events:none}
+.tr-lane{position:absolute;left:0;top:92px;height:52px;display:flex;align-items:center;gap:14px;opacity:0;transition:opacity 160ms;pointer-events:none}
 .tr-lane.on{opacity:1}
-.tr-lbar{height:42px;width:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box;transition:width 320ms ease-out}
+.tr-lbar{position:relative;flex:none;height:42px;width:0;--cap:21px}
 .tr-ltag{font-family:var(--head);font-size:26px;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:2px 16px}

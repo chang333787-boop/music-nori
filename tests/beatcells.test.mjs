@@ -1,12 +1,14 @@
 // 박·리듬 칸(리2 · 리4 · 리5 · 리6) 판정 시험 — node만으로 돈다(화면 · 소리 없음)
 //  메기면 받기(따 · 쉼) · 길게 누르기(누름 · 뗌) · 센박에만 · 판 짜임(마디가 4박 · 상자 답이 꼭 맞음)
 import assert from 'node:assert/strict';
-import { judgeEcho, classifyTap, releaseGrade, judgeHolds, strongPattern, barsOk, layoutNotes, LEN } from '../app/js/cells/_beat.js';
+import { judgeEcho, classifyTap, releaseGrade, judgeHolds, strongPattern, barsOk, layoutNotes, LEN, barPump, noteSVG } from '../app/js/cells/_beat.js';
 import { windows } from '../engine/judge.js';
 import { fillBar } from '../engine/measure.js';
 import { PLAN as P2 } from '../app/js/cells/ri2.js';
 import { PLAN as P4 } from '../app/js/cells/ri4.js';
-import { PLAN as P5, FINAL as F5, TOTAL as T5 } from '../app/js/cells/ri5.js';
+import { PLAN as P5, FINAL as F5, TOTAL as T5, melodyBar, barList } from '../app/js/cells/ri5.js';
+import { songById } from '../engine/songs/index.js';
+import { makeSong, sounding } from '../engine/song.js';
 import { PLAN as P6 } from '../app/js/cells/ri6.js';
 
 let n = 0;
@@ -125,11 +127,47 @@ ok('리6: 상자 답(자동 시험)이 꼭 4박 · 조건을 지킴 · 고르기
       assert.equal(p.tray.filter(k => T[k] === left).length, 1, '꼭 맞는 블록이 하나뿐: ' + p.pre.join(','));
     }
   }
-  // 블록 판은 다섯 블록을 늘 같은 자리에 깔고 잠그기만 함 — 판마다 쓰는 블록이 그 다섯 안에 있어야 함
+  // 블록 판은 다섯 블록을 깔고 판마다 안 쓰는 블록을 숨김 — 판마다 쓰는 블록이 그 다섯 안에 있어야 함
   for (const p of P6) for (const k of p.tray) assert.ok(['q', 'h', 'w', 'qr', 'ee'].includes(k), k);
   // 마지막 상자 '블록 셋으로' — 블록 수와 박 수가 다른 답
   const last = P6[P6.length - 1];
   assert.ok(last.need(['h', 'q', 'q']) && !last.need(['q', 'q', 'q', 'q']) && !last.need(['w']));
+});
+
+// ── 소리 예약(평가 3차 성능) — 한꺼번에 걸지 않고 마디 하나씩 ──
+ok('마디 하나씩 예약: 시작이 0.3초 안으로 다가온 마디만 걸고, 멈추면 더 걸지 않음', () => {
+  const ac = { currentTime: 0 }, q = [], got = [];
+  const T = { after(ms, fn) { q.push(fn); } };
+  const p = barPump(ac, T, 8, i => 0.4 + i * 1.2, i => got.push(i));
+  assert.deepEqual(got, [], '첫 마디는 0.4초 뒤 — 아직 0.3초 밖');
+  ac.currentTime = 0.15; q.shift()(); assert.deepEqual(got, [0]);
+  ac.currentTime = 1.0; q.shift()(); assert.deepEqual(got, [0], '다음 마디(1.6초)는 아직');
+  ac.currentTime = 1.35; q.shift()(); assert.deepEqual(got, [0, 1]);
+  p.stop(); ac.currentTime = 5; q.shift()(); assert.deepEqual(got, [0, 1], '멈춘 뒤에는 안 검');
+  // 끝까지 가면 타이머도 그만
+  const q2 = [], g2 = []; const T2 = { after(ms, fn) { q2.push(fn); } };
+  const ac2 = { currentTime: 100 };
+  barPump(ac2, T2, 3, i => i, i => g2.push(i));
+  assert.deepEqual(g2, [0, 1, 2]); assert.equal(q2.length, 0);
+});
+ok('리5 가락을 한 마디씩 걸어도 예전 한꺼번에 건 것과 같은 음 · 같은 때', () => {
+  for (const [m, id] of [[2, 'ri5-march'], [3, 'ri5-waltz']]) {
+    const s = makeSong(songById(id)), ev = sounding(s), beat = 0.5, perTick = beat / 12, bars = 7, t0 = 3;
+    const old = [];
+    for (let base = 0; base < bars * m * 12; base += s.total)
+      for (const n of ev) if (base + n.t < bars * m * 12) old.push([n.p + 12, +(t0 + (base + n.t) * perTick).toFixed(5)]);
+    const now = [], eng = { note: (inst, p, t) => now.push([p, +t.toFixed(5)]) };
+    for (const br of barList([{ m, bars }])) melodyBar(eng, null, m, t0 + br.x * beat, beat, br.b);
+    const key = a => a.map(x => x.join('@')).sort();
+    assert.deepEqual(key(now), key(old), id);
+  }
+  assert.deepEqual(barList([{ m: 2, bars: 2 }, { m: 3, bars: 1 }]), [{ m: 2, b: 0, x: 0 }, { m: 2, b: 1, x: 2 }, { m: 3, b: 0, x: 4 }]);
+});
+ok('블록 판 음표(꽉 찬 그림): 온음표 머리가 30px 넘게', () => {
+  const svg = noteSVG('w', { size: 30, tight: true }), [, vw, vh] = svg.match(/viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"/).map(Number);
+  const scale = 30 / vh;                                   // 온음표 머리 = 지름 32(그림 단위)
+  assert.ok(32 * scale >= 30, `머리 ${32 * scale}px`);
+  assert.ok(Number(svg.match(/width="(\d+)"/)[1]) <= 44, '블록 판 음표 자리(44px) 안');
 });
 
 console.log(`✓ 박·리듬 칸 시험 통과 — ${n}개`);

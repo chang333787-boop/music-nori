@@ -2,29 +2,28 @@
    11-07 평가 2차: 박 세기 숫자 · 판정 말은 말풍선(ui.tell) · 박자표 설명은 박자표 옆 · 고르기 답 = 오른쪽 세로 한 줄(kit.answers) · '지금' 점 = 잉크 고리 */
 .r5{position:relative;width:100%;min-height:0;display:grid;gap:12px}
 .r5-show{grid-template-rows:minmax(0,1fr) auto}
-.r5-showtop{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;align-items:center;min-height:0}
-.r5-showtop .r5-board{height:100%}
 .r5-scene{grid-template-columns:minmax(0,1fr) auto;gap:24px}
 .r5-scene.solo{grid-template-columns:minmax(0,1fr)}
-.r5-main{display:grid;grid-template-rows:118px minmax(0,1fr);gap:10px;min-height:0}
+.r5-main{display:grid;grid-template-rows:40px minmax(0,1fr);gap:8px;min-height:0}
 .r5-side{display:flex;align-items:center;min-height:0}
 .r5-side:empty{display:none}
-.r5-top{position:relative;display:flex;align-items:center;gap:22px;min-height:0;padding:0 8px}
-.r5-hog{width:110px;height:110px;flex:none}
+/* 고슴도치 — 박 판 안 왼쪽(평가 3차) */
+.r5-hog{position:absolute;left:12px;top:calc(50% - 55px);z-index:1;width:110px;height:110px;pointer-events:none}
 .r5-hog img,.r5-hog svg{width:100%;height:100%;object-fit:contain}
-.r5-hog.bump{animation:r5bump 200ms ease-out}
-@keyframes r5bump{0%{transform:none}35%{transform:translateY(5px) scaleY(.93)}100%{transform:none}}
-.r5-msg{flex:1;min-width:0}
+.r5-msg{align-self:center;min-width:0;padding-left:8px}
 /* 박 판 */
 .r5-board{position:relative;border:3px solid var(--ink);border-radius:22px;background:var(--hog-t);min-height:0;overflow:hidden}
 /* 박 점 — 남은 박 = 빈 동그라미 · 지난 박 = 진한 점 */
-.r5-dot{position:absolute;top:50%;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);border-radius:50%;background:var(--surface);border:3px solid var(--ink);transition:left 450ms ease-out,width 450ms ease-out,height 450ms ease-out,margin 450ms ease-out,background-color 120ms}
+.r5-dot{position:absolute;top:50%;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);border-radius:50%;background:var(--surface);border:3px solid var(--ink);transition:background-color 120ms}
 .r5-dot.on{background:var(--ink)}
 /* 지금 여기 — 잉크 고리(주황 X) */
 .r5-dot.now{box-shadow:0 0 0 4px var(--hog-t),0 0 0 8px var(--ink)}
 .r5-dot.g{background:var(--great)}.r5-dot.k{background:var(--good)}.r5-dot.rh{background:var(--oops)}
 .r5-dot.m{background:var(--surface);border-style:dashed;border-color:var(--oops)}
 .r5-line{position:absolute;top:18%;bottom:18%;width:4px;margin-left:-2px;background:var(--ink);border-radius:2px}
+/* 끝세로줄 — 가는 줄 + 굵은 줄(마디 그림 끝 · 평가 3차) */
+.r5-line.end{margin-left:-6px}
+.r5-line.end::after{content:'';position:absolute;left:8px;top:0;bottom:0;width:9px;background:var(--ink);border-radius:2px}
 .r5-ts{position:absolute;top:50%;transform:translate(-50%,-50%);line-height:0}
 .r5-ts.pop,.r5-line.pop{animation:r5pop 450ms ease-out}
 @keyframes r5pop{0%{opacity:0}100%{opacity:1}}
@@ -32,7 +31,7 @@
 .r5-lab.line{top:6px}
 .r5-lab.strong{top:calc(50% - 56px);transform:translateX(-24px)}
 /* 박자표 설명 — 박자표 왼쪽 옆에서 위 숫자를 가리킴 */
-.r5-call{position:absolute;left:14px;top:calc(50% - 23px);transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;text-align:right;font-size:18px;font-weight:700;line-height:1.3;color:var(--ink);padding-right:18px}
+.r5-call{position:absolute;top:calc(50% - 23px);transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;text-align:right;font-size:18px;font-weight:700;line-height:1.3;color:var(--ink);padding-right:18px}
 .r5-call b{font-family:var(--head);font-weight:400;font-size:22px}
 .r5-call::after{content:'';position:absolute;right:0;top:50%;margin-top:-9px;border:9px solid transparent;border-left:12px solid var(--ink);border-right:0}
 .r5-brace{position:absolute;bottom:8px;height:30px;border:3px solid var(--ink-2);border-top:0;border-radius:0 0 14px 14px;display:flex;align-items:flex-end;justify-content:center}
@@ -52,6 +51,10 @@
 .r5-ptxt small{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
 /* 보기 카드 묶음(박·리듬 칸 같은 모양) — 위 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 */
 .bexgroup{display:flex;flex-direction:column;gap:6px;min-height:0}
-.bexhead{margin:0;font-family:var(--head);font-size:20px;line-height:1.2;color:var(--ink-2)}
+.bexhead{display:flex;align-items:center;gap:8px;margin:0;font-family:var(--head);font-size:18px;line-height:1.2;color:var(--ink)}
+.bexspk{line-height:0}
+.bexgrid .excard{padding-right:48px}
 .bexgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .bspk{position:absolute;right:14px;top:12px;line-height:0;pointer-events:none}
+/* 준비 박 세기 — 판 가운데 큰 숫자(세는 동안만 · 평가 3차) */
+.bcount{position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;width:150px;height:150px;border-radius:50%;background:var(--surface);border:4px solid var(--ink);box-shadow:0 6px 0 var(--ink);font-family:var(--head);font-size:120px;line-height:1;color:var(--ink);pointer-events:none}

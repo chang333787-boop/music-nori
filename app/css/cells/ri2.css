@@ -4,7 +4,7 @@
 .r2-show{grid-template-rows:minmax(0,1fr) auto auto}
 .r2-echo{grid-template-rows:minmax(0,1fr) minmax(0,1fr) 40px}
 .r2-echo.r2-game{grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:18px}
-.r2-row{display:grid;grid-template-columns:170px minmax(0,1fr);gap:14px;align-items:stretch;border-radius:22px;padding:14px 10px 8px;min-height:0;transition:background-color 120ms}
+.r2-row{position:relative;display:grid;grid-template-columns:170px minmax(0,1fr);gap:14px;align-items:stretch;border-radius:22px;padding:14px 10px 8px;min-height:0;transition:background-color 120ms}
 .r2-row.active{background:var(--hog-t)}
 .r2-row.ghost .r2-cards{opacity:.6}
 .r2-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;min-height:0}
@@ -12,8 +12,6 @@
 .r2-hog{width:120px;height:120px}
 .r2-hog.big{width:150px;height:150px}
 .r2-hog img,.r2-hog svg{width:100%;height:100%;object-fit:contain}
-.r2-hog.bump{animation:r2bump 220ms ease-out}
-@keyframes r2bump{0%{transform:none}35%{transform:translateY(5px) scaleY(.93)}100%{transform:none}}
 .r2-me{font-family:var(--head);font-weight:400;font-size:40px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:4px 30px}
 /* 박 카드 */
 .r2-beat{position:relative;background:var(--surface);border:3px solid var(--ink);border-radius:20px;display:grid;grid-template-rows:minmax(0,1fr) auto auto;justify-items:center;align-items:center;padding:6px 4px 10px;min-height:0;transition:background-color 120ms}
@@ -43,7 +41,9 @@
 .r2-mini{display:flex;gap:6px;align-items:flex-end}
 /* 보기 카드 묶음(박·리듬 칸 같은 모양) — 위 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 */
 .bexgroup{display:flex;flex-direction:column;gap:6px;min-height:0}
-.bexhead{margin:0;font-family:var(--head);font-size:20px;line-height:1.2;color:var(--ink-2)}
+.bexhead{display:flex;align-items:center;gap:8px;margin:0;font-family:var(--head);font-size:18px;line-height:1.2;color:var(--ink)}
+.bexspk{line-height:0}
+.bexgrid .excard{padding-right:48px}
 .bexgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .bspk{position:absolute;right:14px;top:12px;line-height:0;pointer-events:none}
 /* 연습 아래 줄(틀린 까닭) */
@@ -53,3 +53,6 @@
 .r2-tag:empty{display:none}
 .r2-row.call .r2-hog{width:110px;height:110px}
 .r2-lab.me .r2-tag{background:var(--ink);color:var(--paper)}
+/* 준비 박 세기 — 판 가운데 큰 숫자(세는 동안만 · 평가 3차) */
+.bcount{position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;width:150px;height:150px;border-radius:50%;background:var(--surface);border:4px solid var(--ink);box-shadow:0 6px 0 var(--ink);font-family:var(--head);font-size:120px;line-height:1;color:var(--ink);pointer-events:none}
+.r2 .bcount{left:calc(50% + 92px)}

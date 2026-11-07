@@ -2,38 +2,36 @@
    11-07 평가 2차: 하늘 판은 반으로 · 지금 선 · '지금' 막대 = 잉크(주황 X) · 지난 박 진한 점 · 남은 박 빈 동그라미 · 마디 세로줄 없음 */
 .r4-wrap{position:relative;width:100%;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) 40px;gap:8px}
 .r4-host{min-height:0;display:flex}
-.r4-play{position:relative;width:100%;min-height:0;display:grid;grid-template-rows:140px minmax(0,1fr);gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.r4-play{position:relative;width:100%;min-height:0;display:grid;grid-template-rows:90px minmax(0,1fr);gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .r4-wrap.game{grid-template-rows:minmax(0,1fr)}
-.r4-wrap.game .r4-play{grid-template-rows:150px minmax(0,1fr);gap:12px}
+.r4-wrap.game .r4-play{grid-template-rows:90px minmax(0,1fr);gap:12px}
 .cbar .go.huge{touch-action:none;-webkit-touch-callout:none}
 /* 하늘 · 고슴도치 · 풍선 */
 .r4-sky{position:relative;overflow:hidden;border:3px solid var(--ink);border-radius:22px;background:#DCEBF5;min-height:0}
-.r4-hog{position:absolute;left:162px;bottom:-4px;width:116px;height:116px;pointer-events:none}
+.r4-hog{position:absolute;left:162px;bottom:-4px;width:86px;height:86px;pointer-events:none}
 .r4-hog img,.r4-hog svg{width:100%;height:100%;object-fit:contain}
-.r4-bal{position:absolute;left:236px;height:52px;width:34px;border-radius:26px;background:var(--c);border:3px solid var(--ink);transform-origin:0 50%;transition:left 700ms ease-out,top 700ms ease-out,transform 700ms ease-out,opacity 400ms;pointer-events:none}
+.r4-bal{position:absolute;height:52px;border-radius:26px;background:var(--c);border:3px solid var(--ink);transform-origin:0 50%;will-change:transform;pointer-events:none}
 .r4-bal .knot{position:absolute;left:-9px;top:50%;width:10px;height:12px;margin-top:-6px;background:var(--c);border:3px solid var(--ink);border-radius:3px 0 0 3px}
-.r4-bal.tied{transform:scale(.5)}
+.r4-bal.tied{transition:transform 700ms ease-out}
 .r4-bal.tied::after{content:'';position:absolute;left:-4px;top:calc(50% + 6px);width:3px;height:44px;background:var(--ink);opacity:.55}
-.r4-bal.pop{transform:scale(.15);opacity:0;transition:transform 380ms ease-in,opacity 380ms}
-.r4-bal.away{transform:translate(240px,-200px) scale(.5);opacity:0;transition:transform 900ms ease-in,opacity 900ms}
+.r4-bal.pop{opacity:0;transition:transform 380ms ease-in,opacity 380ms}
+.r4-bal.away{opacity:0;transition:transform 900ms ease-in,opacity 900ms}
 /* 박 길 — --y = 막대 가운데 높이 */
 .r4-lane{--y:calc(50% + 26px);position:relative;overflow:hidden;border:3px solid var(--ink);border-radius:22px;background:#F6EFE2;min-height:0}
 .r4-track{position:absolute;left:0;top:0;height:100%;width:0;will-change:transform}
 /* 박 점 — 남은 박 = 빈 동그라미 · 지난 박 = 진한 점 */
 .r4-dot{position:absolute;top:calc(var(--y) - 11px);width:22px;height:22px;margin-left:-11px;border-radius:50%;background:var(--surface);border:3px solid var(--ink)}
 .r4-dot.past{background:var(--ink)}
-.r4-dot.cnt{top:calc(var(--y) - 9px);width:18px;height:18px;margin-left:-9px;border-color:var(--ink-2);border-style:dashed}
-.r4-dot.cnt.past{background:var(--ink-2);border-style:solid}
 .r4-note{position:absolute;top:calc(var(--y) - 28px);height:56px;border:3px solid var(--ink);border-radius:28px;background:var(--surface)}
-.r4-note .fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:25px;background:#E9D3AE}
+.r4-note .fw{position:absolute;inset:0;border-radius:25px;overflow:hidden}
+.r4-note .fill{position:absolute;inset:0;transform:translateX(-100%);background:#E9D3AE;will-change:transform}
 .r4-note .sym{position:absolute;left:0;bottom:56px;line-height:0}
 .r4-note .syl{position:absolute;left:38px;top:50%;transform:translateY(-50%);font-family:var(--head);font-weight:400;font-size:24px;line-height:1;z-index:1}
 .r4-note .pdot{position:absolute;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--surface);border:3px solid var(--ink);z-index:1}
 .r4-note .pdot.past{background:var(--ink)}
-.r4-note.h .syl{left:104px;transform:translate(-50%,-50%)}
 /* 지금 막대 — 잉크 고리 */
 .r4-note.now{box-shadow:0 0 0 3px #F6EFE2,0 0 0 7px var(--ink)}
-.r4-note.ok .fill{width:100%!important;background:var(--ok-t)}
+.r4-note.ok .fill{transform:none!important;background:var(--ok-t)}
 .r4-note.great .fill{background:#FBF0D2}
 .r4-note.ok.great{border-color:#9A6E00}
 .r4-note.short,.r4-note.long{background:var(--miss-t)}
@@ -62,13 +60,18 @@
 .r4-pbar.q{width:62px}.r4-pbar.h{width:150px;justify-content:space-between}
 .r4-ptxt b{display:block;font-family:var(--head);font-weight:400;font-size:26px;line-height:1.2}
 .r4-ptxt small{font-size:18px;color:var(--ink-2);font-weight:700}
-.r4-lanebox{min-height:0;display:grid}
+.r4-lanebox{position:relative;min-height:0;display:grid}
 .r4-show .r4-lane{--y:calc(50% + 24px)}
 .r4-ex{min-height:96px;padding:8px 18px;gap:2px}
 .r4-ex b{font-size:26px}
 .r4-mini{display:flex;gap:6px;align-items:flex-end}
 /* 보기 카드 묶음(박·리듬 칸 같은 모양) — 위 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 */
 .bexgroup{display:flex;flex-direction:column;gap:6px;min-height:0}
-.bexhead{margin:0;font-family:var(--head);font-size:20px;line-height:1.2;color:var(--ink-2)}
+.bexhead{display:flex;align-items:center;gap:8px;margin:0;font-family:var(--head);font-size:18px;line-height:1.2;color:var(--ink)}
+.bexspk{line-height:0}
+.bexgrid .excard{padding-right:48px}
 .bexgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .bspk{position:absolute;right:14px;top:12px;line-height:0;pointer-events:none}
+/* 준비 박 세기 — 판 가운데 큰 숫자(세는 동안만 · 평가 3차) */
+.bcount{position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;width:150px;height:150px;border-radius:50%;background:var(--surface);border:4px solid var(--ink);box-shadow:0 6px 0 var(--ink);font-family:var(--head);font-size:120px;line-height:1;color:var(--ink);pointer-events:none}
+.r4-lane .bcount,.r4-lanebox .bcount{left:125px}

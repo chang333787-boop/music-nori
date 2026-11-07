@@ -131,17 +131,21 @@ export default function mount(root, ctx) {
     saveStars('ri1', r.stars);                  // 마을 지도 '일정박' 칸 별
     if (room.kid.isTeacherCell('ri1')) room.kid.send('ri1', r.stars, r.kept, r.total);   // 방 번호 다같이 — 선생님 칸이면 TV로
     bar.mid(stepsUI());
-    overlay.className = 'overlay';
+    overlay.className = 'overlay result';
     overlay.replaceChildren(h('div', { class: 'panelcard resultcard', role: 'dialog', 'aria-label': '결과' },
       h('h2', {}, `${r.total}번 중 ${r.kept}번 맞혔어요`),
       replay,
-      h('div', { class: 'facts' }, `가장 길게 이어서 ${r.streak}번`, h('br'), `그중 딱 맞은 박 ${r.great}번`),
+      h('div', { class: 'facts' }, `이어서 맞힌 최고 기록 ${r.streak}번`, h('br'), `그중 딱 맞은 박 ${r.great}번`),
       h('div', { class: 'stars' }, ...STAR_RULES.map((t, k) => h('div', { class: 'star' + (r.starOn[k] ? ' on' : ''), html: STAR(r.starOn[k]) + `<span>${t}</span>` }))),
       tip ? h('div', { class: 'tip' }, tip) : null));
     overlay.hidden = false;
-    const again = h('button', { type: 'button' }, '다시');
+    const again = h('button', { type: 'button', class: r.stars === 0 ? 'go huge' : '' }, '다시');
     onPress(again, start);
-    if (step < 4) {
+    if (r.stars === 0) {
+      const pick = h('button', { type: 'button' }, '단계 고르기');
+      onPress(pick, showReady);
+      tapbar.replaceChildren(pick, again);
+    } else if (step < 4) {
       const next = h('button', { type: 'button', class: 'go huge' }, '다음 단계');
       onPress(next, () => { step++; lsSet('tap.step', step); showReady(); });
       tapbar.replaceChildren(again, next);
@@ -158,17 +162,25 @@ export default function mount(root, ctx) {
     const st = STEPS[step - 1], bpm = TEMPI[band][st.speed], beat = 60 / bpm;
     const bus = engine.bus();
     const t0 = ac.currentTime + 0.4;
-    for (let i = 0; i < COUNT; i++) engine.click(t0 + i * beat, i === 0, bus);
+    // 소리는 0.3초 앞만 예약(한 판을 한꺼번에 예약하면 노드 350개 · 느린 크롬북에서 긴 작업 — 성능 11-07)
+    const sched = [];
+    for (let i = 0; i < COUNT; i++) { const t = t0 + i * beat; sched.push({ t, f: () => engine.click(t, i === 0, bus) }); }
     const bass = [48, 53, 55, 48, 53, 55, 48];
     for (let i = 0; i < BEATS; i++) {
       const t = t0 + (COUNT + i) * beat, k = i - WARM, down = k >= 0 ? k % 4 === 0 : i === 0;
-      engine.drum(down ? 'kick' : 'hat', t, down ? 0.75 : 0.45, bus);
-      if (k >= 0 && k % 4 === 0) engine.note('marimba', bass[(k / 4) % bass.length], t, beat * 1.8, 0.5, bus);
-      if (k >= 0 && k % 4 === 2) engine.note('marimba', bass[Math.floor(k / 4) % bass.length] + 16, t, beat * 0.9, 0.32, bus);
+      sched.push({ t, f: () => {
+        engine.drum(down ? 'kick' : 'hat', t, down ? 0.75 : 0.45, bus);
+        if (k >= 0 && k % 4 === 0) engine.note('marimba', bass[(k / 4) % bass.length], t, beat * 1.8, 0.5, bus);
+        if (k >= 0 && k % 4 === 2) engine.note('marimba', bass[Math.floor(k / 4) % bass.length] + 16, t, beat * 0.9, 0.32, bus);
+      } });
     }
-    engine.note('marimba', 72, t0 + (COUNT + BEATS) * beat, beat * 2, 0.6, bus);   // 마무리 소리
+    { const t = t0 + (COUNT + BEATS) * beat; sched.push({ t, f: () => engine.note('marimba', 72, t, beat * 2, 0.6, bus) }); }   // 마무리 소리
+    let si = 0;
+    const pump = () => { while (si < sched.length && sched[si].t < ac.currentTime + 0.3) sched[si++].f(); };
+    pump();
+    const pumpTimer = setInterval(pump, 40);
     run = {
-      t0, beat, bpm, bus, helper: st.helper, win: windows(band, beat * 1000), lat: device.latencyMs,
+      t0, beat, bpm, bus, pumpTimer, helper: st.helper, win: windows(band, beat * 1000), lat: device.latencyMs,
       outLat: ac.outputLatency || ac.baseLatency || 0, end: t0 + (COUNT + BEATS) * beat + 0.3,
       state: new Array(BEATS).fill(null), at: new Array(BEATS).fill(-9), taps: [], ac,
     };
@@ -179,6 +191,7 @@ export default function mount(root, ctx) {
     showPlaying();
   }
   function stopAudio() {
+    if (run && run.pumpTimer) { clearInterval(run.pumpTimer); run.pumpTimer = 0; }
     if (!run || !run.bus) return;
     const b = run.bus, now = engine.ctx.currentTime;
     run.bus = null;
@@ -211,8 +224,8 @@ export default function mount(root, ctx) {
     mode = 'arrive';
     pauseBtn.hidden = true;
     tapbar.replaceChildren();
-    hopTo(WORLD_W - BANK_R + 70, 0.7);
-    setPose(hogPic, 'hog', 'happy');
+    if (r.stars > 0) { hopTo(WORLD_W - BANK_R + 70, 0.7); setPose(hogPic, 'hog', r.stars >= 3 ? 'happy' : 'play'); }
+    else setPose(hogPic, 'hog', 'idle');           // 별 0개 — 건너편으로 건너가 만세하지 않음(평가 3차)
     setTimeout(() => { if (mode === 'arrive') showResult(r, st); }, 1300);
   }
 

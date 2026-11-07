@@ -11,10 +11,9 @@
 .m-rung.on .m-badge{transform:scale(1.12)}
 .m-rung.ghost{background:none;border:3px dashed rgba(59,42,30,.32);box-shadow:none}
 .m-hand{margin-left:auto;font-size:18px;font-weight:700;line-height:1.2;background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:3px 12px;white-space:nowrap}
-.m-bbird{position:absolute;right:calc(15% - 48px);width:96px;height:96px;transition:bottom 200ms ease-out;pointer-events:none}
-.m-bbird img,.m-bbird svg{width:100%;height:100%;object-fit:contain}
-.m-bbird.hop img,.m-bbird.hop svg{animation:m-hop 220ms ease-out}
-@keyframes m-hop{0%{transform:none}45%{transform:translateY(-16px)}100%{transform:none}}
+/* 참새 길 — 판 높이 그대로인 투명 기둥(transform으로 올라감 · 폴짝은 el.animate) · 참새 가운데 = 기둥 바닥 */
+.m-bbird{position:absolute;top:0;bottom:0;right:calc(15% - 48px);width:96px;transition:transform 200ms ease-out;pointer-events:none}
+.m-bbird>img,.m-bbird>svg{position:absolute;left:0;bottom:-48px;width:96px;height:96px;object-fit:contain}
 
 /* 높이 그림 — 사다리 띠(계이름 색을 옅게) 위에 점 · 막대 */
 .m-pic{display:block;flex:none;overflow:visible}
@@ -23,13 +22,15 @@
 .m-join{fill:none;stroke:var(--ink);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
 .m-shape{stroke:var(--ink);stroke-width:3}
 .m-pl{font-family:var(--head);font-size:21px;fill:#fff;stroke:var(--ink);stroke-width:4px;paint-order:stroke;stroke-linejoin:round;pointer-events:none}
+.m-pic.sm .m-pl{font-size:18px;stroke-width:3.5px}
 .m-mark{transform-box:fill-box;transform-origin:center;transition:transform 110ms ease-out}
 .m-mark.on{transform:scale(1.18)}
 .m-mark.on .m-shape{stroke-width:4.5}
 
 /* 보기 — 오른쪽 묶음: "눌러서 들어 봐요" + 예시 카드 둘(스피커 · 이름 · 그림) + 노래 카드(두 칸 너비) */
 .m-excol{display:flex;flex-direction:column;justify-content:center;gap:8px;min-height:0;min-width:0}
-.m-hear{margin:0;font-family:var(--head);font-size:22px;line-height:1.3;color:var(--ink-2)}
+.m-hear{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:18px;line-height:1.3;color:#3B2A1E}
+.m-hear .m-spk{width:28px;height:28px}
 .m-exgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:0}
 .m-ex{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;min-height:0;padding:10px 16px}
 .m-exhd{display:flex;align-items:center;gap:10px;min-width:0}
@@ -47,4 +48,6 @@
 /* 계이름 답 단추 — 왼쪽 칩 = 계이름 색 동그라미 */
 .m-dot{display:block;width:44px;height:44px;border-radius:50%;background:var(--c);border:3px solid var(--ink)}
 .m-ans .ans{font-size:34px}
-.m-ans.wait .ans{opacity:.55}
+/* 듣는 동안(A.busy) '잘 들어요' — 자리를 늘 비워 두어 단추가 판마다 오르내리지 않게(위 · 아래 같은 높이 → 단추 묶음은 세로 가운데) */
+.m-busy::before,.m-busy::after{content:'잘 들어요';flex:none;align-self:center;font-family:var(--head);font-size:22px;line-height:1.3;background:var(--sun-t);border:3px solid var(--ink);border-radius:999px;padding:4px 18px;visibility:hidden}
+.m-busy.busy::before{visibility:visible}

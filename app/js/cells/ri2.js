@@ -6,7 +6,8 @@
 //  11-07 평가 2차: 준비 박 숫자 · 맞음/틀림 말은 말풍선(ui.tell) · 판 번호는 ui.count · 연습 점은 ui.practice
 //   '지금' 카드 = 잉크 고리 + 작은 세모 · 지난 박 = 진한 점 · 남은 박 = 빈 동그라미
 //  1~2학년(band low)은 머리 없는 막대 음표로 그린다.
-import { bpmOf, judgeEcho, classifyTap, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, startCard, noteSVG, palmSVG, exampleGroup, countTeller } from './_beat.js';
+//  11-07 평가 3차: 준비 박 숫자는 판 가운데 큰 숫자(세는 동안만 · 오른쪽 위 상자 X) · 반주는 네 박씩 0.3초 앞에만 예약(동시 소리 166 → 75) · ‘따’ ‘쉼’ 둥근 따옴표
+import { bpmOf, judgeEcho, classifyTap, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, startCard, noteSVG, palmSVG, exampleGroup, countTeller, barPump } from './_beat.js';
 import { windows } from '../../../engine/judge.js';
 
 const ORD = ['첫째', '둘째', '셋째', '넷째'];
@@ -34,6 +35,8 @@ const callSound = (engine, t, bus) => engine.drum('deong', t, 0.85, bus);
 const pulse = (engine, t, bus, v = 0.3) => engine.drum('hat', t, v, bus);
 const tapSound = engine => engine.drum('deok', engine.ensure().currentTime, 0.7);
 const SAY_GAME = '고슴도치가 치면, 다음 네 박에 그대로 쳐요';
+// 고슴도치가 북을 칠 때 살짝 눌림(강제 레이아웃 X — el.animate · 평가 3차 성능)
+const bump = el => { if (el.animate) el.animate([{ transform: 'none' }, { transform: 'translateY(5px) scaleY(.93)', offset: 0.35 }, { transform: 'none' }], { duration: 220, easing: 'ease-out' }); };
 
 // 박 카드 한 줄(네 칸) — 기호 · 음절 · 박 점(지난 박 = 진한 점 · 남은 박 = 빈 동그라미)
 function beatRow(kit, { label, cls }) {
@@ -63,24 +66,26 @@ const SHOW = { great: 'g', ok: 'k', miss: 'm', rest: 'rk', resthit: 'rh' };
 function echoRun(kit, ui, view, { rounds, bpm, onRound, onEnd }) {
   const { engine } = kit;
   const ac = engine.ensure();
-  const bus = newBus(engine);
+  const bus = newBus(engine), T = kit.timers();
   const beat = 60 / bpm, beatMs = beat * 1000, band = kit.band, lat = kit.device.latencyMs;
   const w = windows(band, beatMs);
   const t0 = ac.currentTime + 0.45;
   const tOf = i => t0 + i * beat;                     // i = 준비 박부터 센 박 번호
   const callAt = r => COUNT + r * 8, respAt = r => COUNT + r * 8 + 4;
   const total = COUNT + rounds.length * 8;
-  const counter = countTeller(ui);
-  // 소리 예약(모두 미리 — 화면이 버벅여도 박이 안 흔들림)
-  for (let i = 0; i < COUNT; i++) engine.click(tOf(i), i === 0, bus);
-  rounds.forEach((rd, r) => {
-    for (let i = 0; i < 4; i++) {
-      pulse(engine, tOf(callAt(r) + i), bus, i === 0 ? 0.42 : 0.3);
-      if (rd.pat[i] === 'ta') callSound(engine, tOf(callAt(r) + i), bus);
-      pulse(engine, tOf(respAt(r) + i), bus, i === 0 ? 0.42 : 0.3);
+  const counter = countTeller(view.board);
+  // 소리 예약 — 네 박(한 마디)씩, 시작 0.3초 앞에만(오디오 시계라 화면이 버벅여도 박이 안 흔들림 · 한꺼번에 걸면 소리 노드가 쌓임)
+  //  마디 0 = 준비 박 · 1, 3, 5 … = 고슴도치 차례 · 2, 4, 6 … = 내 차례 · 마지막 = 끝 화음(여러 판일 때)
+  const nBars = 1 + rounds.length * 2;
+  const pump = barPump(ac, T, nBars + (rounds.length > 1 ? 1 : 0), i => tOf(i * 4), i => {
+    if (i === 0) { for (let k = 0; k < COUNT; k++) engine.click(tOf(k), k === 0, bus); return; }
+    if (i === nBars) { engine.drum('deong', tOf(total), 0.8, bus); engine.note('marimba', 72, tOf(total), beat * 2, 0.55, bus); return; }
+    const rd = rounds[(i - 1) >> 1], call = (i - 1) % 2 === 0;
+    for (let k = 0; k < 4; k++) {
+      pulse(engine, tOf(i * 4 + k), bus, k === 0 ? 0.42 : 0.3);
+      if (call && rd.pat[k] === 'ta') callSound(engine, tOf(i * 4 + k), bus);
     }
   });
-  if (rounds.length > 1) { engine.drum('deong', tOf(total), 0.8, bus); engine.note('marimba', 72, tOf(total), beat * 2, 0.55, bus); }
   const st = rounds.map(() => ({ taps: [], marks: [null, null, null, null], done: false }));
   const runId = ++RUN;
   let cur = -1, meR = -1, lastBeat = -99, gone = false, raf = 0;
@@ -143,7 +148,7 @@ function echoRun(kit, ui, view, { rounds, bpm, onRound, onEnd }) {
       if (inCall) {
         const ta = rounds[cur].pat[k] === 'ta';
         kit.setPose(view.hog, kit.friend, ta ? 'play' : 'idle');
-        view.hogBox.classList.remove('bump'); void view.hogBox.offsetWidth; if (ta) view.hogBox.classList.add('bump');
+        if (ta) bump(view.hogBox);
         view.call.lit(k, true);
         view.tag('call', rounds[cur].hidden ? '그림 없이 들어요' : '들어요');
       } else if (inResp) { view.me.past(k - 4); kit.setPose(view.hog, kit.friend, 'idle'); view.tag('me', '쳐요!'); }
@@ -180,7 +185,7 @@ function echoRun(kit, ui, view, { rounds, bpm, onRound, onEnd }) {
   };
   return {
     tap, targets, beat, endAt: tOf(total),
-    stop() { gone = true; cancelAnimationFrame(raf); killBus(engine, bus); counter(0); },
+    stop() { gone = true; cancelAnimationFrame(raf); pump.stop(); T.clear(); killBus(engine, bus); counter(0); },
   };
 }
 
@@ -194,13 +199,13 @@ function echoView(kit) {
   const call = beatRow(kit, { label: h('div', { class: 'r2-lab' }, hogBox, callTag), cls: 'call' });
   const me = beatRow(kit, { label: h('div', { class: 'r2-lab me' }, h('b', { class: 'r2-me' }, '나'), meTag), cls: 'me' });
   const tag = (who, text) => { callTag.textContent = who === 'call' ? text : ''; meTag.textContent = who === 'me' ? text : ''; };
-  return { hog, hogBox, tag, call, me };
+  return { hog, hogBox, tag, call, me, board: null };       // board = 준비 박 숫자를 띄울 판(화면이 붙인 뒤 채움)
 }
 // 틀린 까닭 한 줄(연습)
 function why(j) {
   const bad = j.beats.findIndex(b => b.got === 'resthit' || b.got === 'miss');
   if (bad < 0) return '';
-  return j.beats[bad].got === 'resthit' ? `${ORD[bad]} 박은 '쉼'이었어요 — 손바닥을 펴요` : `${ORD[bad]} 박 '따'를 놓쳤어요`;
+  return j.beats[bad].got === 'resthit' ? `${ORD[bad]} 박은 ‘쉼’이었어요 — 손바닥을 펴요` : `${ORD[bad]} 박 ‘따’를 놓쳤어요`;
 }
 
 export default {
@@ -209,12 +214,12 @@ export default {
     const { h, onPress, engine } = kit;
     const T = kit.timers();
     const stick = kit.band === 'low';
-    ui.say("'따'는 박 하나에 소리 하나, '쉼'은 박만 흐르고 소리는 쉬어요");
+    ui.say('‘따’는 박 하나에 소리 하나, ‘쉼’은 박만 흐르고 소리는 쉬어요');
     const hog = kit.friendImg(kit.friend, 'idle', { label: false });
     const hogBox = h('div', { class: 'r2-hog big' }, hog);
     const strip = beatRow(kit, { label: h('div', { class: 'r2-lab' }, hogBox), cls: 'show' });
     strip.set(EXAMPLES[1].pat);                                   // 처음 그림부터 '따'와 '쉼'이 같이 보이게
-    const counter = countTeller(ui);
+    const counter = countTeller(strip.row);
     let bus = null, raf = 0;
     const stop = () => { cancelAnimationFrame(raf); killBus(engine, bus); bus = null; counter(0); strip.now(-1); [0, 1, 2, 3].forEach(i => strip.lit(i, false)); kit.setPose(hog, kit.friend, 'idle'); };
     const cards = EXAMPLES.map(ex => {
@@ -241,7 +246,7 @@ export default {
               strip.lit(k, true);
               const ta = ex.pat[k] === 'ta';
               kit.setPose(hog, kit.friend, ta ? 'play' : 'idle');
-              hogBox.classList.remove('bump'); void hogBox.offsetWidth; if (ta) hogBox.classList.add('bump');
+              if (ta) bump(hogBox);
             }
           }
           if (bi > COUNT + 4) { stop(); return; }
@@ -255,8 +260,8 @@ export default {
     ui.stage.append(h('div', { class: 'r2 r2-show' },
       strip.row,
       h('div', { class: 'r2-legend' },
-        h('span', { html: noteSVG('q', { stick, size: 44 }) }), h('span', {}, "4분음표 = '따' (박 하나에 소리 하나)"),
-        h('span', { html: noteSVG('qr', { size: 44 }) }), h('span', {}, "4분쉼표 = '쉼' (손바닥을 펴요)")),
+        h('span', { html: noteSVG('q', { stick, size: 44 }) }), h('span', {}, '4분음표 = ‘따’(박 하나에 소리 하나)'),
+        h('span', { html: noteSVG('qr', { size: 44 }) }), h('span', {}, '4분쉼표 = ‘쉼’(손바닥을 펴요)')),
       exampleGroup(kit, cards)));
     let k = 0;
     kit.setAuto(() => { if (k < cards.length) cards[k++].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); else kit.next(); });
@@ -273,7 +278,8 @@ export default {
     let streak = 0, run = null, n = 0, passed = false;
     const input = pressInput(ui, kit, { onDown: e => run && run.tap(e) });
     ui.setBar(...input.nodes);
-    ui.stage.append(h('div', { class: 'r2 r2-echo' }, view.call.row, view.me.row, h('div', { class: 'r2-info' }, msg)));
+    view.board = h('div', { class: 'r2 r2-echo' }, view.call.row, view.me.row, h('div', { class: 'r2-info' }, msg));
+    ui.stage.append(view.board);
     const auto = autoScheduler(T);
     function attempt() {
       if (passed) return;
@@ -288,7 +294,7 @@ export default {
             kit.sfx.good(kit.engine); streak++; ui.practice(streak);
             kit.setPose(view.hog, kit.friend, 'happy');
             ui.tell('맞아요', 'good');
-            msg.textContent = "'따'와 '쉼'을 그대로 쳤어요";
+            msg.textContent = '‘따’와 ‘쉼’을 그대로 쳤어요';
             if (streak >= 3) { passed = true; run.stop(); input.off(); kit.pass('세 번 이어서 그대로 쳤어요'); return; }
           } else {
             streak = 0; ui.practice(0);
@@ -312,6 +318,7 @@ export default {
     ui.say(SAY_GAME);
     const view = echoView(kit);
     const scene = h('div', { class: 'r2 r2-echo r2-game' }, view.call.row, view.me.row);
+    view.board = scene;
     ui.stage.append(scene);
     view.call.set(PLAN[0].pat); view.me.set(PLAN[0].pat);
     let run = null, input = null;
@@ -319,7 +326,7 @@ export default {
     const auto = autoScheduler(T);
     const sc = startCard(ui, kit, {
       title: '메기면 받기',
-      sub: ['고슴도치가 네 박을 치면, 다음 네 박에 그대로 쳐요', `'쉼' 박에는 치지 않아요 · ${PLAN.length}번`],
+      sub: ['고슴도치가 네 박을 치면, 다음 네 박에 그대로 쳐요', `‘쉼’ 박에는 치지 않아요·${PLAN.length}번`],
       onStart: () => {
         input = pressInput(ui, kit, { onDown: e => run && run.tap(e) });
         ui.setBar(...input.nodes);
@@ -351,15 +358,15 @@ export default {
       });
       const hiddenWrong = PLAN.filter((p, i) => p.hidden && !res[i]).length;
       let tip;
-      if (s.kept === s.total) tip = "'쉼'으로 시작하는 리듬과 그림 없이 듣기만 한 판까지 모두 그대로 쳤어요.";
-      else if (restHits >= misses) tip = `'쉼' 박에 친 적이 ${restHits}번 있었어요. '쉼' 박에는 손바닥을 펴요.`;
-      else if (afterRest * 2 >= misses) tip = `'쉼' 바로 다음 '따'를 ${afterRest}번 놓쳤어요. 쉬는 동안에도 박은 계속 흘러요.`;
+      if (s.kept === s.total) tip = '‘쉼’으로 시작하는 리듬과 그림 없이 듣기만 한 판까지 모두 그대로 쳤어요.';
+      else if (restHits >= misses) tip = `‘쉼’ 박에 친 적이 ${restHits}번 있었어요. ‘쉼’ 박에는 손바닥을 펴요.`;
+      else if (afterRest * 2 >= misses) tip = `‘쉼’ 바로 다음 ‘따’를 ${afterRest}번 놓쳤어요. 쉬는 동안에도 박은 계속 흘러요.`;
       else if (hiddenWrong) tip = `그림 없이 듣기만 한 판(6·7번째)에서 ${hiddenWrong}번 헷갈렸어요.`;
-      else tip = `'따'를 놓친 박이 ${misses}개 있었어요. 고슴도치 소리를 잘 듣고 그대로 쳐요.`;
+      else tip = `‘따’를 놓친 박이 ${misses}개 있었어요. 고슴도치 소리를 잘 듣고 그대로 쳐요.`;
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: res,
-        facts: [`가장 길게 이어서 ${s.streak}번`, `'쉼'을 지킨 박 ${restAll}개 중 ${restKept}개`],
+        facts: [`이어서 맞힌 최고 기록 ${s.streak}번`, `‘쉼’ 박 ${restAll}개 중 ${restKept}개를 지켰어요`],
         starOn: s.starOn, rules: s.rules, tip,
       });
     }

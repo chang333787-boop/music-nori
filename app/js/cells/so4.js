@@ -4,7 +4,9 @@
 //  보기: 예시 넷(악기 넷 · 오르는 짝 · 내리는 짝) → 연습: 세 번 이어서 맞히면 지남 → 확인 게임: 12판(옥타브 → 5도 → 3도 · 악기 바꿈)
 //  11-07 평가 2차: 소리 갈래 길잡이는 토끼 · 참새는 손님(소리를 따라 나는 새) · 나무 · 연못은 코덱스 그림 · 답은 오른쪽 답 묶음
 //   연습 = "첫 번째보다 높아요, 낮아요?" + 고른 뒤 첫 소리 자리에 옅은 새 그림자(두 자리를 견주게)
-import { exGroup, nowCard, pal, pose } from './_snd.js';
+//  11-07 평가 3차: 위 = 하늘 · 아래 = 풀밭(물 띠 안에 다시 연못 X) · 게임은 나무 왼쪽 1/3 · 연못 오른쪽 1/3 · 참새는 가운데 길만 오르내림(가지와 겹치지 않게)
+//   참새 움직임은 transform(top · bottom X) · 듣는 동안 답 묶음 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기'
+import { exGroup, nowCard, pal, pose, voice } from './_snd.js';
 
 const REF = 72;                                       // 기준 = 높은 도(C5)
 const EXAMPLES = [
@@ -28,20 +30,22 @@ const dots = up => `<svg viewBox="0 0 84 48" aria-hidden="true"><path d="M20 ${u
 const sceneImg = (kit, f, cls) => kit.h('img', { src: SCENE + f + '.webp', alt: '', draggable: 'false', class: cls });
 
 // 세로 높이 길(나무 ↔ 연못) — 참새가 소리 높이를 따라 오르내린다 · ghost = 첫 소리 자리 그림자
+//  참새는 길(사다리 높이 그대로인 .lad-way) 안에서 translateY(-n%)로 오르내림 — n% = 사다리 높이의 n%
 function ladder(kit) {
   const { h } = kit;
   const bird = h('div', { class: 'lad-bird' }, pal(kit, 'bird'));
-  const ghost = h('div', { class: 'lad-bird lad-ghost', hidden: true }, pal(kit, 'bird'));
+  const ghost = h('div', { class: 'lad-bird lad-ghost' }, pal(kit, 'bird'));
+  const way = h('div', { class: 'lad-way' }, bird), gway = h('div', { class: 'lad-way still', hidden: true }, ghost);
   const el = h('div', { class: 'ladder' },
     h('div', { class: 'lad-top' }, h('span', {}, '높게'), sceneImg(kit, 'prop_tree', 'lad-tree')),
     h('div', { class: 'lad-mid' }),
     h('div', { class: 'lad-bot' }, h('span', {}, '낮게'), sceneImg(kit, 'prop_pond', 'lad-pond')),
-    ghost, bird);
-  // p(음높이) → 0(아래) ~ 1(위)
-  const at = p => `calc(${((Math.max(0, Math.min(1, (p - 58) / (86 - 58)))) * 74 + 13).toFixed(1)}% - 50px)`;
-  const move = (p, ps = 'play') => { bird.style.bottom = at(p); pose(kit, bird.firstChild, 'bird', ps); };
-  const rest = () => { bird.style.bottom = 'calc(50% - 50px)'; pose(kit, bird.firstChild, 'bird', 'idle'); };
-  const shadow = p => { if (p == null) { ghost.hidden = true; return; } ghost.style.bottom = at(p); ghost.hidden = false; };
+    gway, way);
+  // p(음높이) → 아래에서 13% ~ 87%
+  const at = p => `translateY(-${((Math.max(0, Math.min(1, (p - 58) / (86 - 58)))) * 74 + 13).toFixed(1)}%)`;
+  const move = (p, ps = 'play') => { way.style.transform = at(p); pose(kit, bird.firstChild, 'bird', ps); };
+  const rest = () => { way.style.transform = 'translateY(-50%)'; pose(kit, bird.firstChild, 'bird', 'idle'); };
+  const shadow = p => { if (p == null) { gway.hidden = true; return; } gway.style.transform = at(p); gway.hidden = false; };
   rest();
   return { el, move, rest, shadow, bird };
 }
@@ -89,10 +93,10 @@ export default {
     ui.setBar(again);
     function ask(newOne = true) {
       if (newOne) { const iv = [12, 7, 5][Math.floor(r() * 3)] * (r() < 0.5 ? 1 : -1); cur = { b: REF + iv }; }
-      busy = true; A.clear(); ui.say(ASK);
+      busy = true; A.clear(); A.busy(true); ui.say(ASK);
       const s = kit.playSeq(engine, [{ p: REF, d: 0.5, gap: 0.25 }, { p: cur.b, d: 0.6 }], { inst: 'xylo' });
       lad.move(REF, 'idle'); lad.shadow(null);
-      T.after(kit.msUntil(s.ac, s.end), () => { busy = false; });
+      T.after(kit.msUntil(s.ac, s.end), () => { busy = false; A.busy(false); });
     }
     function answer(up) {
       if (busy || !cur) return;
@@ -125,9 +129,9 @@ export default {
   // ── 확인 게임: 나무일까, 연못일까 — 12판 · 한 판 약 4초 ──
   game(ui, kit) {
     const { h, onPress, engine } = kit;
-    const T = kit.timers();
+    const T = kit.timers(), V = voice(engine);      // 소리 길(다시 듣기 때 앞 소리를 끔)
     const results = [];
-    let i = -1, cur = null, open = false, gone = false;
+    let i = -1, cur = null, open = false, gone = false, listen = 0;
     ui.say('높으면 나무, 낮으면 연못을 눌러요');
     const bird = h('div', { class: 'g-bird', 'data-at': 'mid' }, pal(kit, 'bird'));
     const tree = h('div', { class: 'g-zone g-tree' }, sceneImg(kit, 'prop_tree', 'g-tree-img'));
@@ -139,15 +143,25 @@ export default {
     ], k => answer(k === 'up'));
     const start = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
       h('h2', {}, '나무일까, 연못일까?'),
-      h('p', { class: 'sub' }, '두 번째 소리가 첫 번째보다 높은지 낮은지 들어요'),
-      h('p', { class: 'sub' }, '12번 · 키보드 ', h('span', { class: 'kbd' }, '↑'), ' ', h('span', { class: 'kbd' }, '↓'), ' 도 돼요')));
+      h('p', { class: 'sub' }, '두 번째 소리가 첫 번째보다 높은지 낮은지 12번 들어요'),
+      h('p', { class: 'sub' }, '키보드 ', h('span', { class: 'kbd' }, '↑'), ' ', h('span', { class: 'kbd' }, '↓'), ' 도 돼요')));
     ui.stage.append(h('div', { class: 'g-wrap' }, scene, A.el), start);
     const birdTo = (where, ps) => { bird.dataset.at = where; pose(kit, bird.firstChild, 'bird', ps); };
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
-    onPress(startBtn, () => { start.remove(); ui.setBar(); next(); });
+    const again = h('button', { type: 'button' }, '다시 듣기');
+    onPress(startBtn, () => { start.remove(); ui.setBar(again); next(); });
+    onPress(again, () => { if (open) hear(); });       // 고르기 전이면 언제든 한 번 더(놓침 시계도 다시)
     ui.setBar(startBtn);
     kit.setAuto(() => { if (start.isConnected) press(startBtn); else if (open) answer(cur.b > REF); });
 
+    // 두 소리 듣기(처음 · 다시 듣기) — 두 번째 소리가 나오면 고를 수 있음
+    function hear() {
+      const my = ++listen;
+      open = false; A.busy(true); birdTo('mid', 'idle'); V.hush();
+      const s = kit.playSeq(engine, [{ p: REF, d: 0.42, gap: 0.2 }, { p: cur.b, d: 0.5 }], { inst: cur.inst, out: V.out });
+      T.after(kit.msUntil(s.ac, s.starts[1]), () => { if (my !== listen || gone) return; open = true; A.busy(false); });
+      T.after(kit.msUntil(s.ac, s.end) + 2600, () => { if (my === listen && open) answer(null); });   // 3초 넘게 고르지 않으면 놓침
+    }
     function next() {
       if (gone) return;
       i++;
@@ -155,15 +169,12 @@ export default {
       const [iv, inst] = PLAN[i];
       cur = { b: REF + iv, inst };
       ui.count(i + 1, PLAN.length);
-      birdTo('mid', 'idle'); A.clear();
-      const s = kit.playSeq(engine, [{ p: REF, d: 0.42, gap: 0.2 }, { p: cur.b, d: 0.5 }], { inst });
-      open = false;
-      T.after(kit.msUntil(s.ac, s.starts[1]), () => { open = true; });
-      T.after(kit.msUntil(s.ac, s.end) + 2600, () => { if (open) answer(null); });   // 3초 넘게 고르지 않으면 놓침
+      A.clear();
+      hear();
     }
     function answer(up) {
       if (!open) return;
-      open = false;
+      open = false; listen++;
       const want = cur.b > REF, right = up === want;
       results.push(right);
       if (right) { kit.sfx.good(engine); birdTo(want ? 'top' : 'bot', 'happy'); A.mark(up ? 'up' : 'down', 'right'); ui.tell('맞아요', 'good'); }
@@ -176,7 +187,8 @@ export default {
       T.after(right ? 750 : 1150, next);
     }
     function end() {
-      bird.hidden = true; ui.tell(null); ui.count(null); A.clear();   // 결과 옆 친구는 칸 화면이 붙임
+      listen++;
+      bird.hidden = true; ui.tell(null); ui.count(null); A.clear(); A.busy(false); ui.setBar();   // 결과 옆 친구는 칸 화면이 붙임
       const s = kit.scoreChoices(results, 5);
       const wrongSmall = PLAN.map((p, k) => !results[k] && Math.abs(p[0]) <= 5).filter(Boolean).length;
       const wrongDown = PLAN.map((p, k) => !results[k] && p[0] < 0).filter(Boolean).length;
@@ -186,12 +198,12 @@ export default {
       else if (wrongSmall >= Math.ceil(wrong / 2)) tip = '높이 차이가 작을 때(9번째부터) 헷갈렸어요. 두 소리를 따라 불러 보면 잘 들려요.';
       else if (wrongDown > wrong / 2) tip = '낮아지는 소리를 더 많이 놓쳤어요.';
       else tip = '높아지는 소리를 더 많이 놓쳤어요.';
-      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`가장 길게 이어서 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
     }
     // 나무 · 연못을 직접 눌러도 됨
     onPress(tree, () => answer(true)); onPress(pond, () => answer(false));
     const onKey = e => { if (e.key === 'ArrowUp' || e.key === '1') { e.preventDefault(); answer(true); } else if (e.key === 'ArrowDown' || e.key === '2') { e.preventDefault(); answer(false); } };
     window.addEventListener('keydown', onKey);
-    return () => { gone = true; T.clear(); window.removeEventListener('keydown', onKey); };
+    return () => { gone = true; T.clear(); V.hush(); window.removeEventListener('keydown', onKey); };
   },
 };

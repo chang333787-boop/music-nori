@@ -103,10 +103,10 @@ export const IMG_DIR = 'app/img/band/';
 // 있는 그림 — 없는 자세는 가까운 자세로 바꿔 받는다(없는 파일을 찾느라 404가 나지 않게). 그림이 더 들어오면 여기에 더한다
 export const POSES = {
   hog: ['idle', 'play', 'jump', 'oops', 'happy', 'face'],
-  bird: ['idle', 'play', 'face'],
-  bunny: ['idle', 'play', 'face'],
-  turtle: ['idle', 'play', 'face'],
-  bear: ['idle', 'play', 'face'],
+  bird: ['idle', 'play', 'face', 'happy', 'oops'],
+  bunny: ['idle', 'play', 'face', 'happy', 'oops'],
+  turtle: ['idle', 'play', 'face', 'happy', 'oops'],
+  bear: ['idle', 'play', 'face', 'happy', 'oops'],
 };
 const NEAR = { happy: 'play', jump: 'play', oops: 'idle', face: 'idle', play: 'idle' };
 export function poseOf(key, pose) {

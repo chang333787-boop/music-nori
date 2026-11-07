@@ -6,7 +6,8 @@
 //  길이는 가로 길이로(화면 약속) — 풍선도 길게 늘어난다
 //  11-07 평가 2차: 긴 음 다루는 말은 하나로(HOW) · 준비 박 숫자 · 판정 말은 말풍선(ui.tell) · 음 번호는 ui.count · 연습 점은 ui.practice
 //   지금 선(재생선)과 '지금' 막대 = 잉크 · 지난 박 = 진한 점 · 남은 박 = 빈 동그라미 · 마디 세로줄은 리5(마디)에서 배우므로 여기선 그리지 않음
-import { bpmOf, releaseGrade, HOLD_WIN, layoutNotes, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, fireUp, startCard, noteSVG, SYL, LEN, exampleGroup, countTeller } from './_beat.js';
+//  11-07 평가 3차: 하늘 띠 90px · 준비 박 점 X(숫자는 길 왼쪽 빈 곳 · 세는 동안만) · ‘따’ ‘따아’ 모두 왼쪽 정렬 · 막대 채움 · 풍선은 transform · 반주는 한 마디씩 예약
+import { bpmOf, releaseGrade, HOLD_WIN, layoutNotes, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, fireUp, startCard, noteSVG, SYL, LEN, exampleGroup, countTeller, barPump } from './_beat.js';
 import { windows } from '../../../engine/judge.js';
 
 const PX = 170, COUNT = 4, PITCH = 67;                      // 박 하나 = 170px · 솔(G4) 한 음
@@ -34,14 +35,14 @@ function laneView(kit, bars, { scroll = true } = {}) {
   { let b = 0; for (const bar of bars) for (const k of bar) { if (k === 'qr') rests.push(b); b += LEN[k]; } }
   const track = h('div', { class: 'r4-track' });
   const dots = [];                                            // { el, b } — 지난 박이면 진하게
-  for (let b = scroll ? -COUNT : 0; b < beats; b++) {
-    const el = h('i', { class: 'r4-dot' + (b < 0 ? ' cnt' : ''), style: { left: `${b * PX}px` } });
+  for (let b = 0; b < beats; b++) {                           // 준비 박은 점으로 그리지 않음(판 가운데 숫자로 셈 · 평가 3차: 맨 앞 뜻 없는 회색 점)
+    const el = h('i', { class: 'r4-dot', style: { left: `${b * PX}px` } });
     track.append(el); dots.push({ el, b });
   }
   const els = notes.map(n => {
     const fill = h('i', { class: 'fill' });
     const el = h('div', { class: 'r4-note ' + n.kind, style: { left: `${n.beat * PX - 22}px`, width: `${n.len * PX - 20}px` } },
-      fill, h('span', { class: 'sym', html: noteSVG(n.kind, { stick, size: 56 }) }), h('b', { class: 'syl' }, sylOf(n.kind)));
+      h('i', { class: 'fw' }, fill), h('span', { class: 'sym', html: noteSVG(n.kind, { stick, size: 56 }) }), h('b', { class: 'syl' }, sylOf(n.kind)));
     track.append(el);
     // 막대 위 박 점(이 음이 차지하는 박마다 하나 — 2분음표는 둘이 한 막대로 이어진다)
     for (let j = 0; j < n.len; j++) { const d = h('i', { class: 'pdot', style: { left: `${19 + j * PX}px` } }); el.append(d); dots.push({ el: d, b: n.beat + j }); }
@@ -62,7 +63,7 @@ function laneView(kit, bars, { scroll = true } = {}) {
       track.style.transform = `translateX(${x0}px)`;
       hit.style.transform = `translateX(${(x0 + Math.max(-0.5, Math.min(beats - 0.3, nowBeat)) * PX).toFixed(1)}px)`;
     },
-    fillTo(i, p) { els[i].fill.style.width = `${(Math.max(0, Math.min(1, p)) * 100).toFixed(1)}%`; },
+    fillTo(i, p) { els[i].fill.style.transform = `translateX(${((Math.max(0, Math.min(1, p)) - 1) * 100).toFixed(1)}%)`; },   /* 너비 대신 옮기기(레이아웃 X · 평가 3차) */
     mark(i, cls) { els[i].el.classList.remove('now', 'ok', 'great', 'short', 'long', 'miss'); if (cls) els[i].el.classList.add(...cls.split(' ')); },
     now(i, on) { els[i].el.classList.toggle('now', on); },
   };
@@ -74,28 +75,26 @@ function skyView(kit) {
   const hog = kit.friendImg(kit.friend, 'idle', { label: false });
   const hogBox = h('div', { class: 'r4-hog' }, hog);
   const sky = h('div', { class: 'r4-sky' }, hogBox);
-  const ROW0 = 420;
-  let slot = 0, n = 0, rowX = [ROW0, ROW0];
+  //  평가 3차: 하늘 띠 90px · 풍선은 너비 대신 transform으로 커짐(레이아웃 X) — 처음부터 다 분 모양(4분 = 둥근 풍선 · 2분 = 긴 풍선)을 작게 시작
+  const ROW0 = 420, X0 = 244, Y0 = 19, ROWY = [2, 38];
+  let n = 0, rowX = [ROW0, ROW0];
   function balloon(len) {
-    const color = BAL[n++ % BAL.length];
-    const el = h('div', { class: 'r4-bal' + (len >= 2 ? ' long' : ''), style: { '--c': color, top: `${Math.max(40, sky.clientHeight - 122)}px` } }, h('i', { class: 'knot' }));
+    const color = BAL[n++ % BAL.length], W = len >= 2 ? 146 : 60;
+    const el = h('div', { class: 'r4-bal' + (len >= 2 ? ' long' : ''), style: { '--c': color, left: `${X0}px`, top: `${Y0}px`, width: `${W}px` } }, h('i', { class: 'knot' }));
     sky.append(el);
-    const W = p => (len >= 2 ? 34 + 112 * p : 34 + 26 * p);
-    const grow = p => { el.style.width = `${W(Math.max(0, Math.min(1, p))).toFixed(1)}px`; };
+    const grow = p => { el.style.transform = `scale(${(0.3 + 0.7 * Math.max(0, Math.min(1, p))).toFixed(3)})`; };
     grow(0);
     return {
       grow,
-      tie() {                                   // 줄에 매달기(성공한 풍선이 하늘에 남는다)
-        grow(1);
-        const w = W(1) * 0.5, lim = sky.clientWidth - 30, row = rowX[0] + w > lim ? 1 : 0;
+      tie() {                                   // 줄에 매달기(성공한 풍선이 하늘에 남는다) — 옮기기도 transform
+        const w = W * 0.5, lim = sky.clientWidth - 30, row = rowX[0] + w > lim ? 1 : 0;
         if (rowX[row] + w > lim) rowX = [ROW0, ROW0];
         const x = rowX[row]; rowX[row] += w + 8;
         el.classList.add('tied');
-        el.style.left = `${x}px`; el.style.top = `${row ? 74 : 16}px`;
-        slot++;
+        el.style.transform = `translate(${x - X0}px,${ROWY[row] - Y0}px) scale(.5)`;
       },
-      pop() { el.classList.add('pop'); setTimeout(() => el.remove(), 450); },
-      away() { el.classList.add('away'); setTimeout(() => el.remove(), 900); },
+      pop() { el.classList.add('pop'); el.style.transform = 'scale(.15)'; setTimeout(() => el.remove(), 450); },
+      away() { el.classList.add('away'); el.style.transform = 'translate(240px,-160px) scale(.5)'; setTimeout(() => el.remove(), 900); },
     };
   }
   return { sky, hog, hogBox, balloon };
@@ -110,18 +109,22 @@ function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
   const w = windows(band, beatMs), relLate = (HOLD_WIN[band] || HOLD_WIN.mid)[1];
   const t0 = ac.currentTime + 0.5 + COUNT * beat;            // 첫 박(준비 박 다음)
   const tOf = b => t0 + b * beat;
-  const runId = ++RUN;
-  // 박자기 · 반주(마디 첫 박에 낮은 소리 · 박마다 작은 소리)
-  for (let i = 0; i < COUNT; i++) engine.click(tOf(i - COUNT), i === 0, bus);
-  for (let b = 0; b < lane.beats; b++) {
-    engine.drum('hat', tOf(b), b % 4 === 0 ? 0.4 : 0.28, bus);
-    if (b % 4 === 0) engine.note('marimba', [48, 53, 55, 48][(b / 4) % 4], tOf(b), beat * 1.6, 0.4, bus);
-  }
-  engine.note('marimba', 60, tOf(lane.beats), beat * 2, 0.45, bus);
+  const runId = ++RUN, T = kit.timers();
+  // 박자기 · 반주(마디 첫 박에 낮은 소리 · 박마다 작은 소리) — 한 마디씩, 시작 0.3초 앞에만 예약(평가 3차 성능)
+  //  마디 0 = 준비 박 · 1 … nb = 마디 · nb + 1 = 끝 음
+  const nb = Math.ceil(lane.beats / 4);
+  const pump = barPump(ac, T, nb + 2, i => tOf((i - 1) * 4), i => {
+    if (i === 0) { for (let k = 0; k < COUNT; k++) engine.click(tOf(k - COUNT), k === 0, bus); return; }
+    if (i === nb + 1) { engine.note('marimba', 60, tOf(lane.beats), beat * 2, 0.45, bus); return; }
+    for (let b = (i - 1) * 4; b < Math.min(i * 4, lane.beats); b++) {
+      engine.drum('hat', tOf(b), b % 4 === 0 ? 0.4 : 0.28, bus);
+      if (b % 4 === 0) engine.note('marimba', [48, 53, 55, 48][(b / 4) % 4], tOf(b), beat * 1.6, 0.4, bus);
+    }
+  });
   const notes = lane.notes.map(n => ({ ...n, at: tOf(n.beat), res: null, press: null, down: null, bal: null }));
   let holding = null, tone = null, gone = false, raf = 0, ended = false, nextN = 0;
   const atMs = n => perfOf(ac, n.at);
-  const counter = countTeller(ui);
+  const counter = countTeller(lane.lane);
   const say = (t, k) => ui.tell(t, k, 800);                  // 판정 말 = 말풍선(무대 위에 겹쳐 그리지 않음)
 
   function down(e) {
@@ -202,7 +205,7 @@ function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
   });
   return {
     down, up, targets,
-    stop() { gone = true; cancelAnimationFrame(raf); if (tone) { tone.stop(ac.currentTime); tone = null; } killBus(engine, bus); counter(0); },
+    stop() { gone = true; cancelAnimationFrame(raf); pump.stop(); T.clear(); if (tone) { tone.stop(ac.currentTime); tone = null; } killBus(engine, bus); counter(0); },
   };
 }
 
@@ -226,14 +229,14 @@ export default {
       h('span', { class: 'r4-psym', html: noteSVG(kind, { stick, size: 64 }) }),
       h('span', { class: 'r4-pbar ' + kind }, ...Array.from({ length: beats }, () => h('i'))),
       h('span', { class: 'r4-ptxt' }, h('b', {}, text), h('small', {}, sub)));
-    const counter = countTeller(ui);
+    const counter = countTeller(laneBox);
     let bus = null, raf = 0;
     const stop = () => { cancelAnimationFrame(raf); killBus(engine, bus); bus = null; counter(0); kit.setPose(hog, kit.friend, 'idle'); };
     const cards = EXAMPLES.map(ex => {
-      const btn = h('button', { type: 'button', class: 'excard r4-ex', 'aria-label': `${ex.name} · ${ex.inName} 들어 보기` },
+      const btn = h('button', { type: 'button', class: 'excard r4-ex', 'aria-label': `${ex.name}·${ex.inName} 들어 보기` },
         h('b', {}, ex.bars[0].map(sylOf).join(' ')),
         h('span', { class: 'r4-mini', html: ex.bars[0].map(k => noteSVG(k, { stick, size: 38 })).join('') }),
-        h('span', {}, `${ex.name} · ${ex.inName}`));
+        h('span', {}, `${ex.name}·${ex.inName}`));
       onPress(btn, () => {
         stop();
         const nl = laneView(kit, ex.bars, { scroll: false });
@@ -260,8 +263,8 @@ export default {
     });
     ui.stage.append(h('div', { class: 'r4 r4-show' },
       h('div', { class: 'r4-pairs' }, h('div', { class: 'r4-shog' }, hog),
-        pair('q', 1, '4분음표 = 박 하나', "'따' · 손뼉 한 번"),
-        pair('h', 2, '2분음표 = 박 둘', "'따아' · 소리가 두 박 동안 이어져요")),
+        pair('q', 1, '4분음표 = 박 하나', '‘따’·손뼉 한 번'),
+        pair('h', 2, '2분음표 = 박 둘', '‘따아’·소리가 두 박 동안 이어져요')),
       laneBox,
       exampleGroup(kit, cards)));
     requestAnimationFrame(() => lane.place(-1));
@@ -297,15 +300,15 @@ export default {
           if (bad < 0) {
             kit.sfx.good(kit.engine); streak++; ui.practice(streak);
             ui.tell('맞아요', 'good');
-            msg.textContent = "'따'는 한 박, '따아'는 두 박 동안 눌렀어요";
+            msg.textContent = '‘따’는 한 박, ‘따아’는 두 박 동안 눌렀어요';
             if (streak >= 3) { passed = true; run.stop(); input.off(); kit.pass('세 번 이어서 길이를 맞혔어요'); return; }
           } else {
             streak = 0; ui.practice(0);
             ui.tell('다시 들어 봐요', 'oops', 1500);
             const kind = sc.lane.notes[bad].kind, x = res[bad];
             msg.textContent = x.press === 'miss' ? `${bad + 1}번째 음을 놓쳤어요 — 막대가 선에 닿을 때 눌러요`
-              : x.rel === 'short' ? "'따아'(2분음표)를 일찍 뗐어요 — 막대가 끝날 때까지 꾹 누르고 있어요"
-                : kind === 'q' ? "'따'(4분음표)는 한 박만 — 짧게 눌렀다 떼요" : "'따아'는 두 박까지만 — 막대가 끝나면 떼요";
+              : x.rel === 'short' ? '‘따아’(2분음표)를 일찍 뗐어요 — 막대가 끝날 때까지 꾹 누르고 있어요'
+                : kind === 'q' ? '‘따’(4분음표)는 한 박만 — 짧게 눌렀다 떼요' : '‘따아’는 두 박까지만 — 막대가 끝나면 떼요';
           }
           T.after(1500, attempt);
         },
@@ -329,7 +332,7 @@ export default {
     const auto = autoScheduler(T);
     const card = startCard(ui, kit, {
       title: '풍선 불기',
-      sub: [h('p', { class: 'sub r4-cardpair', html: `${noteSVG('q', { stick: kit.band === 'low', size: 46 })}<span>'따' = 한 박</span>${noteSVG('h', { size: 46 })}<span>'따아' = 두 박</span>` }),
+      sub: [h('p', { class: 'sub r4-cardpair', html: `${noteSVG('q', { stick: kit.band === 'low', size: 46 })}<span>‘따’ = 한 박</span>${noteSVG('h', { size: 46 })}<span>‘따아’ = 두 박</span>` }),
         '꾹 누르고 있다가 막대가 끝나면 떼요', `음 ${total}개`],
       onStart: () => {
         input = pressInput(ui, kit, { onDown: e => run && run.down(e), onUp: e => run && run.up(e), label: '꾹!', aria: '꾹 — 누르고 있기' });
@@ -356,13 +359,13 @@ export default {
       let tip;
       if (s.kept === s.total) tip = '4분음표는 한 박, 2분음표는 두 박 — 길이를 모두 맞게 눌렀어요.';
       else if (shortH >= Math.max(longQ, longH, miss)) tip = `2분음표를 일찍 뗀 적이 ${shortH}번 있었어요. 막대가 끝날 때까지 꾹 누르고 있어요.`;
-      else if (longQ >= Math.max(longH, miss)) tip = `4분음표를 길게 누른 적이 ${longQ}번 있었어요. '따'는 한 박만 — 짧게 눌렀다 떼요.`;
+      else if (longQ >= Math.max(longH, miss)) tip = `4분음표를 길게 누른 적이 ${longQ}번 있었어요. ‘따’는 한 박만 — 짧게 눌렀다 떼요.`;
       else if (longH >= miss) tip = `2분음표를 두 박보다 오래 누른 적이 ${longH}번 있었어요. 막대가 끝나면 떼요.`;
       else tip = `누르는 때를 놓친 음이 ${miss}개 있었어요. 막대가 선에 닿을 때 눌러요.`;
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: ok, group: PLAN.map(b => b.filter(k => !k.endsWith('r')).length),   /* 다시 보기는 마디마다 끊음 */
-        facts: [`가장 길게 이어서 ${s.streak}번`, `2분음표 ${hAll}개 중 ${hOk}개를 두 박 동안 눌렀어요`],
+        facts: [`이어서 맞힌 최고 기록 ${s.streak}번`, `2분음표 ${hAll}개 중 ${hOk}개를 두 박 동안 눌렀어요`],
         starOn: s.starOn, rules: s.rules, tip,
       });
     }

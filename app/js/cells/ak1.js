@@ -7,8 +7,10 @@
 //  확인 게임: 네 줄(줄마다 8박 · 넷 세고 시작) — 소개 → 발전(긴 막대가 먼저) → 비틀기(빨라지고 자주 바뀜) → 마무리(자작 곡 앞 두 마디)
 //  때는 너그럽게(engine/judge.js 'low' 창 = 이르게 150ms · 늦게 180ms) · 높이가 맞아야 맞음 · 실수해도 줄은 끝까지 흐른다
 //  11-07 평가 2차: 아이 화면에서 위 · 아래 띠를 '줄'이라 부르지 않는다('줄'은 오선에서만 — 여기는 '위 · 아래') · 넷 세기와 판정 말은 맨 위 말풍선(ui.tell)
-//   번호 "1 / 4" · 결과 "높이 23개 다 맞힘 · 박자 맞춤 17개" · 4박마다 굵은 세로선 X(마디는 ri5에서 배움)
-import { voice, exGroup, nowCard, pal, pose } from './_snd.js';
+//   4박마다 굵은 세로선 X(마디는 ri5에서 배움)
+//  11-07 평가 3차: 번호 = 막대 수 "3 / 23"(결과 단위와 같게) · 결과 "높이 23개 중 12개, 박자 23개 중 3개를 맞혔어요"
+//   넷 세기는 오른쪽 위 상자 X → 악보 가운데 큰 숫자(세는 동안만) · 게임 아래 띠 = 악보 넷 중 몇째 + 키보드 · 박 소리는 0.3초 앞만 예약
+import { voice, exGroup, nowCard, pal, pose, shake } from './_snd.js';
 import { windows } from '../../../engine/judge.js';
 import { audioToPerf } from '../clock.js';
 import { SONGS } from '../../../engine/songs/index.js';
@@ -100,7 +102,7 @@ function score(kit, n, { keys = false, rowh = 140, head = 70 } = {}) {
   const el = h('div', { class: 'pscore' + (keys ? ' keys' : ''), style: { '--rowh': rowh + 'px', '--headh': head + 'px', '--n': String(n) } }, sheet, ...keyEls, track);
   let bars = [], beats = 8, px = 0;
   const api = {
-    el, keys: keyEls, lanes,
+    el, keys: keyEls, lanes, track,
     set(notes, total) {
       beats = total;
       for (const l of lanes) l.inner.replaceChildren();
@@ -121,6 +123,8 @@ function score(kit, n, { keys = false, rowh = 140, head = 70 } = {}) {
       line.style.transform = `translateX(${(beat * px).toFixed(1)}px)`;
     },
     measure() { px = lanes[0].inner.clientWidth / beats; },
+    // 높이 단추 표시 — 누른 틀린 단추 회색 · 맞는 단추 초록 테두리 + ✓(답 묶음과 같은 말 · 평가 3차) · null = 지움
+    markKeys(wrong, right) { keyEls.forEach((k, r) => { k.classList.toggle('wrong', r === wrong); k.classList.toggle('right', r === right); }); },
     pose(p) { pose(kit, turtle.firstChild, 'turtle', p); },
     showHead(on) { line.hidden = !on; },
   };
@@ -185,7 +189,7 @@ export default {
     const { h, onPress, engine } = kit;
     const n = rowsFor(kit), T = kit.timers(), V = voice(engine), rnd = kit.rng();
     const R = ROWS[n], beat = 60 / FOLLOW_BPM;
-    const ASK = n === 3 ? '막대가 위 · 가운데 · 아래 어디에 있나요? 그 단추를 눌러요' : '막대가 위에 있나요, 아래에 있나요? 그쪽 단추를 눌러요';
+    const ASK = n === 3 ? '막대가 위·가운데·아래 어디에 있나요? 그 단추를 눌러요' : '막대가 위에 있나요, 아래에 있나요? 그쪽 단추를 눌러요';
     ui.say(ASK);
     const S = score(kit, n, { keys: true, rowh: n === 3 ? 96 : 128, head: 76 });
     let streak = 0, notes = [], bars = [], idx = 0, busy = true, passed = false;
@@ -203,6 +207,7 @@ export default {
     function press(r) {
       if (busy || passed || !notes.length) return;
       const nt = notes[idx], bar = bars[idx];
+      S.markKeys(null, null);
       if (r === nt.r) {
         busy = true;
         const ac = engine.ensure(), t = ac.currentTime + 0.02, len = nt.d * beat;
@@ -222,7 +227,7 @@ export default {
       } else {
         kit.sfx.oops(engine); streak = 0; ui.practice(0); S.pose('oops');
         ui.tell('다시 눌러 봐요', 'oops'); ui.say(`이 막대는 ${R.at[nt.r]}에 있어요 — ${R.name[nt.r]} 단추예요`);
-        bar.classList.remove('nope'); void bar.offsetWidth; bar.classList.add('nope');
+        shake(bar); S.markKeys(r, nt.r);                // 다음에 누를 때까지 맞는 단추에 ✓
         busy = true; T.after(450, () => { busy = false; S.pose('idle'); });
       }
     }
@@ -242,20 +247,31 @@ export default {
     const n = rowsFor(kit), T = kit.timers(), V = voice(engine);
     const R = ROWS[n];
     const lines = LINES[n].map(d => toBars(d, n));
-    let li = -1, run = null, mode = 'ready', raf = 0, gone = false, rushed = 0, cnt = -1;
+    const totalBars = lines.reduce((a, L) => a + L.notes.length, 0);
+    let li = -1, run = null, mode = 'ready', raf = 0, gone = false, rushed = 0, cnt = -1, judged = 0, markT = 0;
     const all = [];                                   // 막대마다 { st, long, afterLong }
     ui.say('거북이 막대에 닿으면 그 높이 단추를 눌러요');
     const S = score(kit, n, { keys: true, rowh: n === 3 ? 104 : 156, head: 84 });
+    // 넷 세기 — 악보 가운데 큰 숫자(세는 동안만 · 평가 3차: 오른쪽 위 상자 X)
+    const cnum = h('div', { class: 'ak-count', hidden: true, 'aria-live': 'polite' });
+    S.track.append(cnum);
     const scene = h('div', { class: 'ak-scene' }, S.el);
     const start = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
       h('h2', {}, '그림 악보 따라 연주'),
-      h('p', { class: 'sub' }, '악보 네 개 · 하나, 둘, 셋, 넷 세고 시작해요'),
+      h('p', { class: 'sub' }, `악보 네 개 — 하나, 둘, 셋, 넷 세고 시작해요`),
       h('p', { class: 'sub' }, '키보드 ', ...R.keys.flatMap((k, j) => [j ? ' ' : null, h('span', { class: 'kbd' }, k)]), ' 도 돼요')));
     ui.stage.append(scene, start);
     S.set(lines[0].notes, lines[0].beats);
+    // 아래 띠(노는 동안) — 악보 넷 중 몇째 + 키보드 키캡(두드리는 화면 약속)
+    const sheetDots = lines.map(() => h('i'));
+    const playBar = h('div', { class: 'ak-bar' },
+      h('span', { class: 'ak-prog' }, '악보', h('span', { class: 'ak-dots', 'aria-hidden': 'true' }, ...sheetDots)),
+      h('span', { class: 'ak-keys' }, '키보드 ', ...R.keys.flatMap((k, j) => [j ? ' ' : null, h('span', { class: 'kbd' }, k)]), ' 도 돼요'));
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
-    onPress(startBtn, () => { start.remove(); ui.setBar(); S.measure(); T.after(200, nextLine); });
+    onPress(startBtn, () => { start.remove(); ui.setBar(playBar); ui.count(1, totalBars); S.measure(); T.after(200, nextLine); });
     ui.setBar(startBtn);
+    // 막대 하나가 판정될 때마다 번호(다음 막대 · 결과 단위와 같은 '막대 수')
+    const judgedOne = () => { judged++; ui.count(Math.min(totalBars, judged + 1), totalBars); };
 
     function nextLine() {
       if (gone) return;
@@ -264,12 +280,12 @@ export default {
       const L = lines[li];
       const bars = S.set(L.notes, L.beats);
       S.measure();
-      ui.count(li + 1, lines.length); cnt = -1;
+      sheetDots.forEach((d, k) => { d.className = k < li ? 'done' : k === li ? 'now' : ''; });
+      cnt = -1;
       const ac = engine.ensure(), beat = 60 / L.bpm, t0 = ac.currentTime + 0.5, tStart = t0 + 4 * beat;
       for (let k = 0; k < 4; k++) V.click(t0 + k * beat, k === 0);
-      for (let k = 0; k < L.beats; k++) engine.drum('hat', tStart + k * beat, 0.22, V.out);   // 박 소리(작게)
       run = {
-        L, bars, ac, beat, t0, tStart, end: tStart + L.beats * beat,
+        L, bars, ac, beat, t0, tStart, end: tStart + L.beats * beat, hat: 0,
         outLat: ac.outputLatency || ac.baseLatency || 0, lat: device.latencyMs || 0,
         win: windows('low', beat * 1000),
         notes: L.notes.map((nt, k) => ({ ...nt, t: tStart + nt.b * beat, st: null, k })),
@@ -298,6 +314,7 @@ export default {
       const len = best.d * run.beat * 0.92;
       V.note(INST, R.p[r], now + 0.01, len, 0.6);     // 누르면 막대 길이만큼 소리
       const bar = run.bars[best.k];
+      clearTimeout(markT); S.markKeys(null, null);
       if (r === best.r) {
         best.st = bestAbs <= run.win.great ? 'great' : 'ok';
         bar.classList.add(best.st === 'great' ? 'gg' : 'g', 'on');
@@ -307,7 +324,9 @@ export default {
         best.st = 'wrong';
         bar.classList.add('m');
         ui.tell('삐끗', 'oops', 700); S.pose('oops');
+        S.markKeys(r, best.r); markT = setTimeout(() => S.markKeys(null, null), 450);   // 잠깐 — 흐름은 멈추지 않음
       }
+      judgedOne();
     }
     function loop() {
       if (gone) return;
@@ -315,12 +334,18 @@ export default {
         const now = run.ac.currentTime - run.outLat;
         const b = (now - run.tStart) / run.beat;
         S.headAt(Math.max(0, Math.min(run.L.beats, b)));
-        // 넷 세기 — 맨 위 말풍선에 1 2 3 4(박마다 한 번만 바꿈)
+        // 박 소리(작게) — 한 줄을 통째로 예약하지 않고 0.3초 앞만(동시 소리 줄이기)
+        while (run.hat < run.L.beats && run.tStart + run.hat * run.beat < run.ac.currentTime + 0.3) { engine.drum('hat', run.tStart + run.hat * run.beat, 0.22, V.out); run.hat++; }
+        // 넷 세기 — 악보 가운데 큰 숫자 1 2 3 4(박마다 한 번만 바꿈 · 세는 동안만)
         const ci = Math.floor((now - run.t0) / run.beat);
-        if (ci !== cnt && ci >= 0 && ci <= 4) { cnt = ci; ui.tell(ci < 4 ? String(ci + 1) : null, 'count', 0); }
+        if (ci !== cnt && ci >= 0 && ci <= 4) {
+          cnt = ci;
+          if (ci < 4) { cnum.hidden = false; cnum.textContent = String(ci + 1); cnum.animate([{ transform: 'translate(-50%, -50%) scale(.7)', opacity: 0.4 }, { transform: 'translate(-50%, -50%)', opacity: 1 }], { duration: 160, easing: 'ease-out' }); }
+          else cnum.hidden = true;
+        }
         const lateS = (run.win.late + run.lat) / 1000;
         for (const nt of run.notes) {
-          if (!nt.st && now > nt.t + lateS) { nt.st = 'miss'; run.bars[nt.k].classList.add('m'); ui.tell('놓쳤어요', 'oops', 700); S.pose('oops'); }
+          if (!nt.st && now > nt.t + lateS) { nt.st = 'miss'; run.bars[nt.k].classList.add('m'); ui.tell('놓쳤어요', 'oops', 700); S.pose('oops'); judgedOne(); }
         }
         if (now > run.end + 0.35) {
           mode = 'between';
@@ -332,7 +357,8 @@ export default {
       raf = requestAnimationFrame(loop);
     }
     function end() {
-      mode = 'done'; ui.tell(null); S.pose('happy');
+      mode = 'done'; ui.tell(null); S.pose('happy'); cnum.hidden = true;
+      sheetDots.forEach(d => { d.className = 'done'; });
       const results = all.map(x => x.st === 'great' || x.st === 'ok');
       const s = kit.scoreChoices(results, 6);
       const great = all.filter(x => x.st === 'great').length;
@@ -343,11 +369,10 @@ export default {
       else if (wrongRow >= missed) tip = `위아래를 바꿔 누른 막대가 ${wrongRow}개 있었어요. 막대가 위에 있으면 높은 소리예요.`;
       else if (rushed || missAfterLong * 2 >= missed) tip = `긴 막대 다음에서 놓친 적이 ${missAfterLong}번 있었어요. 긴 막대는 거북이 막대 끝까지 갈 때까지 기다려요.`;
       else tip = `놓친 막대가 ${missed}개 있었어요. 거북이 막대 앞 끝에 닿을 때 눌러요.`;
-      // 기준 둘 — 높이(맞는 단추를 제때 누름) · 박자(그중 '딱' 맞춘 것)
-      const hi = s.kept === s.total ? `높이 ${s.total}개 다 맞힘` : `높이 ${s.kept}개 맞힘`;
+      // 기준 둘 — 높이(맞는 단추를 제때 누름) · 박자(그중 '딱' 맞춘 것) — 둘 다 막대 수를 분모로
       T.after(700, () => {
-        S.showHead(false); ui.count(null);           // 결과 옆 친구는 칸 화면이 붙임
-        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`${hi} · 박자 맞춤 ${great}개`, `가장 길게 이어서 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+        S.showHead(false); ui.count(null); ui.setBar();   // 결과 옆 친구는 칸 화면이 붙임
+        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`높이 ${s.total}개 중 ${s.kept}개,`, `박자 ${s.total}개 중 ${great}개를 맞혔어요`, `이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
       });
     }
 
@@ -366,6 +391,6 @@ export default {
     const onKey = e => { if (e.repeat) return; const r = keyRow(e, n); if (r >= 0) { e.preventDefault(); press(r, e.timeStamp); } };
     window.addEventListener('keydown', onKey);
     raf = requestAnimationFrame(loop);
-    return () => { gone = true; mode = 'gone'; cancelAnimationFrame(raf); T.clear(); V.hush(); window.removeEventListener('keydown', onKey); };
+    return () => { gone = true; mode = 'gone'; cancelAnimationFrame(raf); clearTimeout(markT); T.clear(); V.hush(); window.removeEventListener('keydown', onKey); };
   },
 };

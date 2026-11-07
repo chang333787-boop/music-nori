@@ -28,8 +28,9 @@ export default function mount(root, ctx) {
     list.querySelectorAll('button').forEach(b => b.setAttribute('aria-current', String(b.dataset.id === def.id)));
     const row = ledgerOf(def.id) || {};
     staffSong = toStaffSong(cur);
-    const width = Math.max(520, Math.min(1000, view.clientWidth - 36));
-    const staff = renderStaff(staffSong, { width, chords: false });
+    // 좁게(두 마디씩) 그려 화면 폭으로 늘림 — 줄 간격 · 계이름이 약 두 배(평가 3차: 앱에서 가장 작은 글씨였음)
+    const staff = renderStaff(staffSong, { width: 700, barsPerLine: 2, chords: false });
+    staff.el.removeAttribute('width'); staff.el.removeAttribute('height');
     staffEls = staff.noteEls;
     const playBtn = h('button', { type: 'button', class: 'go' }, '듣기');
     const instSeg = h('div', { class: 'choice', role: 'group', 'aria-label': '악기' },

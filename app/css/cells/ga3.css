@@ -1,17 +1,21 @@
-/* 가3 도 · 건너뛰는 가락 — 보기 · 연습(그림 둘) · 확인 게임 '건너뛰는 가락 그림 고르기'(높이 판 · 카드 · 사다리 띠는 _mel.css) */
+/* 가3 도·건너뛰는 가락 — 보기 · 연습(그림 둘) · 확인 게임 '건너뛰는 가락 그림 고르기'(높이 판 · 카드 · 사다리 띠는 _mel.css) */
 .ga-cols{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
 
-/* 그림 답 단추(kit.answers) — 그림이 글 자리를 채움 */
-.g3-ans{width:440px}
+/* 연습 · 게임 — 왼쪽 높이 판은 40%(범례 몫) · 오른쪽 그림 답을 넓게(평가 3차) */
+.m-play.g3-play{grid-template-columns:40% minmax(0,1fr)}   /* _mel.css .m-play보다 늘 이기게(붙는 차례와 상관없이) */
+.g3-play .m-why{min-height:68px}   /* 까닭이 두 줄이 되어도 판이 줄었다 늘었다 하지 않게 */
+
+/* 그림 답 단추(kit.answers) — 그림이 글 자리를 채움 · '잘 들어요' 자리는 위에만(아래 같은 높이 자리는 빼서 그림을 크게) */
+.g3-ans{width:auto;min-width:0}
+.g3-ans.m-busy::after{display:none}
 .g3-ans .ans{justify-content:center;padding:6px 14px}
 .g3-ans .lab{display:flex;align-items:center;justify-content:center;width:100%}
-.g3-ans.two .ans{min-height:156px}
-.g3-ans.four{gap:10px}
-.g3-ans.four .ans{min-height:0;height:96px;padding:2px 12px;border-radius:20px}
-.g3-ans.wait .ans:not(.locked){opacity:.55}
-.g3-ans .ans.locked{border-style:dashed}
+.g3-ans.two .ans{min-height:150px}
+.g3-ans.four{gap:8px}
+.g3-ans.four .ans{min-height:0;height:86px;padding:2px 12px;border-radius:20px}
+.g3-ans .ans.locked{display:none}   /* 셋 고르는 판 — 넷째는 빼고 남은 셋을 세로 가운데 */
 .g3-ans .ans{transition:opacity 120ms ease-out,transform var(--up),box-shadow var(--up)}
 
 /* 확인 게임 — 왼쪽 높이 판(참새가 고른 뒤 들은 가락대로 계단을 밟음) · 오른쪽 그림 답 넷 */
-.g3-scene{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;padding:14px 28px 16px 22px}
+.g3-scene{position:absolute;inset:0;display:grid;grid-template-columns:40% minmax(0,1fr);gap:28px;padding:14px 28px 16px 22px}
 .g3-scene .m-board{min-height:0}

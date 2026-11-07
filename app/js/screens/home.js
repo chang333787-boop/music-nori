@@ -52,7 +52,7 @@ export default function mount(root, ctx) {
       h('span', { class: 'txt' }, h('b', {}, '마을 지도'), h('small', {}, `13개 중 ${done}개 했어요`))),
     h('a', { class: 'btn acard', href: '#/play', style: { '--a-t': 'var(--bear-t)' } },
       h('span', { class: 'art' }, friendImg('bear', 'play', { label: false })),
-      h('span', { class: 'txt' }, h('b', {}, '놀이터'), h('small', {}, '곡을 바꿔 보며 들어요'))),
+      h('span', { class: 'txt' }, h('b', {}, '곡 바꾸기'), h('small', {}, '음을 바꿔 보며 들어요'))),
     h('a', { class: 'btn acard', href: '#/songs', style: { '--a-t': 'var(--turtle-t)' } },
       h('span', { class: 'art' }, friendImg('turtle', 'idle', { label: false })),
       h('span', { class: 'txt' }, h('b', {}, '곡 듣기'), h('small', {}, '노래를 듣고 악보를 따라가요'))));
