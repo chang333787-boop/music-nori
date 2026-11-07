@@ -7,6 +7,7 @@
     "test": "node tools/ver.mjs --check && node tests/engine.test.mjs && node tests/cells.test.mjs && node tests/beatcells.test.mjs && node tests/edit.test.mjs && node tests/songs.test.mjs",
     "ver": "node tools/ver.mjs",
     "test:browser": "node tests/app.test.cjs && node tests/cells.browser.cjs && node tests/play.browser.cjs && node tests/pitch.test.cjs",
+    "test:db": "node tests/room.rules.cjs && node tests/room.browser.cjs",
     "serve": "python3 -m http.server 8040"
   },
   "license": "MIT"

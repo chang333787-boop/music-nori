@@ -9,6 +9,7 @@ import { friendImg, setPose, preload, IMG_DIR } from '../band.js';
 import { audioToPerf } from '../clock.js';
 import { windows, judgeTaps, BANDS, STAR_RULES } from '../../../engine/judge.js';
 import { saveStars } from '../cellkit.js';
+import * as room from '../room.js';
 
 const TEMPI = { low: [100, 110, 120], mid: [84, 100, 116], high: [76, 96, 120] };
 const STEPS = [
@@ -128,6 +129,7 @@ export default function mount(root, ctx) {
     if (!hits.length) tip = '톡!을 박마다 한 번씩 눌러요. 화면 아무 곳이나 눌러도 돼요.';
     if (r.stars > (best[step] || 0)) { best[step] = r.stars; lsSet('tap.best', best); }
     saveStars('ri1', r.stars);                  // 마을 지도 '일정박' 칸 별
+    if (room.kid.isTeacherCell('ri1')) room.kid.send('ri1', r.stars, r.kept, r.total);   // 방 번호 다같이 — 선생님 칸이면 TV로
     bar.mid(stepsUI());
     overlay.className = 'overlay';
     overlay.replaceChildren(h('div', { class: 'panelcard resultcard', role: 'dialog', 'aria-label': '결과' },

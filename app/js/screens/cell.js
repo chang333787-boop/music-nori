@@ -3,8 +3,11 @@
 //  11-07 평가 2차: 모든 칸이 같은 자리를 쓰게 — 맨 위 한 줄 = [문제 번호] 지시 글 …… [말풍선(맞아 · 다시 들어 봐 · 1 2 3 4)]
 //   연습 점은 아래 띠 왼쪽 한 곳("3번 이어서 맞히면 게임") · 넘어가기는 머리띠 오른쪽 작은 단추 · 아래 띠 높이는 늘 그대로
 //  앞 칸을 건너뛰고 들어오면 "이 칸은 ○○를 알면 더 쉬워요" 한 번 + 바로 가기(잠그지 않음).
+//  방 번호 다같이(docs/room.md): #/cell/<칸>/<단계>로 시작 단계를 받음 · TV 모드에서 방이 열려 있으면 단계마다 알리고 모인 결과 띠를 보임
+//   · 방에 있는 아이 기기는 확인 게임 결과를 보내고 결과 아래 '다음 놀이' 대신 "선생님을 기다려요"
 import { h, onPress, josa } from '../util.js';
-import { friendImg, setPose, preload } from '../band.js';
+import { friendImg, setPose, preload, BAND } from '../band.js';
+import * as room from '../room.js';
 import { cellById, LANES, missingPre, nextCell } from '../../../engine/cells.js';
 import * as K from '../cellkit.js';
 import { TV_STEPS, TV_SCRIPT } from '../../../engine/tvscript.js';
@@ -17,7 +20,10 @@ export default function mount(root, ctx) {
   const cell = cellById(ctx.args && ctx.args[0]);
   const tv = ctx.mode === 'tvcell';                 // TV 하나로 반 전체 — 아이들은 몸으로 답하고 선생님이 대신 누름
   if (!cell) { ctx.go(tv ? 'tv' : 'map'); return null; }
-  if (cell.route) { ctx.go(cell.route); return null; }
+  const troom = tv ? room.teacher.get() : null;     // 선생님 방(열려 있으면 단계마다 아이 기기에 알림)
+  if (cell.route) { if (troom) room.teacher.pub(cell.id, 'game'); ctx.go(cell.route); return null; }
+  const startAt = Math.max(0, PHASES.findIndex(p => p[0] === (ctx.args && ctx.args[1])));
+  const inRoom = !tv && !!room.kid.get();          // 방에 있는 아이 기기
   const friend = LANES[cell.lane].friend;
   bar.title(cell.name, friend);
   // 칸만의 모양(app/css/cells/<칸>.css — 칸마다 꼭 하나, 비어 있어도 됨)
@@ -40,18 +46,26 @@ export default function mount(root, ctx) {
   // TV 수업 안내 줄(선생님용 · 접을 수 있음) — 단계 · 시간 · 그대로 읽어도 되는 발문
   const guideStep = h('span', { class: 'tvg-step' }), guideText = h('span', { class: 'tvg-text' });
   const guideToggle = h('button', { type: 'button', class: 'tvg-hide', 'aria-label': '안내 접기' }, '접기');
-  const guide = h('div', { class: 'tvguide', hidden: !tv }, guideStep, guideText, guideToggle);
-  onPress(guideToggle, () => { guide.classList.toggle('folded'); guideToggle.textContent = guide.classList.contains('folded') ? '안내' : '접기'; });
+  // 모인 결과 띠(방이 열린 TV만) — 들어온 기기 · 끝낸 아이 + 끝낸 아이 칩(친구 얼굴 + 번호 + 별)
+  const stripHead = h('span', { class: 'rs-head' }), stripChips = h('span', { class: 'rs-chips' });
+  //  띠를 누르면 무대 위에 모두 크게(반 전체 30명은 띠에 다 안 들어감 — 띠는 막 끝낸 아이부터)
+  const strip = troom ? h('div', { class: 'rstrip', role: 'button', tabindex: '0', 'aria-label': '모인 결과 크게 보기' }, h('span', { class: 'rs-room' }, `방 ${troom.room}`), stripHead, stripChips) : null;
+  const allEl = h('div', { class: 'overlay rsall', hidden: true });
+  if (strip) onPress(strip, () => { allEl.hidden = !allEl.hidden; stripSig = ''; drawStrip(); });
+  const guide = h('div', { class: 'tvguide' + (troom ? ' hasroom' : ''), hidden: !tv }, guideStep, guideText, strip, guideToggle);
+  onPress(guideToggle, () => { guide.classList.toggle('folded'); guideToggle.textContent = guide.classList.contains('folded') ? '안내' : '접기'; stripSig = ''; drawStrip(); });
   const setGuide = key => {
     if (!tv) return;
     const i = TV_STEPS.findIndex(s => s.key === key), st = TV_STEPS[i], sc = TV_SCRIPT[cell.id] || {};
     guideStep.textContent = `${i + 1} ${st.name} · ${st.min}분`;
     guideText.textContent = sc[key] || '';
   };
+  if (troom) stage.append(allEl);
   const screenEl = h('div', { class: 'cellscreen' + (tv ? ' tvmode' : '') }, stage, guide, barEl);
   root.append(screenEl);
 
   let mod = null, phase = -1, cleanup = null, auto = null, gone = false, tellTimer = 0;
+  let since = 0, resList = [], resultShown = false, sentP = null, stripSig = '';       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
   const ui = {
     stage: body,
     bar: barSlot,
@@ -90,7 +104,10 @@ export default function mount(root, ctx) {
   function runPhase(i) {
     if (gone) return;
     if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
+    const again = resultShown && i === 2;           // 결과 뒤 '한 번 더' → 새 판(앞 판 결과는 띠에서 뺌)
+    resultShown = false;
     phase = i; auto = null;
+    if (troom) room.teacher.pub(cell.id, PHASES[i][0]).then(r => { if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
     overlay.hidden = true; overlay.replaceChildren();
     body.replaceChildren(); ui.say(''); ui.count(null); ui.tell(null); ui.practice(i === 1 && !tv ? 0 : null);
     setGuide(PHASES[i][0]);
@@ -101,7 +118,51 @@ export default function mount(root, ctx) {
     if (key === 'show') ui.setBar(goBtn('연습해 볼래요', () => runPhase(1)));
     else ui.setBar();
     cleanup = mod[key](ui, kit) || null;
+    drawStrip();
   }
+
+  // 모인 결과 띠 그리기 — 보기 · 연습 단계는 들어온 기기 수만, 확인 게임 · 결과 단계는 끝낸 아이 칩까지
+  function drawStrip() {
+    if (!strip) return;
+    const showDone = phase === 2 || resultShown;
+    const done = resList.filter(r => r.c === cell.id && r.n > 0 && (r.at || 0) >= since);
+    const sig = [showDone, allEl.hidden, resList.length, done.map(r => `${r.dev}:${r.s}:${r.at}`).join(',')].join('|');
+    if (sig === stripSig) return;                   // 바뀐 것이 없으면 다시 그리지 않음(그림 깜빡임 X)
+    stripSig = sig;
+    const head = showDone ? `들어온 기기 ${resList.length}대 · 끝낸 아이 ${done.length}명` : `들어온 기기 ${resList.length}대`;
+    stripHead.textContent = head;
+    const chip = r => h('span', { class: 'rs-chip', 'data-no': r.no, 'data-s': r.s },
+      friendImg((BAND[r.a] || BAND[0]).key, 'face', { label: false }),
+      h('b', {}, String(r.no)),
+      h('span', { class: 'rs-stars', 'aria-label': `별 ${r.s}`, html: [0, 1, 2].map(j => K.STAR_SVG(j < r.s)).join('') }));
+    // 띠 = 막 끝낸 아이부터(자기 번호가 뜨는 걸 보게) · 넘치는 칩은 숨기고 '+n'(스크롤 X)
+    stripChips.replaceChildren(...(showDone ? [...done].sort((a, b) => (b.at || 0) - (a.at || 0)) : []).map(chip));
+    requestAnimationFrame(() => {
+      if (gone || !stripChips.isConnected) return;
+      const kids = [...stripChips.children], max = stripChips.clientWidth;
+      const total = kids.reduce((w, c) => w + c.offsetWidth + 8, -8);
+      if (total <= max + 1) return;
+      let w = 0, hiddenN = 0;
+      for (const c of kids) { w += c.offsetWidth + 8; if (w > max - 130) { c.hidden = true; hiddenN++; } }
+      if (hiddenN) stripChips.append(h('span', { class: 'rs-more' }, `+${hiddenN} 모두 보기`));
+    });
+    // 크게 보기 — 번호 차례로 모두
+    if (!allEl.hidden) {
+      const close = h('button', { type: 'button' }, '닫기');
+      onPress(close, () => { allEl.hidden = true; });
+      allEl.replaceChildren(h('div', { class: 'panelcard rsall-card' },
+        h('div', { class: 'rsall-top' }, h('h2', {}, head), close),
+        done.length ? h('div', { class: 'rsall-grid' }, ...[...done].sort((a, b) => (a.no || 0) - (b.no || 0)).map(chip))
+          : h('p', { class: 'rsall-none' }, showDone ? '아직 끝낸 아이가 없어요' : '확인 게임이 끝나면 여기에 모여요')));
+    }
+  }
+  const stripLoop = troom ? room.loop(async () => {
+    const r = await room.teacher.res(troom);
+    if (!r.ok || gone) { if (strip) strip.classList.toggle('off', !r.net); return; }
+    strip.classList.remove('off');
+    resList = r.list;
+    drawStrip();
+  }, room.TV_TICK) : null;
 
   const kit = {
     engine, device, cell, friend,
@@ -122,6 +183,14 @@ export default function mount(root, ctx) {
       if (gone) return;
       const stars = r.starOn.filter(Boolean).length;
       if (!tv) K.saveStars(cell.id, stars);         // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음
+      resultShown = true;
+      // 방에 있는 아이 기기 + 선생님 칸이면 결과를 TV로(맞힌 수 = 제목 'N번 중 M번' · 없으면 다시 보기 줄)
+      const roomCell = inRoom && (room.kid.last ? room.kid.isTeacherCell(cell.id) : startAt > 0 || !!(ctx.args && ctx.args[1]));
+      if (roomCell) {
+        const m = /(\d+)번 중 (\d+)번/.exec(r.title || '');
+        const n = m ? +m[1] : (r.replay || []).length, k = m ? +m[2] : (r.replay || []).filter(Boolean).length;
+        sentP = room.kid.send(cell.id, stars, k, n);
+      }
       ui.tell(null); ui.say(''); ui.count(null); ui.practice(null);
       const pose = friend === 'hog' ? 'happy' : 'play';
       overlay.replaceChildren(h('div', { class: 'resultwrap' }, K.resultCard(r), friendImg(friend, pose, { label: false, cls: 'resultpal' })));
@@ -130,13 +199,23 @@ export default function mount(root, ctx) {
       bar.right(null);
       if (tv) {                                     // TV: 반 결과 뒤 '먼저 예측하기' — 놀이터에서 하나만 바꿔 보기 전에 묻기
         setGuide('predict');
+        if (troom) room.teacher.pub(cell.id, 'done');
+        drawStrip();
         ui.setBar(subBtn('한 번 더', () => runPhase(2), 'again'), goBtn('놀이터에서 바꿔 보기', () => ctx.go('play')));
         auto = null;
         window.__cellResult = { id: cell.id, stars, ...r };
         return;
       }
-      const nx = nextCell(K.getProg(), cell.id);
       const again = subBtn('한 번 더', () => runPhase(2), 'again');
+      if (roomCell) {                               // 방: 다음 놀이는 선생님이 고름
+        const sub = h('small', {}, '');
+        ui.setBar(again, h('span', { class: 'rwait' }, friendImg((BAND[room.kid.get().a] || BAND[0]).key, 'face', { label: false }), h('span', { class: 'rwait-t' }, '선생님을 기다려요', sub)));
+        if (sentP) sentP.then(ok => { if (ok && sub.isConnected) sub.textContent = '별을 TV로 보냈어요'; });
+        auto = null;
+        window.__cellResult = { id: cell.id, stars, ...r };
+        return;
+      }
+      const nx = nextCell(K.getProg(), cell.id);
       const fwd = nx && nx !== cell.id
         ? goBtn('다음 놀이', () => { const c = cellById(nx); ctx.go(c.route || 'cell/' + nx); })
         : goBtn('마을 지도', () => ctx.go('map'));
@@ -159,8 +238,10 @@ export default function mount(root, ctx) {
       return;
     }
     if (gone) return;
+    // 방 아이 기기가 선생님 단계를 따라가게 — 같은 칸이면 다시 열지 않고 단계만 바꿈
+    if (inRoom) room.here.cur = { cell: cell.id, idx: () => (overlay.hidden ? phase : 3), go: i => runPhase(i) };
     const miss = missingPre(K.getProg(), cell.id).map(cellById).filter(c => c && c.first);
-    if (miss.length && !warned.has(cell.id) && !tv) {
+    if (miss.length && !warned.has(cell.id) && !tv && !inRoom && !startAt) {
       warned.add(cell.id);
       const m = miss[0];
       body.replaceChildren(h('div', { class: 'panelcard startcard', style: { margin: 'auto' } },
@@ -172,8 +253,13 @@ export default function mount(root, ctx) {
       bar.mid(null);
       return;
     }
-    runPhase(0);
+    runPhase(startAt);
   })();
 
-  return () => { gone = true; clearTimeout(tellTimer); if (cleanup) try { cleanup(); } catch { /* */ } window.__cellAuto = null; css.remove(); };
+  return () => {
+    gone = true; clearTimeout(tellTimer); if (cleanup) try { cleanup(); } catch { /* */ }
+    window.__cellAuto = null; css.remove();
+    if (stripLoop) stripLoop.stop();
+    if (room.here.cur && room.here.cur.cell === cell.id) room.here.cur = null;
+  };
 }

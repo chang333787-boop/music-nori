@@ -1,0 +1,137 @@
+/* 방 번호 다같이(docs/room.md) — 아이 방 들어가기 · 대기 · 머리띠 방 칩 · TV 방 열기 · 모인 결과 띠
+   · 아이 손가락 크기(단추 64px 넘게) · 1366×768 스크롤 0 · 주황은 '지금 누를 것' 하나(다음 · 들어가기 · 선생님 놀이로 가기) */
+
+/* ── 머리띠: 처음 화면 '방 번호' · 방에 있는 아이 기기 '방 1234' 칩 ── */
+.bar-r>.roombtn{min-height:52px;font-size:20px;padding:4px 20px}
+.bar-r>.roomchip{gap:8px;padding:4px 16px 4px 6px;border-radius:999px}
+.roomchip img,.roomchip svg{width:38px;height:38px;object-fit:contain}
+.roomchip.off{border-style:dashed;color:var(--ink-2);box-shadow:none}
+.rmodal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(59,42,30,.30)}
+.rmodal-card{width:600px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.rmodal-card h2{font-size:36px}
+.rmodal-card .sub{margin:0;font-size:20px;color:var(--ink-2)}
+.rmodal-card .row{justify-content:center;margin-top:6px}
+.rmodal-card button{min-width:200px}
+
+/* ── 방 들어가기(#/join) ── */
+.join{height:100%;display:flex;align-items:stretch;justify-content:center}
+.join h2{font-size:40px}
+.jsub{margin:6px 0 0;font-size:22px;color:var(--ink-2)}
+.jmsg{margin:0;min-height:40px;font-family:var(--head);font-size:28px;color:var(--go-d)}
+/* 1. 방 번호 — 왼쪽 네 칸 · 오른쪽 숫자 판 */
+.jroom{display:grid;grid-template-columns:minmax(0,560px) auto;align-items:center;gap:64px;margin:auto}
+.jleft{display:flex;flex-direction:column;gap:22px}
+.jdigits{display:flex;gap:16px}
+.jd{display:flex;align-items:center;justify-content:center;width:112px;height:140px;background:var(--surface);border:3px solid var(--ink);border-radius:20px;font-family:var(--head);font-size:88px;line-height:1;color:var(--ink)}
+.jd{position:relative}
+.jd.now::after{content:'';position:absolute;left:30%;right:30%;bottom:22px;height:7px;border-radius:4px;background:var(--ink);animation:jblink 1s steps(2,start) infinite}
+@keyframes jblink{to{visibility:hidden}}
+.jpad{display:grid;grid-template-columns:repeat(3,150px);grid-auto-rows:104px;gap:16px}
+.jkey{min-height:0;height:100%;padding:0;font-size:48px;border-radius:22px}
+.jkey.jdel{font-size:26px}
+.jkey.jnext{font-size:32px}
+/* 2. 내 번호 — 1~30 */
+.jno,.jpal{width:100%;display:flex;flex-direction:column;gap:22px;justify-content:center}
+.jhead{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.jpicked{display:flex;gap:12px}
+.jpick{gap:10px;min-height:64px;padding:4px 20px;font-size:30px;border-radius:16px}
+.jpick small{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
+.jnogrid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-auto-rows:112px;gap:14px}
+.jnum{min-height:0;height:100%;padding:0;font-size:44px;border-radius:20px}
+.jnum[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+/* 3. 짝꿍 친구 */
+.jpals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px}
+.jfr{flex-direction:column;gap:6px;min-height:0;height:250px;padding:14px 10px 12px;background:var(--a-t);border-radius:24px;font-size:30px}
+.jfr img,.jfr svg{width:150px;height:150px;object-fit:contain;background:var(--surface);border:3px solid var(--ink);border-radius:50%;padding:10px}
+.jfr[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.jfoot{display:flex;align-items:center;justify-content:center;gap:28px;min-height:116px}
+/* 대기 화면 */
+.jwait{display:grid;grid-template-columns:400px minmax(0,640px);align-items:center;gap:48px;margin:auto}
+.jwait-art{display:flex;align-items:flex-end;justify-content:center;height:420px;background:var(--panel);border:3px solid var(--ink);border-radius:32px;overflow:hidden}
+.jwait-pal{height:340px;width:auto;max-width:92%;object-fit:contain;transform-origin:50% 100%;animation:jbob 2.4s ease-in-out infinite}
+@keyframes jbob{0%,100%{transform:none}50%{transform:translateY(-8px)}}
+.jwait-t{display:flex;flex-direction:column;gap:22px}
+.jwait-t h2{font-size:44px}
+.jtags{display:flex;gap:14px;flex-wrap:wrap}
+.jtag{display:inline-flex;align-items:center;gap:10px;min-height:64px;padding:4px 20px;background:var(--surface);border:3px solid var(--ink);border-radius:16px;font-family:var(--head);font-size:30px}
+.jtag small{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
+.jtag img,.jtag svg{width:44px;height:44px;object-fit:contain}
+.jwait-acts{gap:20px;margin-top:6px}
+.jout{min-height:64px;font-size:22px}
+
+/* ── 아이 칸 결과 아래: '다음 놀이' 대신 ── */
+.rwait{display:inline-flex;align-items:center;gap:12px;min-height:88px;padding:6px 26px 6px 12px;border:3px dashed var(--ink-2);border-radius:var(--r);font-family:var(--head);font-size:30px;color:var(--ink-2)}
+.rwait img,.rwait svg{width:56px;height:56px;object-fit:contain}
+.rwait-t{display:flex;flex-direction:column;line-height:1.15}
+.rwait-t small{font-family:var(--body);font-size:18px;font-weight:700}
+.rwait-t small:empty{display:none}
+
+/* ── TV로 다같이: 방 열기 · 머리띠 방 칩 · 방 번호 크게 ── */
+.tvpick{position:relative}
+.tvhead{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.tvhead-t{min-width:0}
+.tvroomctl{flex:none;display:flex;align-items:center;gap:14px}
+.tvroom-hint{font-size:18px;color:var(--ink-2)}
+.roomopen{min-height:64px;font-size:24px}
+.roomclose{min-height:56px;font-size:20px;padding:4px 18px}
+.bar-r>.troomchip{gap:14px;min-height:56px;padding:2px 20px;border-radius:16px}
+.troomchip b{font-family:var(--head);font-weight:400;font-size:34px;line-height:1}
+.troomchip small{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
+.rbigwrap{border-radius:28px}
+.rbig{display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 56px 30px;text-align:center}
+.rbig p{margin:0}
+.rbig-k{font-family:var(--head);font-size:32px}
+.rbig-no{display:flex;gap:18px}
+.rbig-no span{display:flex;align-items:center;justify-content:center;width:150px;height:184px;border:4px solid var(--ink);border-radius:24px;background:var(--paper);font-family:var(--head);font-size:136px;line-height:1}
+.rbig-how{font-size:24px}
+.rbig-cnt{font-family:var(--head);font-size:26px;color:var(--ink-2)}
+
+/* ── TV 칸: 모인 결과 띠(안내 줄 오른쪽) ── */
+.cellscreen.tvmode{grid-template-columns:minmax(0,1fr)}
+.tvguide{min-width:0}
+.tvguide.hasroom{gap:14px}
+.rstrip{flex:0 1 auto;max-width:62%;min-width:0;display:flex;align-items:center;gap:10px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:4px 8px;min-height:56px}
+.tvguide.folded .rstrip{margin-left:auto;max-width:none}
+.rstrip.off{border-style:dashed}
+.rs-room{flex:none;font-family:var(--head);font-size:22px;background:var(--ink);color:var(--paper);border-radius:10px;padding:2px 12px}
+.rs-head{flex:none;font-family:var(--head);font-size:20px;white-space:nowrap}
+.rs-chips{flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap}
+.rs-chips:empty{display:none}
+.rs-chip{flex:none;display:inline-flex;align-items:center;gap:5px;padding:1px 10px 1px 1px;border:2px solid var(--ink);border-radius:999px;background:var(--paper)}
+.rs-chip img,.rs-chip svg.pal{width:40px;height:40px;object-fit:contain}
+.rs-chip b{font-family:var(--head);font-weight:400;font-size:28px;line-height:1;min-width:26px;text-align:center}
+.rs-stars{display:inline-flex}
+.rs-stars svg{width:19px;height:19px}
+.rs-more{flex:none;font-family:var(--head);font-size:20px;color:var(--ink);text-decoration:underline;text-underline-offset:4px}
+.rstrip{cursor:pointer}
+.rstrip:focus-visible{outline:4px solid var(--bird);outline-offset:3px}
+/* 모인 결과 크게 보기(띠를 누르면 무대 위에) */
+.rsall{z-index:4;padding:18px}
+.rsall-card{width:100%;height:100%;display:flex;flex-direction:column;gap:16px;padding:18px 24px}
+.rsall-top{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.rsall-top h2{font-size:32px}
+.rsall-top button{min-height:56px;font-size:22px}
+.rsall-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-content:start;gap:10px;overflow:hidden}
+.rsall-grid .rs-chip{justify-content:flex-start;gap:6px;min-width:0;overflow:hidden}
+.rsall-grid .rs-chip img,.rsall-grid .rs-chip svg.pal{width:44px;height:44px}
+.rsall-grid .rs-chip b{font-size:32px;min-width:40px}
+.rsall-grid .rs-stars svg{width:19px;height:19px}
+.rsall-none{margin:auto;font-family:var(--head);font-size:28px;color:var(--ink-2)}
+
+/* 좁은 화면(세로 휴대폰) — 한 줄씩 */
+@media (max-width:900px){
+  .jroom,.jwait{grid-template-columns:1fr;gap:24px;margin:0 auto}
+  .join h2,.jwait-t h2{font-size:30px}
+  .jd{width:72px;height:92px;font-size:56px}
+  .jpad{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:80px;gap:12px}
+  .jnogrid{grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:76px;gap:10px}
+  .jnum{font-size:34px}
+  .jpals{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .jfr{height:190px;font-size:24px}
+  .jfr img,.jfr svg{width:104px;height:104px}
+  .jwait-art{height:240px}
+  .jwait-pal{height:200px}
+  .rmodal-card{width:calc(100% - 32px)}
+  body[data-screen="join"] .bar-mid{display:none}
+  button.huge.jenter{min-width:0;width:100%;min-height:88px;font-size:34px}
+}

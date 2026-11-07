@@ -3,7 +3,8 @@
 import { h, toast } from './util.js';
 import { engine } from './audio.js';
 import { device } from './device.js';
-import { friendImg } from './band.js';
+import { friendImg, BAND } from './band.js';
+import * as room from './room.js';
 import './eq.js';                       // 스피커 점검 값(음높이별 크기)을 모든 소리에
 
 const ROUTES = {
@@ -13,6 +14,7 @@ const ROUTES = {
   map: { load: () => import('./screens/map.js'), title: '음악 마을 지도', friend: 'bird' },
   play: { load: () => import('./screens/play.js'), title: '놀이터', friend: 'turtle' },
   tv: { load: () => import('./screens/tvpick.js'), title: 'TV로 다같이', parent: 'teacher' },
+  join: { load: () => import('./screens/join.js'), title: '방 들어가기' },
   tvcell: { load: () => import('./screens/cell.js'), title: '', parent: 'tv' },
   cell: { load: () => import('./screens/cell.js'), title: '', parent: 'map' },
   teacher: { load: () => import('./screens/teacher.js'), title: '선생님' },
@@ -26,7 +28,7 @@ const back = document.getElementById('back');
 const titleEl = document.getElementById('title');
 const barMid = document.getElementById('barMid');
 const barR = document.getElementById('barR');
-let cleanup = null, token = 0, parent = '';
+let cleanup = null, token = 0, parent = '', rightNode = null, isHome = false;
 
 // 첫 두드림에 소리 길을 연다(브라우저는 사람이 누르기 전에는 소리를 막는다)
 const unlock = () => { try { engine.ensure(); } catch { /* 소리가 없는 기기 */ } };
@@ -42,7 +44,8 @@ export const bar = {
     titleEl.append(text);
   },
   mid(node) { barMid.replaceChildren(...(node ? [node] : [])); },
-  right(node) { barR.replaceChildren(...(node ? [node] : [])); },
+  // 화면이 채우는 것 + (방에 있는 아이 기기면) 맨 오른쪽 '방 1234' 칩 · 처음 화면은 '방 번호' + 톱니
+  right(node) { rightNode = node || null; renderRight(); },
 };
 
 export const ctx = {
@@ -56,6 +59,44 @@ function gearBtn() {
   return b;
 }
 
+// ── 방 번호 다같이(docs/room.md) — 아이 기기 머리띠 ──
+function renderRight() {
+  const k = room.kid.get(), onJoin = document.body.dataset.screen === 'join';
+  const kids = [];
+  if (rightNode) kids.push(rightNode);
+  if (isHome && !k) kids.push(h('a', { class: 'btn roombtn', href: '#/join' }, '방 번호'));
+  if (k && !onJoin) kids.push(roomChip(k));
+  if (isHome) kids.push(gearBtn());
+  barR.replaceChildren(...kids);
+}
+function roomChip(k) {
+  const off = !room.kid.online;
+  const b = h('button', { type: 'button', class: 'roomchip' + (off ? ' off' : ''), 'aria-label': `방 ${k.room} — 나가기` },
+    friendImg((BAND[k.a] || BAND[0]).key, 'face', { label: false }), off ? '연결 끊김' : `방 ${k.room}`);
+  b.addEventListener('click', () => askLeave(k));
+  return b;
+}
+function askLeave(k) {
+  if (document.querySelector('.rmodal')) return;
+  const close = () => { m.remove(); window.removeEventListener('keydown', esc); };
+  const esc = e => { if (e.key === 'Escape') close(); };
+  const stay = h('button', { type: 'button' }, '그대로 있기');
+  const out = h('button', { type: 'button' }, '나가기');
+  const m = h('div', { class: 'rmodal', role: 'dialog', 'aria-label': '방에서 나가기' },
+    h('div', { class: 'panelcard rmodal-card' },
+      h('h2', {}, `방 ${k.room}에서 나갈까요?`),
+      h('p', { class: 'sub' }, '나가면 선생님이 고르는 놀이가 열리지 않아요'),
+      h('div', { class: 'row' }, stay, out)));
+  stay.addEventListener('click', close);
+  out.addEventListener('click', () => { close(); room.kid.leave(); ctx.go(''); });
+  m.addEventListener('click', e => { if (e.target === m) close(); });
+  window.addEventListener('keydown', esc);
+  document.body.append(m);
+  stay.focus();
+}
+room.kid.on(renderRight);
+window.addEventListener('room-gone', () => toast('방이 끝났어요'));
+
 async function route() {
   const my = ++token;
   const [name, ...args] = (location.hash.replace(/^#\/?/, '') || '').split('/');
@@ -64,11 +105,12 @@ async function route() {
   if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
   document.body.dataset.screen = key || 'home';
   parent = r.parent || '';
+  isHome = !key;
   back.hidden = !key;
   back.setAttribute('aria-label', parent === 'teacher' ? '선생님 칸으로' : parent === 'map' ? '마을 지도로' : parent === 'tv' ? 'TV 놀이 고르기로' : '처음으로');
   bar.title(r.title || '음악 놀이터', r.friend);
   bar.mid(null);
-  bar.right(key ? null : gearBtn());
+  bar.right(null);
   main.replaceChildren();
   try {
     const mod = await r.load();
@@ -83,3 +125,4 @@ async function route() {
 back.addEventListener('click', () => ctx.go(parent));
 window.addEventListener('hashchange', route);
 route();
+room.startKid(ctx.go);                 // 방에 들어가 있던 아이 기기면 선생님 놀이를 따라가기 시작
