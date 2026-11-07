@@ -1,5 +1,5 @@
 // 음악 마을 지도 — 갈래 넷(소리 · 가락 · 박·리듬 · 악보)의 첫 판 13칸. 잠그지 않음 · 추천 다음 칸만 크게
-import { h, onPress } from '../util.js';
+import { h, onPress, lsGet } from '../util.js';
 import { friendImg } from '../band.js';
 import { CELLS, LANES, ORDER, cellById, nextCell } from '../../../engine/cells.js';
 import { getProg, STAR_SVG } from '../cellkit.js';
@@ -8,7 +8,7 @@ const ROWS = ['sound', 'melody', 'rhythm', 'score'];
 
 export default function mount(root, ctx) {
   const prog = getProg();
-  const nx = nextCell(prog);
+  const nx = nextCell(prog, lsGet('startCell', undefined));
   const rows = ROWS.map(lane => {
     const ids = ORDER.filter(id => cellById(id).lane === lane);
     const L = LANES[lane];

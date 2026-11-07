@@ -1,0 +1,50 @@
+/* 가락·악보 칸 공용(app/js/cells/_mel.js) — 계이름 배지 · 높이 판 · 높이 그림 · 계이름 고르기 단추 · 확인 게임 셈·판정 말
+   계이름 색 = theory.js colorOf(무지개 실로폰) · 글자는 늘 흰 동그라미 위 잉크(색이 무엇이든 읽히게) */
+.m-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;width:52px;height:52px;border-radius:50%;background:var(--surface);border:3px solid var(--ink);font-family:var(--head);font-size:28px;line-height:1;color:var(--ink);transition:transform 120ms ease-out}
+
+/* 높이 판 — 왼쪽 70%는 계단, 오른쪽은 참새 길 */
+.m-board{position:relative;border:3px solid var(--ink);border-radius:24px;background:var(--bird-t);min-height:0;overflow:hidden}
+.m-rung{position:absolute;left:16px;right:30%;height:var(--rh);display:flex;align-items:center;gap:12px;padding:0 8px;background:var(--c);border:3px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 var(--ink);transition:transform 120ms ease-out,box-shadow 120ms ease-out}
+.m-rung .m-badge{width:calc(var(--rh) - 14px);height:calc(var(--rh) - 14px);font-size:clamp(20px,calc(var(--rh) * .48),30px)}
+.m-rung.on{transform:translateY(-4px);box-shadow:0 8px 0 var(--ink)}
+.m-rung.on .m-badge{transform:scale(1.12)}
+.m-rung.ghost{background:none;border:3px dashed rgba(59,42,30,.32);box-shadow:none}
+.m-hand{margin-left:auto;font-size:18px;font-weight:700;line-height:1.2;background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:3px 12px;white-space:nowrap}
+.m-bbird{position:absolute;right:calc(15% - 48px);width:96px;height:96px;transition:bottom 200ms ease-out;pointer-events:none}
+.m-bbird img,.m-bbird svg{width:100%;height:100%;object-fit:contain}
+.m-bbird.hop img,.m-bbird.hop svg{animation:m-hop 220ms ease-out}
+@keyframes m-hop{0%{transform:none}45%{transform:translateY(-16px)}100%{transform:none}}
+
+/* 높이 그림 */
+.m-pic{display:block;height:auto;max-width:100%;overflow:visible}
+.m-guide{stroke:var(--line2);stroke-width:2;stroke-dasharray:6 6}
+.m-guide.ghost{stroke:rgba(59,42,30,.18);stroke-dasharray:2 6}
+.m-join{fill:none;stroke:var(--ink);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.m-shape{stroke:var(--ink);stroke-width:3}
+.m-pl{font-family:var(--head);font-size:19px;fill:#fff;stroke:var(--ink);stroke-width:4px;paint-order:stroke;stroke-linejoin:round;pointer-events:none}
+.m-mark{transform-box:fill-box;transform-origin:center;transition:transform 110ms ease-out}
+.m-mark.on{transform:scale(1.18)}
+.m-mark.on .m-shape{stroke-width:4.5}
+.m-mark.dim{opacity:.35}
+
+/* 보기 — 예시 카드(이름 왼쪽 · 높이 그림 오른쪽) · 노래 카드(두 칸 너비) */
+.m-exgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:center;min-height:0}
+.m-ex{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;min-height:86px;padding:6px 16px}
+.m-ex .m-pic{width:auto;flex:none}
+.m-song{grid-column:1/-1;flex-direction:column;align-items:stretch;gap:6px;min-height:0;padding:10px 16px 12px}
+.m-song b{text-align:left}
+.m-song .m-pic{width:100%}
+
+/* 따라 하기 — 계이름 고르기 단추(세로 차례 = 높이 차례) */
+.m-pick{background:var(--c);min-height:96px;width:100%;max-width:560px;font-size:0;gap:0;border-radius:24px}
+.m-pick .m-badge{width:68px;height:68px;font-size:38px}
+.m-pick.lo{min-height:96px}
+.m-why{margin:0;min-height:34px;font-family:var(--head);font-size:24px;color:var(--ink)}
+.m-why.hint{color:var(--ink-2)}
+
+/* 확인 게임 공용 */
+.m-count:empty{display:none}
+.m-count{position:absolute;left:22px;top:18px;z-index:2;font-family:var(--head);font-size:26px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:4px 14px;pointer-events:none}
+.m-word{position:absolute;left:50%;top:14px;z-index:2;transform:translateX(-50%);font-family:var(--head);font-size:40px;line-height:1.2;pointer-events:none;white-space:nowrap}
+.m-word[data-k="good"]{color:var(--good)}.m-word[data-k="oops"]{color:var(--ink-2)}
+.m-word[data-k="info"]{font-size:30px;color:var(--ink);background:var(--surface);border:3px solid var(--ink);border-radius:16px;padding:4px 18px}

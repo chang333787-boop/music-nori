@@ -1,0 +1,27 @@
+/* 가2 라 — 보기 · 따라 하기(높이 판은 _mel.css) · 확인 게임 '라는 몇 번째?' */
+.ga-cols{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
+.m-pick.three{min-height:78px}
+.m-pick.three .m-badge{width:58px;height:58px;font-size:32px}
+
+/* 확인 게임 — 왼쪽 나뭇가지(참새가 부름) · 가운데 자리 칸(첫째 ~ 넷째 · 누르면 그 자리 높이가 보임) */
+.e2-scene{position:absolute;inset:0;background:#DCEBF5;overflow:hidden}
+.e2-scene::before{content:'';position:absolute;left:-90px;top:-70px;width:400px;height:230px;border-radius:50%;background:#7FB283;border:3px solid var(--ink)}
+.e2-trunk{position:absolute;left:58px;bottom:-3px;width:70px;height:78%;background:#8B5A2B;border:3px solid var(--ink);border-bottom:0}
+.e2-branch{position:absolute;left:120px;top:46%;width:190px;height:26px;background:#8B5A2B;border:3px solid var(--ink);border-left:0;border-radius:0 14px 14px 0}
+.e2-bird{position:absolute;left:168px;top:calc(46% - 128px);width:136px;height:136px;pointer-events:none;z-index:1}
+.e2-bird img,.e2-bird svg{width:100%;height:100%;object-fit:contain}
+.e2-mid{position:absolute;left:340px;right:30px;top:62px;bottom:24px;display:flex;align-items:center;justify-content:center;gap:18px}
+.e2-axis{position:relative;width:46px;height:360px;margin-top:56px;flex:none}
+.e2-axis .m-badge{position:absolute;left:0;width:46px;height:46px;font-size:24px;transform:translateY(-50%)}
+.e2-row{display:flex;gap:20px;height:416px}
+.e2-row.done{pointer-events:none}
+.e2-slot{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;width:178px;height:100%;min-height:0;padding:0;border-radius:22px;overflow:visible;transition:transform 120ms ease-out,background-color 120ms ease-out,box-shadow 120ms ease-out}
+.e2-ord{flex:none;height:56px;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:26px;border-bottom:3px solid var(--ink)}
+.e2-track{position:relative;flex:1}
+.e2-track i{position:absolute;left:16px;right:16px;border-top:3px dashed var(--line2)}
+.e2-slot.sung{background:var(--bird-t);transform:translateY(-6px)}
+.e2-slot.right{box-shadow:0 4px 0 var(--ink),0 0 0 6px var(--paper),0 0 0 11px var(--great)}
+.e2-slot.miss{opacity:.55}
+.e2-note{position:absolute;left:50%;width:92px;height:92px;border-radius:50%;background:var(--c);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);animation:e2-pop 160ms ease-out}
+.e2-note .m-badge{width:52px;height:52px;font-size:28px}
+@keyframes e2-pop{0%{transform:translate(-50%,-50%) scale(.6)}100%{transform:translate(-50%,-50%) scale(1)}}

@@ -25,7 +25,7 @@ const server = http.createServer((req, res) => {
     const errs = [];
     page.on('console', m => { if (m.type() === 'error' && !/fonts\.(googleapis|gstatic)/.test(m.text())) errs.push(m.text()); });
     page.on('pageerror', e => errs.push(String(e)));
-    for (const name of ['', 'tap', 'songs', 'teacher', 'calib', 'speaker', 'credits']) {
+    for (const name of ['', 'map', 'tap', 'songs', 'teacher', 'calib', 'speaker', 'credits']) {
       errs.length = 0;
       await page.goto(base + '#/' + name);
       await page.waitForTimeout(900);

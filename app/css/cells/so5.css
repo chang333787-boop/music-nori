@@ -1,0 +1,44 @@
+/* 소5 한 가지만 바뀌는 짝 — 소리 그림(세로 자리 = 높이 · 가로 길이 = 길이 · 굵기 = 크기) · 확인 게임 '무엇이 바뀌었나' */
+.sp-cols{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr)}
+.sp-left{display:flex;flex-direction:column;gap:12px;min-height:0}
+.spic{position:relative;flex:1;min-height:0;border:3px solid var(--ink);border-radius:24px;background:var(--bunny-t);padding:58px 18px 10px 84px}
+.sp-lines{position:absolute;left:84px;right:18px;top:58px;bottom:50px;pointer-events:none}
+.sp-lines i{position:absolute;left:0;right:0;border-top:3px dashed rgba(59,42,30,.18)}
+.sp-lines i:nth-child(1){bottom:17%}.sp-lines i:nth-child(2){bottom:48%}.sp-lines i:nth-child(3){bottom:79%}
+.sp-hi,.sp-lo{position:absolute;left:12px;font-family:var(--head);font-size:20px;line-height:1.1;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 10px}
+.sp-hi{top:58px}.sp-lo{bottom:50px}
+.sp-halves{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%}
+.sp-half{position:relative;display:flex;flex-direction:column;min-height:0}
+.sp-half+.sp-half::before{content:'';position:absolute;left:-11px;top:0;bottom:0;border-left:3px solid rgba(59,42,30,.25)}
+.sp-num{align-self:center;font-family:var(--head);font-size:20px;line-height:1.1;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 14px;margin-top:6px}
+.sp-field{position:relative;flex:1;min-height:0}
+.sp-pill{position:absolute;left:0;width:0;background:var(--bunny);border:3px solid var(--ink);border-radius:999px;box-sizing:border-box}
+.sp-pill.off{visibility:hidden}
+.sp-ghost{position:absolute;left:0;border:3px dashed var(--ink);border-radius:999px;box-sizing:border-box;background:none;z-index:1}
+.sp-ask{position:absolute;left:calc(50% - 32px);top:calc(50% - 32px);width:64px;height:64px;border:3px dashed rgba(59,42,30,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:36px;color:var(--ink-2);background:var(--surface);transition:transform 120ms ease-out}
+.sp-ask.live{border-style:solid;border-color:var(--ink);color:var(--ink);transform:scale(1.15)}
+.sp-note{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:var(--head);font-size:22px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 16px 3px 8px}
+.sp-ic{display:inline-flex;flex:none;width:34px;height:34px}
+.sp-ic svg{width:100%;height:100%}
+.sp-legend{display:flex;gap:12px;flex-wrap:wrap}
+.sp-legend>span{display:inline-flex;align-items:center;gap:8px;font-family:var(--head);font-size:20px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 16px 3px 8px}
+.sp-ex b{font-size:26px}
+/* 고르는 카드 — 높이(세로 화살표) · 길이(가로 막대) · 크기(작은 원 → 큰 원) */
+.sp-card{min-height:110px;font-size:40px;border-radius:24px;justify-content:flex-start;gap:22px;padding-left:34px}
+.sp-card .sp-ic{width:62px;height:62px}
+.sp-card.g5{min-height:118px;width:300px;justify-content:center;padding-left:20px}
+.sp-card.new{animation:g5-pop 360ms ease-out}
+@keyframes g5-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.05);opacity:1}100%{transform:none}}
+/* 확인 게임 */
+.g5-scene{position:absolute;inset:0;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:22px;padding:74px 40px 30px}
+.g5-mid{display:grid;grid-template-columns:150px minmax(0,1fr) 150px;gap:20px;align-items:center;min-height:0}
+.g5-mid .spic{height:100%}
+.g5-bunny{width:150px;height:150px;align-self:end}
+.g5-bunny img,.g5-bunny svg{width:100%;height:100%;object-fit:contain}
+.g5-cards{display:flex;justify-content:center;gap:26px}
+.g5-count:empty{display:none}
+.g5-count{position:absolute;left:24px;top:22px;font-family:var(--head);font-size:26px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:4px 14px;pointer-events:none}
+.g5-word{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--head);font-size:42px;pointer-events:none}
+.g5-word[data-k="good"]{color:var(--good)}.g5-word[data-k="oops"]{color:var(--ink-2)}
+.g5-banner{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:3;display:flex;align-items:center;gap:14px;font-family:var(--head);font-size:40px;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:16px 34px;box-shadow:0 8px 0 var(--ink);animation:g5-pop 360ms ease-out}
+.g5-banner .sp-ic{width:60px;height:60px}

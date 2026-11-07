@@ -1,6 +1,6 @@
 // 처음 화면 — 위: 숲속 공연장(친구를 누르면 바로 소리 · 계획서 '첫 10초') · 아래: 카드(추천 '다음 칸' 하나만 크게 + 주황 '시작')
 //  선생님 도구(지연 · 스피커 · 출처)는 머리띠 오른쪽 톱니 안(11-07 처음 보는 눈 평가).
-import { h, onPress } from '../util.js';
+import { h, onPress, lsGet } from '../util.js';
 import { BAND, friendImg, setPose, friendSound, preload, IMG_DIR } from '../band.js';
 import { cellById, LANES, nextCell, ORDER } from '../../../engine/cells.js';
 import { getProg } from '../cellkit.js';
@@ -31,7 +31,7 @@ export default function mount(root, ctx) {
   }
 
   const prog = getProg();
-  const nx = nextCell(prog);
+  const nx = nextCell(prog, lsGet('startCell', undefined));
   const done = ORDER.filter(id => prog[id] && prog[id].stars >= 1).length;
   let main;
   if (nx) {

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # 그림 손질 — 코덱스가 그린 PNG(흰 바탕) → 앱용 webp
 #  캐릭터·돌: 테두리에서 이어진 흰 바탕만 투명하게(토끼 흰 털처럼 외곽선 안쪽 흰색은 그대로) → 여백 자르기 → 긴 변 512px
-#  배경(bg_*): 1600×900으로 줄여 그대로
+#  배경(bg_*): 가로 1600px로 비율 그대로 줄임
 #  쓰는 법: python3 tools/img_prep.py <코덱스 out 폴더> app/img/band
 import sys, os
 from collections import deque
@@ -54,7 +54,8 @@ def main(src, dst):
         name = f[:-4]
         im = Image.open(os.path.join(src, f))
         if name.startswith('bg_'):
-            im = im.convert('RGB').resize((1600, 900), Image.LANCZOS)
+            im = im.convert('RGB')
+            im = im.resize((1600, round(im.height * 1600 / im.width)), Image.LANCZOS)
             im.save(os.path.join(dst, name + '.webp'), 'WEBP', quality=80, method=6)
         else:
             im = trim(cut_white(im))

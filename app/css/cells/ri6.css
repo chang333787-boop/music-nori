@@ -1,0 +1,74 @@
+/* 리6 4/4 마디 채우기 — 택배 상자(박 칸 넷 · 넘침 자리) · 음표 블록(길이만큼 가로로 긴 판) */
+.r6{position:relative;width:100%;min-height:0;display:grid;gap:12px;align-content:center}
+.r6-show{grid-template-rows:auto 34px auto}
+.r6-follow{grid-template-rows:auto auto 40px}
+.r6-game{grid-template-rows:auto auto auto;gap:14px}
+/* 상자 */
+.r6-boxzone{position:relative;display:grid;grid-template-rows:214px 32px;gap:2px}
+.r6-box{position:relative;width:656px;height:214px;margin-left:44px}
+.r6-body{position:absolute;left:0;top:44px;width:656px;height:128px;background:#D9A86A;border:3px solid var(--ink);border-radius:10px}
+.r6-inner{position:absolute;left:5px;top:8px;width:640px;bottom:8px;background:#F6EDE0;border-radius:6px}
+.r6-cell{position:absolute;top:0;bottom:0;width:160px;border-left:3px dashed rgba(59,42,30,.28);transition:background-color 100ms}
+.r6-cell:first-child{border-left:0;border-radius:6px 0 0 6px}
+.r6-cell:last-child{border-radius:0 6px 6px 0}
+.r6-cell.lit{background:#FBF0D2}
+.r6-cell.rest{animation:r6rest 420ms ease-out}
+@keyframes r6rest{0%{background:#E3DCD2}100%{background:transparent}}
+.r6-flap{position:absolute;top:28px;height:18px;width:328px;background:#C99A5B;border:3px solid var(--ink);border-radius:4px;transition:transform 340ms ease-in}
+.r6-flap.l{left:0;transform-origin:0 100%;transform:rotate(-7deg)}
+.r6-flap.r{left:328px;transform-origin:100% 100%;transform:rotate(7deg)}
+.r6-box.closed .r6-flap{transform:none}
+.r6-tape{position:absolute;left:298px;top:22px;width:60px;height:30px;background:#EBDDB2;border:3px solid var(--ink);border-radius:3px;opacity:0;transition:opacity 150ms 330ms}
+.r6-box.closed .r6-tape{opacity:1}
+.r6-over{position:absolute;left:648px;top:52px;height:112px;width:0;border-radius:0 12px 12px 0;background:repeating-linear-gradient(45deg,rgba(196,81,26,.5) 0 10px,rgba(248,230,218,.35) 10px 20px);border:3px dashed var(--go);border-left:0;pointer-events:none;z-index:2}
+.r6-box:not(.overflow) .r6-over{display:none}
+.r6-bdot{position:absolute;top:180px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;font-family:var(--head);font-size:20px;color:var(--ink-2)}
+.r6-bdot i{display:block;width:18px;height:18px;border-radius:50%;border:3px solid var(--ink);background:var(--surface)}
+.r6-bdot.on i{background:var(--ink)}
+.r6-bdot.on b{color:var(--ink)}
+.r6-bdot b{font-weight:400}
+.r6-count{margin:0 0 0 44px;width:656px;text-align:center;font-family:var(--head);font-size:24px;line-height:32px;color:var(--ink)}
+.r6-count[data-k="over"]{color:var(--go-d)}
+.r6-box.gone{transform:translateX(120%);opacity:0;transition:transform 450ms ease-in,opacity 450ms}
+.r6-box.enter{animation:r6in 420ms ease-out}
+@keyframes r6in{from{transform:translateX(-70px);opacity:0}to{transform:none;opacity:1}}
+.r6-box.shake{animation:r6shake 320ms ease-out}
+@keyframes r6shake{0%,100%{transform:none}25%{transform:translateX(-8px)}60%{transform:translateX(6px)}}
+/* 블록 */
+.r6-blk{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:6px;height:96px;min-height:0;padding:0 12px;border:3px solid var(--ink);border-radius:16px;background:var(--bc,#fff);font-family:var(--head);color:var(--ink);box-shadow:0 4px 0 var(--ink);flex:none}
+.r6-blk .nt{line-height:0;flex:none}
+.r6-blk .sy{font-weight:400;font-size:24px;white-space:nowrap}
+.r6-blk .bd{position:absolute;right:10px;bottom:9px;display:flex;gap:5px}
+.r6-blk .bd i{display:block;width:11px;height:11px;border-radius:50%;background:var(--ink)}
+.k-q{--bc:#F3D98B}.k-h{--bc:#BFDDEF}.k-w{--bc:#CFE5C3}.k-qr{--bc:#E3DCD2}.k-ee{--bc:#F2B6C6}
+.r6-inner .r6-blk{position:absolute;top:2px;height:96px;z-index:1}
+.r6-inner .r6-blk.lock{box-shadow:none;cursor:default;border-style:solid;opacity:.92}
+.r6-inner .r6-blk.in{cursor:pointer}
+.r6-blk.pop{animation:r6pop 260ms ease-out}
+@keyframes r6pop{0%{transform:translateY(-16px)}60%{transform:translateY(3px)}100%{transform:none}}
+.r6-blk.ghost{position:fixed;z-index:100;pointer-events:none;opacity:.92}
+.r6-blk.tr{height:88px}
+.r6-blk.tr.press{transform:translateY(4px);box-shadow:0 0 0 var(--ink)}
+/* 블록 판 */
+.r6-traywrap{display:flex;align-items:center;gap:16px;background:var(--panel);border-radius:22px;padding:12px 16px}
+.r6-traylab{font-family:var(--head);font-size:22px;color:var(--ink-2);writing-mode:horizontal-tb;flex:none}
+.r6-tray{display:flex;align-items:center;gap:16px;flex-wrap:nowrap;touch-action:none}
+/* 게임 머리 */
+.r6-head{display:flex;align-items:center;gap:18px;min-height:80px}
+.r6-hog{width:80px;height:80px;flex:none}
+.r6-hog img,.r6-hog svg{width:100%;height:100%;object-fit:contain}
+.r6-msg{flex:1;margin:0}
+.r6-listen{min-height:64px;font-size:22px;flex:none}
+.r6-counter{font-family:var(--head);font-size:24px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:2px 14px;white-space:nowrap}
+.r6-counter:empty{display:none}
+/* 보기 */
+.r6-show .r6-msg{padding-left:44px}
+.r6-exgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.r6-ex{min-height:112px;padding:10px 14px;gap:6px}
+.r6-ex b{font-size:23px}
+.r6-exmini{display:flex;gap:3px}
+.r6-exmini i{display:block;height:16px;border:2px solid var(--ink);border-radius:5px;background:var(--bc)}
+/* 따라 하기 */
+.r6-nums{display:grid;grid-template-columns:repeat(4,150px);gap:16px;margin-left:44px}
+.r6-num{min-height:84px;font-size:34px}
+.r6-frow{margin-left:44px}

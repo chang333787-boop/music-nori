@@ -1,0 +1,69 @@
+/* 리4 2분음표 — 박 길(박 점 · 길이만큼 막대) · 풍선 불기 */
+.r4-wrap{position:relative;width:100%;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) 44px;gap:8px}
+.r4-host{min-height:0;display:flex}
+.r4-play{position:relative;width:100%;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) 170px;gap:10px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.tapbar .go.huge{touch-action:none;-webkit-touch-callout:none}
+/* 하늘 · 고슴도치 · 풍선 */
+.r4-sky{position:relative;overflow:hidden;border:3px solid var(--ink);border-radius:22px;background:#DCEBF5;min-height:0}
+.r4-hog{position:absolute;left:162px;bottom:-4px;width:116px;height:116px;pointer-events:none}
+.r4-hog img,.r4-hog svg{width:100%;height:100%;object-fit:contain}
+.r4-bal{position:absolute;left:236px;height:52px;width:34px;border-radius:26px;background:var(--c);border:3px solid var(--ink);transform-origin:0 50%;transition:left 700ms ease-out,top 700ms ease-out,transform 700ms ease-out,opacity 400ms;pointer-events:none}
+.r4-bal .knot{position:absolute;left:-9px;top:50%;width:10px;height:12px;margin-top:-6px;background:var(--c);border:3px solid var(--ink);border-radius:3px 0 0 3px}
+.r4-bal.tied{transform:scale(.5)}
+.r4-bal.tied::after{content:'';position:absolute;left:-4px;top:calc(50% + 6px);width:3px;height:44px;background:var(--ink);opacity:.55}
+.r4-bal.pop{transform:scale(.15);opacity:0;transition:transform 380ms ease-in,opacity 380ms}
+.r4-bal.away{transform:translate(240px,-200px) scale(.5);opacity:0;transition:transform 900ms ease-in,opacity 900ms}
+.r4-word{position:absolute;left:220px;top:8px;transform:translateX(-50%);font-family:var(--head);font-size:34px;line-height:1.2;white-space:nowrap;pointer-events:none;opacity:0}
+.r4-word.show{animation:r4word 900ms ease-out forwards}
+@keyframes r4word{0%{opacity:0;transform:translate(-50%,10px)}15%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-8px)}}
+.r4-word[data-k="great"]{color:#9A6E00}.r4-word[data-k="good"]{color:var(--good)}.r4-word[data-k="oops"]{color:var(--ink-2)}
+/* 박 길 */
+.r4-lane{position:relative;overflow:hidden;border:3px solid var(--ink);border-radius:22px;background:#F6EFE2;height:170px;min-height:0}
+.r4-track{position:absolute;left:0;top:0;height:100%;width:0;will-change:transform}
+.r4-dot{position:absolute;top:102px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:var(--ink)}
+.r4-dot.cnt{top:94px;width:36px;height:36px;margin-left:-18px;background:var(--surface);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:20px;font-style:normal;color:var(--ink-2)}
+.r4-barline{position:absolute;top:58px;height:92px;width:4px;margin-left:-2px;background:var(--ink);border-radius:2px}
+.r4-note{position:absolute;top:84px;height:56px;border:3px solid var(--ink);border-radius:28px;background:var(--surface)}
+.r4-note .fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:25px;background:#F3D98B}
+.r4-note .sym{position:absolute;left:0;bottom:56px;line-height:0}
+.r4-note .syl{position:absolute;left:38px;top:50%;transform:translateY(-50%);font-family:var(--head);font-weight:400;font-size:24px;line-height:1}
+.r4-note .pdot{position:absolute;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:var(--ink);z-index:1}
+.r4-note.h .syl{left:104px;transform:translate(-50%,-50%)}
+.r4-note.now{box-shadow:0 0 0 3px var(--paper),0 0 0 7px var(--go)}
+.r4-note.ok .fill{width:100%!important;background:var(--ok-t)}
+.r4-note.great .fill{background:#FBF0D2}
+.r4-note.ok.great{border-color:#9A6E00}
+.r4-note.short,.r4-note.long{background:var(--miss-t)}
+.r4-note.short .fill,.r4-note.long .fill{background:#E3DCD2}
+.r4-note.miss{border-style:dashed;border-color:var(--oops)}
+.r4-rest{position:absolute;top:10px;margin-left:-14px;line-height:0}
+.r4-rest b{position:absolute;left:30px;top:84px;font-family:var(--head);font-weight:400;font-size:22px;line-height:1;color:var(--ink-2)}
+.r4-hit{position:absolute;left:220px;top:0;bottom:0;width:6px;margin-left:-3px;background:var(--go);border-radius:3px}
+.r4-lane.still .r4-hit{left:0;opacity:.85}
+.r4-cnum{position:absolute;left:24px;top:50%;transform:translateY(-50%);font-family:var(--head);font-weight:400;font-size:64px;line-height:1;color:var(--ink)}
+.r4-cnum:empty{display:none}
+/* 아래 줄 */
+.r4-info{display:flex;align-items:center;gap:22px;padding:0 12px}
+.r4-counter{margin-left:auto;font-family:var(--head);font-size:24px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:2px 14px}
+.r4-counter:empty{display:none}
+.r4-wrap.game .r4-info{position:absolute;right:16px;top:12px;padding:0;z-index:2}
+.r4-wrap.game{grid-template-rows:minmax(0,1fr)}
+.r4-cardpair{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--ink)}
+.r4-cardpair span{margin-right:16px;font-family:var(--head)}
+/* 보기 */
+.r4-show{position:relative;width:100%;display:grid;grid-template-rows:auto 170px auto;gap:12px;min-height:0}
+.r4-pairs{display:flex;align-items:center;gap:28px}
+.r4-shog{width:104px;height:104px}
+.r4-shog img,.r4-shog svg{width:100%;height:100%;object-fit:contain}
+.r4-pair{display:flex;align-items:center;gap:14px;background:var(--panel);border-radius:20px;padding:6px 20px 6px 12px}
+.r4-psym{line-height:0}
+.r4-pbar{display:flex;align-items:center;height:42px;border:3px solid var(--ink);border-radius:21px;background:var(--surface);padding:0 14px}
+.r4-pbar i{display:block;width:16px;height:16px;border-radius:50%;background:var(--ink)}
+.r4-pbar.q{width:62px}.r4-pbar.h{width:150px;justify-content:space-between}
+.r4-ptxt b{display:block;font-family:var(--head);font-weight:400;font-size:26px;line-height:1.2}
+.r4-ptxt small{font-size:18px;color:var(--ink-2);font-weight:700}
+.r4-lanebox{min-height:0;display:grid}
+.r4-exgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.r4-ex{min-height:108px;padding:10px 18px;gap:4px}
+.r4-ex b{font-size:26px}
+.r4-mini{display:flex;gap:6px;align-items:flex-end}

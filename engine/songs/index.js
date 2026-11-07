@@ -16,7 +16,7 @@ export const SONGS = [
     mel: 'G4q Rq G4q Rq | E4q E4q G4h | G4q E4q Rq E4q | G4h Rh',
     use: '솔·미 사이에 쉼이 끼어도 높낮이를 따라가기' },
   // 가2 = 솔·미·라(G4·E4·A4) · 라가 꼭 나옴
-  { id: 'ga2-ra', title: '라가 왔어요', meter: [4, 4], tempo: 100, key: 0, cells: ['가2', '악1'],
+  { id: 'ga2-ra', title: '라가 왔어요', meter: [4, 4], tempo: 100, key: 0, cells: ['가2', '악1', '악2'],
     mel: 'G4q A4q G4h | E4h G4h | A4q A4q G4q E4q | G4h Rh',
     use: '새로 온 음(라)이 나온 자리 찾기' },
   { id: 'ga2-stair', title: '솔미라 계단', meter: [4, 4], tempo: 100, key: 0, cells: ['가2'],

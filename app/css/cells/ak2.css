@@ -1,0 +1,52 @@
+/* 악2 오선의 줄과 칸 — 큰 오선(줄 사이 44~56px · 줄이 음표 위로 지나가 '꿰인' 모양이 보이게) · 보기 · 따라 하기 · 확인 게임 */
+.k2-cols{grid-template-columns:minmax(0,1.22fr) minmax(0,.78fr)}
+.k2-panel{display:flex;align-items:center;min-height:0;padding:0 10px;background:var(--surface);border:3px solid var(--ink);border-radius:24px}
+.k2-staff{position:relative;width:100%;display:grid;grid-template-columns:0 minmax(0,1fr) 0}
+.k2-staff.labeled{grid-template-columns:100px minmax(0,1fr) 88px}
+.k2-labs{position:relative}
+.k2-lab{position:absolute;transform:translateY(-50%);font-size:18px;font-weight:700;line-height:1.3;color:var(--ink-2);white-space:nowrap;padding:1px 10px;border-radius:999px;transition:background-color 120ms,opacity 450ms ease-out}
+.k2-lab.l{right:8px}.k2-lab.s{left:8px}
+.k2-lab.on{color:var(--ink);background:var(--turtle-t);box-shadow:inset 0 0 0 2px var(--ink)}
+.k2-field{position:relative}
+.k2-line{position:absolute;left:0;right:0;height:3px;background:var(--ink);transform:translateY(-50%);z-index:2;transition:opacity 450ms ease-out,height 120ms,background-color 120ms}
+.k2-line.on{height:7px;background:var(--turtle)}
+.k2-space{position:absolute;left:0;right:0;transition:background-color 120ms}
+.k2-space.on{background:var(--turtle-t)}
+.k2-staff.picture .k2-line,.k2-staff.picture .k2-lab{opacity:0}
+.k2-note{position:absolute;width:calc(var(--g) * 1.3);height:calc(var(--g) * .9);border-radius:50%;background:var(--c);border:3px solid var(--ink);transform:translate(-50%,-50%) rotate(-14deg);z-index:1;transition:left 520ms ease-in-out,width 520ms ease-in-out,border-radius 520ms ease-in-out,transform 520ms ease-in-out,box-shadow 110ms}
+.k2-note.bar{border-radius:14px;transform:translate(-50%,-50%)}
+.k2-note.hollow{background:var(--surface);border-width:4px}
+.k2-note.on{box-shadow:0 0 0 4px var(--paper),0 0 0 8px var(--ink)}
+.k2-note.pop{animation:k2-pop 180ms ease-out}
+@keyframes k2-pop{0%{transform:translate(-50%,-50%) rotate(-14deg) scale(.5)}100%{transform:translate(-50%,-50%) rotate(-14deg) scale(1)}}
+.k2-ledger{position:absolute;width:calc(var(--g) * 2);height:3px;background:var(--ink);transform:translate(-50%,-50%);z-index:2}
+.k2-ledger.on{height:7px;background:var(--turtle)}
+.k2-tag{position:absolute;transform:translateY(-50%);z-index:3;font-family:var(--head);font-size:24px;line-height:1.2;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:2px 14px;white-space:nowrap}
+
+/* 보기 카드 */
+.k2-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:center;min-height:0}
+.k2-ex{flex-direction:column;align-items:flex-start;gap:4px;min-height:100px;padding:10px 16px;text-align:left}
+.k2-ex.wide{grid-column:1/-1}
+.k2-exhead{display:flex;align-items:center;gap:10px}
+.k2-ex .k2-exhead .m-badge{width:44px;height:44px;font-family:var(--head);font-size:24px;font-weight:400;color:var(--ink)}
+.k2-ex b{font-family:var(--head);font-weight:400;font-size:26px;color:var(--ink)}
+
+/* 줄 음 · 칸 음 그림 단추 */
+.k2-ico{position:relative;display:inline-block;flex:none;width:96px;height:64px}
+.k2-ico::before{content:'';position:absolute;left:50%;top:50%;width:54px;height:36px;border-radius:50%;background:var(--surface);border:3px solid var(--ink);box-sizing:border-box;transform:translate(-50%,-50%) rotate(-14deg)}
+.k2-ico.line::after{content:'';position:absolute;left:0;right:0;top:50%;height:3px;background:var(--ink);transform:translateY(-50%)}
+.k2-ico.space::after{content:'';position:absolute;left:0;right:0;top:50%;height:40px;border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);box-sizing:border-box;transform:translateY(-50%)}
+.k2-pick{justify-content:flex-start;gap:22px;min-height:118px;padding:10px 28px;font-size:34px}
+
+/* 확인 게임 — 왼쪽 큰 오선 · 오른쪽 거북 + 고르기 */
+.k2-scene{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:24px;padding:70px 28px 26px;background:#E0EDE5}
+.k2-gpanel{display:flex;align-items:center;min-height:0;padding:0 24px;background:var(--surface);border:3px solid var(--ink);border-radius:24px}
+.k2-side{display:flex;flex-direction:column;align-items:stretch;gap:14px;min-height:0}
+.k2-turtle{align-self:center;width:104px;height:104px;flex:0 1 104px;min-height:0;pointer-events:none}
+.k2-turtle img,.k2-turtle svg{width:100%;height:100%;object-fit:contain}
+.k2-opts{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;min-height:0}
+.k2-opts.done{pointer-events:none}
+.k2-opt{flex:0 1 84px;min-height:56px;font-size:30px}
+.k2-opt.bin{flex:0 1 140px;min-height:84px;justify-content:flex-start;gap:24px;padding:10px 28px;font-size:32px}
+.k2-opt.right{box-shadow:0 4px 0 var(--ink),0 0 0 6px var(--paper),0 0 0 11px var(--great)}
+.k2-opt.miss{opacity:.5}

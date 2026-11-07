@@ -1,0 +1,29 @@
+/* 가1 솔·미 — 보기 · 따라 하기(높이 판은 _mel.css) · 확인 게임 메아리 언덕 */
+.ga-cols{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
+
+/* 확인 게임 — 왼쪽 언덕(참새) · 가운데 메아리 길(칸마다 솔 높이 · 미 높이) · 오른쪽 솔 돌(위) · 미 돌(아래) */
+.e1-scene{position:absolute;inset:0;display:grid;grid-template-columns:300px minmax(0,1fr) 300px;background:#DCEBF5;overflow:hidden}
+.e1-hill{position:absolute;left:-130px;bottom:-170px;width:580px;height:420px;border-radius:50%;background:#9CCB8E;border:3px solid var(--ink)}
+.e1-bird{position:absolute;left:84px;bottom:226px;width:156px;height:156px;z-index:1;pointer-events:none}
+.e1-bird img,.e1-bird svg{width:100%;height:100%;object-fit:contain}
+.e1-mid{grid-column:2;position:relative;display:flex;align-items:center;justify-content:center;gap:20px;padding:64px 0 28px}
+.e1-axis{position:relative;width:48px;height:400px;flex:none}
+.e1-axis .m-badge{position:absolute;left:0;width:48px;height:48px;font-size:24px;transform:translateY(-50%)}
+.e1-axis .hi{top:25%}.e1-axis .lo{top:75%}
+.e1-path{display:flex;gap:22px;height:400px}
+.e1-slot{position:relative;width:150px;height:100%;background:var(--surface);border:3px solid var(--ink);border-radius:22px;transition:transform 120ms ease-out,background-color 120ms ease-out}
+.e1-slot::before,.e1-slot::after{content:'';position:absolute;left:14px;right:14px;border-top:3px dashed var(--line2)}
+.e1-slot::before{top:25%}.e1-slot::after{top:75%}
+.e1-slot.sung{background:var(--bird-t);transform:translateY(-6px)}
+.e1-slot.now{outline:4px dashed var(--ink);outline-offset:6px}
+.e1-put{position:absolute;left:50%;width:104px;height:104px;border-radius:50%;background:var(--c);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);animation:e1-drop 160ms ease-out;z-index:1}
+.e1-put.hi{top:25%}.e1-put.lo{top:75%}
+.e1-put.miss{opacity:.4}
+.e1-put.ghost{background:var(--surface);border:4px dashed var(--ink)}
+@keyframes e1-drop{0%{transform:translate(-50%,-50%) scale(.6)}100%{transform:translate(-50%,-50%) scale(1)}}
+.e1-stones{grid-column:3;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:70px 34px 34px 0;z-index:1}
+.e1-stone{width:250px;min-height:0;height:186px;padding:0;background:var(--c);border-radius:46% 54% 50% 50% / 58% 58% 42% 42%;box-shadow:0 6px 0 var(--ink)}
+.e1-stone .m-badge{width:80px;height:80px;font-size:44px}
+.e1-stone.glow{box-shadow:0 6px 0 var(--ink),0 0 0 8px var(--paper),0 0 0 13px var(--c)}
+.e1-stone{transition:opacity 120ms ease-out,transform var(--up),box-shadow var(--up)}
+.e1-scene.listen .e1-stone{opacity:.55}

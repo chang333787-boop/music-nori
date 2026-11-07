@@ -1,0 +1,20 @@
+/* 가3 도(뛰어가는 가락) — 보기 · 따라 하기(그림 둘) · 확인 게임 '뛰는 가락 그림 고르기' */
+.ga-cols{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
+.g3-opts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3-card{position:relative;flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:0;padding:14px 12px 12px;border-radius:24px;transition:opacity 120ms ease-out,box-shadow 120ms ease-out}
+.g3-card .m-pic{max-width:100%}
+.g3-num{position:absolute;left:12px;top:10px;font-family:var(--head);font-size:22px;line-height:1;background:var(--panel);border:2px solid var(--ink);border-radius:999px;padding:5px 12px}
+.g3-card.right{box-shadow:0 4px 0 var(--ink),0 0 0 6px var(--paper),0 0 0 11px var(--great)}
+.g3-card.miss{opacity:.5}
+
+/* 확인 게임 — 왼쪽 계단(참새) · 가운데 그림 카드 셋~넷 */
+.g3-scene{position:absolute;inset:0;background:#DCEBF5;overflow:hidden}
+.g3-stairs{position:absolute;left:0;bottom:0;width:210px;height:240px}
+.g3-stairs i{position:absolute;bottom:-3px;left:calc(var(--k) * 42px - 3px);width:45px;height:calc(46px + var(--k) * 34px);background:#E3C893;border:3px solid var(--ink)}
+.g3-bird{position:absolute;left:112px;bottom:176px;width:132px;height:132px;pointer-events:none;z-index:1}
+.g3-bird img,.g3-bird svg{width:100%;height:100%;object-fit:contain}
+.g3-row{position:absolute;left:260px;right:28px;top:70px;bottom:30px;display:flex;align-items:center;justify-content:center;gap:24px}
+.g3-row.done{pointer-events:none}
+.g3-row .g3-card{width:300px;height:340px}
+.g3-row.n4 .g3-card{width:226px}
+.g3-row .g3-num{font-size:26px;padding:6px 14px}

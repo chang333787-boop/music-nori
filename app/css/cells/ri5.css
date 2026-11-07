@@ -1,0 +1,52 @@
+/* 리5 마디·박자표 — 박 판(센박 큰 점 · 마디줄 · 박자표) · 행진일까 왈츠일까 */
+.r5{position:relative;width:100%;min-height:0;display:grid;gap:12px}
+.r5-show{grid-template-rows:84px 200px auto}
+.r5-scene{grid-template-rows:150px minmax(0,1fr);gap:10px}
+.r5-wrap{position:relative;width:100%;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) 44px;gap:8px}
+.r5-wrap.game{grid-template-rows:minmax(0,1fr)}
+.r5-top{position:relative;display:flex;align-items:center;gap:22px;min-height:0;padding:0 8px}
+.r5-hog{width:128px;height:128px;flex:none}
+.r5-show .r5-hog{width:84px;height:84px}
+.r5-hog img,.r5-hog svg{width:100%;height:100%;object-fit:contain}
+.r5-hog.bump{animation:r5bump 200ms ease-out}
+@keyframes r5bump{0%{transform:none}35%{transform:translateY(5px) scaleY(.93)}100%{transform:none}}
+.r5-note{margin:0;font-size:20px;font-weight:700;color:var(--ink-2)}
+.r5-cnum{font-family:var(--head);font-weight:400;font-size:60px;line-height:1;min-width:40px}
+.r5-word{font-family:var(--head);font-size:32px;line-height:1.2}
+.r5-word[data-k="great"]{color:#9A6E00}.r5-word[data-k="good"]{color:var(--good)}.r5-word[data-k="oops"],.r5-word[data-k="info"]{color:var(--ink-2)}
+.r5-word[data-k="count"]{font-size:80px;color:var(--ink)}
+.r5-counter{margin-left:auto;font-family:var(--head);font-size:24px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:2px 14px;white-space:nowrap}
+.r5-counter:empty{display:none}
+/* 박 판 */
+.r5-board{position:relative;border:3px solid var(--ink);border-radius:22px;background:var(--hog-t);min-height:0;overflow:hidden}
+.r5-dot{position:absolute;top:50%;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);border-radius:50%;background:var(--surface);border:3px solid var(--ink);transition:left 450ms ease-out,width 450ms ease-out,height 450ms ease-out,margin 450ms ease-out,background-color 120ms}
+.r5-dot.on{background:var(--ink)}
+.r5-dot.now{box-shadow:0 0 0 4px var(--hog-t),0 0 0 8px var(--go)}
+.r5-dot.g{background:var(--great)}.r5-dot.k{background:var(--good)}.r5-dot.rh{background:var(--oops)}
+.r5-dot.m{background:var(--surface);border-style:dashed;border-color:var(--oops)}
+.r5-line{position:absolute;top:18%;bottom:18%;width:4px;margin-left:-2px;background:var(--ink);border-radius:2px}
+.r5-ts{position:absolute;top:50%;transform:translate(-50%,-50%);line-height:0}
+.r5-ts.pop,.r5-line.pop{animation:r5pop 450ms ease-out}
+@keyframes r5pop{0%{opacity:0}100%{opacity:1}}
+.r5-lab{position:absolute;transform:translateX(-50%);font-size:18px;font-weight:700;color:var(--ink);background:var(--surface);border:2px solid var(--ink);border-radius:10px;padding:0 8px;line-height:1.5;white-space:nowrap}
+.r5-lab.line,.r5-lab.ts{top:6px}
+.r5-lab.strong{top:46px}
+.r5-brace{position:absolute;bottom:8px;height:30px;border:3px solid var(--ink-2);border-top:0;border-radius:0 0 14px 14px;display:flex;align-items:flex-end;justify-content:center}
+.r5-brace b{font-size:18px;line-height:1.3;background:var(--hog-t);padding:0 8px;margin-bottom:-4px}
+.r5-exgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.r5-ex{flex-direction:row;align-items:center;gap:14px;min-height:104px;padding:10px 16px}
+.r5-exts{display:flex;gap:2px;line-height:0;flex:none}
+.r5-extx{display:flex;flex-direction:column;gap:2px}
+.r5-extx b{font-size:26px}
+/* 고르기 단추(아래 띠) */
+.tapbar>button.r5-pick{min-height:112px;min-width:340px;font-size:30px;justify-content:flex-start;gap:18px;padding:8px 26px}
+.r5-pdots{display:flex;align-items:center;gap:8px}
+.r5-pdots i{display:block;width:18px;height:18px;border-radius:50%;background:var(--surface);border:3px solid var(--ink)}
+.r5-pdots i.strong{width:32px;height:32px;background:var(--ink)}
+.r5-ptxt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.r5-ptxt b{font-weight:400;font-size:32px}
+.r5-ptxt small{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
+.r5-pick:disabled .r5-pdots i{border-color:var(--line2)}
+.r5-pick:disabled .r5-pdots i.strong{background:var(--line2)}
+.r5-pick:disabled small{color:var(--off-ink)}
+.r5-info{display:flex;align-items:center;gap:22px;padding:0 12px}
