@@ -12,6 +12,8 @@ const ROUTES = {
   songs: { load: () => import('./screens/songs.js'), title: '곡 듣기', friend: 'turtle' },
   map: { load: () => import('./screens/map.js'), title: '음악 마을 지도', friend: 'bird' },
   play: { load: () => import('./screens/play.js'), title: '놀이터', friend: 'turtle' },
+  tv: { load: () => import('./screens/tvpick.js'), title: 'TV로 다같이', parent: 'teacher' },
+  tvcell: { load: () => import('./screens/cell.js'), title: '', parent: 'tv' },
   cell: { load: () => import('./screens/cell.js'), title: '', parent: 'map' },
   teacher: { load: () => import('./screens/teacher.js'), title: '선생님' },
   calib: { load: () => import('./screens/calib.js'), title: '지연 맞추기', parent: 'teacher' },
@@ -63,7 +65,7 @@ async function route() {
   document.body.dataset.screen = key || 'home';
   parent = r.parent || '';
   back.hidden = !key;
-  back.setAttribute('aria-label', parent === 'teacher' ? '선생님 칸으로' : parent === 'map' ? '마을 지도로' : '처음으로');
+  back.setAttribute('aria-label', parent === 'teacher' ? '선생님 칸으로' : parent === 'map' ? '마을 지도로' : parent === 'tv' ? 'TV 놀이 고르기로' : '처음으로');
   bar.title(r.title || '음악 놀이터', r.friend);
   bar.mid(null);
   bar.right(key ? null : gearBtn());
@@ -71,7 +73,7 @@ async function route() {
   try {
     const mod = await r.load();
     if (my !== token) return;
-    cleanup = mod.default(main, { ...ctx, args }) || null;
+    cleanup = mod.default(main, { ...ctx, args, mode: key }) || null;
     main.focus({ preventScroll: true });
   } catch (e) {
     console.error(e);

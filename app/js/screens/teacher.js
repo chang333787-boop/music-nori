@@ -10,7 +10,8 @@ export default function mount(root, ctx) {
   const card = (to, title, desc, st, need) => h('a', { class: 'btn tcard', href: '#/' + to },
     h('b', {}, title), h('span', {}, desc), h('span', { class: 'st' + (need ? ' need' : '') }, st));
   root.append(h('div', { class: 'teacher' },
-    h('h1', {}, '이 기기 맞추기'),
+    h('h1', {}, '선생님 칸'),
+    card('tv', 'TV로 다같이', 'TV 하나로 반 전체 수업 — 시범 → 몸으로 따라 하기 → 반 전체 게임 → 먼저 예측하기. 단계마다 발문이 떠요.', '기기를 나눠 주지 않아도 돼요', false),
     card('calib', '지연 맞추기', '딸깍 소리에 맞춰 8번 두드려 이 기기의 두드림 지연을 재요. 박 판정에서 이만큼 빼요.',
       lat ? `맞춤 · ${lat.ms}ms · 판정 ${band.name} 기준` : '아직 안 맞췄어요 — 처음 한 번 꼭', !lat),
     card('speaker', '스피커 점검', '크롬북 작은 스피커는 낮은 음이 작게 들려요. 음높이마다 크기를 맞춰요.',

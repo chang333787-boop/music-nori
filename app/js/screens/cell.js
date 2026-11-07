@@ -7,6 +7,7 @@ import { h, onPress, josa } from '../util.js';
 import { friendImg, setPose, preload } from '../band.js';
 import { cellById, LANES, missingPre, nextCell } from '../../../engine/cells.js';
 import * as K from '../cellkit.js';
+import { TV_STEPS, TV_SCRIPT } from '../../../engine/tvscript.js';
 
 const PHASES = [['show', '보기'], ['follow', '연습'], ['game', '확인 게임']];
 const warned = new Set();                    // 이 창에서 한 번만 안내
@@ -14,7 +15,8 @@ const warned = new Set();                    // 이 창에서 한 번만 안내
 export default function mount(root, ctx) {
   const { engine, device, bar } = ctx;
   const cell = cellById(ctx.args && ctx.args[0]);
-  if (!cell) { ctx.go('map'); return null; }
+  const tv = ctx.mode === 'tvcell';                 // TV 하나로 반 전체 — 아이들은 몸으로 답하고 선생님이 대신 누름
+  if (!cell) { ctx.go(tv ? 'tv' : 'map'); return null; }
   if (cell.route) { ctx.go(cell.route); return null; }
   const friend = LANES[cell.lane].friend;
   bar.title(cell.name, friend);
@@ -35,7 +37,19 @@ export default function mount(root, ctx) {
   const practiceEl = h('div', { class: 'cpractice', hidden: true });
   const barSlot = h('div', { class: 'cbarslot' });
   const barEl = h('div', { class: 'tapbar cbar' }, practiceEl, barSlot);
-  root.append(h('div', { class: 'cellscreen' }, stage, barEl));
+  // TV 수업 안내 줄(선생님용 · 접을 수 있음) — 단계 · 시간 · 그대로 읽어도 되는 발문
+  const guideStep = h('span', { class: 'tvg-step' }), guideText = h('span', { class: 'tvg-text' });
+  const guideToggle = h('button', { type: 'button', class: 'tvg-hide', 'aria-label': '안내 접기' }, '접기');
+  const guide = h('div', { class: 'tvguide', hidden: !tv }, guideStep, guideText, guideToggle);
+  onPress(guideToggle, () => { guide.classList.toggle('folded'); guideToggle.textContent = guide.classList.contains('folded') ? '안내' : '접기'; });
+  const setGuide = key => {
+    if (!tv) return;
+    const i = TV_STEPS.findIndex(s => s.key === key), st = TV_STEPS[i], sc = TV_SCRIPT[cell.id] || {};
+    guideStep.textContent = `${i + 1} ${st.name} · ${st.min}분`;
+    guideText.textContent = sc[key] || '';
+  };
+  const screenEl = h('div', { class: 'cellscreen' + (tv ? ' tvmode' : '') }, stage, guide, barEl);
+  root.append(screenEl);
 
   let mod = null, phase = -1, cleanup = null, auto = null, gone = false, tellTimer = 0;
   const ui = {
@@ -78,7 +92,8 @@ export default function mount(root, ctx) {
     if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
     phase = i; auto = null;
     overlay.hidden = true; overlay.replaceChildren();
-    body.replaceChildren(); ui.say(''); ui.count(null); ui.tell(null); ui.practice(i === 1 ? 0 : null);
+    body.replaceChildren(); ui.say(''); ui.count(null); ui.tell(null); ui.practice(i === 1 && !tv ? 0 : null);
+    setGuide(PHASES[i][0]);
     bar.mid(steps());
     bar.right(rightBtns(i));
     const key = PHASES[i][0];
@@ -97,7 +112,8 @@ export default function mount(root, ctx) {
     // 연습을 세 번 이어서 맞혀 지남 → 확인 게임 단추
     pass(msg = '세 번 이어서 맞혔어요') {
       if (PHASES[phase][0] !== 'follow') return;
-      ui.practice(3); ui.say(msg + ' — 이제 확인 게임!');
+      if (!tv) ui.practice(3);
+      ui.say(msg + ' — 이제 ' + (tv ? '반 전체 게임!' : '확인 게임!'));
       ui.setBar(goBtn('확인 게임', () => runPhase(2)));
       auto = () => runPhase(2);
     },
@@ -105,13 +121,20 @@ export default function mount(root, ctx) {
     finish(r) {
       if (gone) return;
       const stars = r.starOn.filter(Boolean).length;
-      K.saveStars(cell.id, stars);
+      if (!tv) K.saveStars(cell.id, stars);         // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음
       ui.tell(null); ui.say(''); ui.count(null); ui.practice(null);
       const pose = friend === 'hog' ? 'happy' : 'play';
       overlay.replaceChildren(h('div', { class: 'resultwrap' }, K.resultCard(r), friendImg(friend, pose, { label: false, cls: 'resultpal' })));
       overlay.hidden = false;
       bar.mid(h('span', { class: 'steps labeled' }, ...PHASES.map(([, name]) => h('span', { class: 'st done' }, h('span', { class: 'd' }), name))));
       bar.right(null);
+      if (tv) {                                     // TV: 반 결과 뒤 '먼저 예측하기' — 놀이터에서 하나만 바꿔 보기 전에 묻기
+        setGuide('predict');
+        ui.setBar(subBtn('한 번 더', () => runPhase(2), 'again'), goBtn('놀이터에서 바꿔 보기', () => ctx.go('play')));
+        auto = null;
+        window.__cellResult = { id: cell.id, stars, ...r };
+        return;
+      }
       const nx = nextCell(K.getProg(), cell.id);
       const again = subBtn('한 번 더', () => runPhase(2), 'again');
       const fwd = nx && nx !== cell.id
@@ -137,7 +160,7 @@ export default function mount(root, ctx) {
     }
     if (gone) return;
     const miss = missingPre(K.getProg(), cell.id).map(cellById).filter(c => c && c.first);
-    if (miss.length && !warned.has(cell.id)) {
+    if (miss.length && !warned.has(cell.id) && !tv) {
       warned.add(cell.id);
       const m = miss[0];
       body.replaceChildren(h('div', { class: 'panelcard startcard', style: { margin: 'auto' } },

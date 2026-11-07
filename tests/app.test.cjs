@@ -25,7 +25,7 @@ const server = http.createServer((req, res) => {
     const errs = [];
     page.on('console', m => { if (m.type() === 'error' && !/fonts\.(googleapis|gstatic)/.test(m.text())) errs.push(m.text()); });
     page.on('pageerror', e => errs.push(String(e)));
-    for (const name of ['', 'map', 'tap', 'songs', 'teacher', 'calib', 'speaker', 'credits']) {
+    for (const name of ['', 'map', 'tap', 'songs', 'play', 'teacher', 'tv', 'calib', 'speaker', 'credits']) {
       errs.length = 0;
       await page.goto(base + '#/' + name);
       await page.waitForTimeout(900);
@@ -37,6 +37,21 @@ const server = http.createServer((req, res) => {
       if (errs.length) bad(`#/${name} 콘솔 오류: ${errs.join(' | ')}`);
       if (scrolled) bad(`#/${name} 스크롤 생김 ${JSON.stringify(scroll)}`);
       if (!errs.length && !scrolled) console.log(`✓ #/${name || '(처음)'} 오류 0 · 스크롤 0`);
+    }
+    // TV로 다같이 — 높게·낮게를 시범 → 몸으로 → 반 전체 게임 → 예측까지(아이 기록에는 안 남음)
+    {
+      errs.length = 0;
+      await page.evaluate(() => { localStorage.clear(); window.__cellResult = null; });
+      await page.goto(base + '#/tvcell/so4');
+      await page.waitForTimeout(700);
+      let done = null;
+      for (let k = 0; k < 700 && !done; k++) {
+        done = await page.evaluate(() => { if (window.__cellResult) return { r: window.__cellResult, g: document.querySelector('.tvg-text')?.textContent || '', prog: localStorage.getItem('mn.prog') }; window.__cellAuto && window.__cellAuto(); return null; });
+        if (!done) await page.waitForTimeout(160);
+      }
+      if (!done || done.r.stars !== 3 || !done.g.includes('높이면') || done.prog) bad('TV 높게·낮게: ' + JSON.stringify(done && { stars: done.r.stars, g: done.g, prog: done.prog }));
+      else if (errs.length) bad('TV 콘솔 오류: ' + errs.join(' | '));
+      else console.log('✓ TV로 다같이 높게·낮게 — 끝까지 · 예측 발문 · 아이 기록 안 남김');
     }
     // 징검다리 자동 연주 — 박마다 ±15ms 흔들어 두드림 → 별 셋이어야
     await page.goto(base + '#/tap');

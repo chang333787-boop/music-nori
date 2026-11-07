@@ -1,5 +1,5 @@
 {
- "v": "30d943fa80b2",
+ "v": "fe09ae777be7",
  "files": [
   "app/css/app.css",
   "app/css/cells/_mel.css",
@@ -51,6 +51,7 @@
   "app/js/screens/speaker.js",
   "app/js/screens/tap.js",
   "app/js/screens/teacher.js",
+  "app/js/screens/tvpick.js",
   "app/js/util.js",
   "engine/cells.js",
   "engine/edit.js",
@@ -59,6 +60,7 @@
   "engine/song.js",
   "engine/songs/index.js",
   "engine/songs/ledger.js",
-  "engine/theory.js"
+  "engine/theory.js",
+  "engine/tvscript.js"
  ]
 }
