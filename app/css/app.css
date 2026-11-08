@@ -364,3 +364,7 @@ th{background:var(--panel)}
 
 /* 보기 단계 '연습해 볼래요' — 예시를 두 번 듣기 전에는 흰 큰 단추(누를 수는 있음 · X10) */
 button.huge.soon{background:var(--surface);color:var(--ink)}
+
+/* 저장이 안 되는 기기 — 톱니에 주황 점(X3) */
+body[data-savefail] .icon-btn[href="#/teacher"]{position:relative}
+body[data-savefail] .icon-btn[href="#/teacher"]::after{content:'';position:absolute;right:-3px;top:-3px;width:16px;height:16px;border-radius:50%;background:var(--go);border:2px solid var(--ink)}

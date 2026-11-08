@@ -19,6 +19,10 @@ import * as music from '../music.js';
 import { levelsOf, newParts } from '../../../engine/theme.js';
 
 const PHASES = [['show', '보기'], ['follow', '연습'], ['game', '확인 게임']];
+// 소리는 TV 하나 · 답은 각자(11-08 토론 T1 · 교사 승인) — 이 칸들은 방이 열린 TV의 확인 게임에서 TV만 소리를 내고 아이 기기는 답만
+//  TVS_LEAD = 알림 뒤 첫 판까지(아이 기기가 따라오고 서버 시각을 맞출 틈) · 이 기기 시각(Date ms) → performance.now() 시각
+const TVS = new Set(['so4']), TVS_LEAD = 5000;
+const perfAt = wall => performance.now() + (wall - Date.now());
 const warned = new Set();                    // 이 창에서 한 번만 안내
 
 export default function mount(root, ctx) {
@@ -71,14 +75,14 @@ export default function mount(root, ctx) {
     if (!tv) return;
     const i = TV_STEPS.findIndex(s => s.key === key), st = TV_STEPS[i], sc = TV_SCRIPT[cell.id] || {};
     guideStep.textContent = `${i + 1} ${st.name} · ${st.min}분`;
-    guideText.textContent = E(sc[key] || '');
+    guideText.textContent = E((key === 'game' && troom && TVS.has(cell.id) && sc.game_tvs) || sc[key] || '');   // 방이 열린 TVS 칸은 'TV 소리 · 각자 답' 발문
   };
   if (troom) stage.append(allEl);
   const screenEl = h('div', { class: 'cellscreen' + (tv ? ' tvmode' : '') }, stage, guide, barEl);
   root.append(screenEl);
 
   let mod = null, phase = -1, cleanup = null, auto = null, gone = false, tellTimer = 0;
-  let showTap = null, since = 0, gameAt = 0, resList = [], resultShown = false, sentP = null, stripSig = '';   // gameAt = 확인 게임 알림의 서버 시각(판 씨앗 · N2)       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
+  let showTap = null, tvsReady = null, resSubs = new Set(), since = 0, gameAt = 0, resList = [], resultShown = false, sentP = null, stripSig = '';   // gameAt = 확인 게임 알림의 서버 시각(판 씨앗 · N2)       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
   const ui = {
     stage: body,
     bar: barSlot,
@@ -121,7 +125,18 @@ export default function mount(root, ctx) {
     resultShown = false;
     if (showTap) { body.removeEventListener('pointerdown', showTap, true); showTap = null; }
     phase = i; auto = null; K.sfx.reset(); music.stopFx();   // 이어 맞힘 사다리는 단계마다 처음부터 · 결과 팡파르는 멈춤
-    if (troom) room.teacher.pub(cell.id, PHASES[i][0]).then(r => { if (r.at && i === 2) gameAt = r.at; if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
+    // 소리는 TV 하나 · 답은 각자(TVS 칸 · 방이 열린 TV의 확인 게임) — 판 씨앗을 함께 알리고, 알림 시각 + LEAD부터 모든 기기가 같은 판 시간표
+    tvsReady = null;
+    const tvsOn = troom && i === 2 && TVS.has(cell.id);
+    const sdNew = tvsOn ? (Math.random() * 4294967296) >>> 0 : null;
+    if (troom) {
+      const job = room.teacher.pub(cell.id, PHASES[i][0], undefined, tvsOn ? { sd: sdNew } : {});
+      job.then(r => { if (r.at && i === 2) gameAt = r.at; if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
+      if (tvsOn) tvsReady = job.then(r => (r.ok ? { sd: sdNew, start: perfAt(r.at + TVS_LEAD - r.off) } : null));
+    } else if (inRoom && i === 2 && TVS.has(cell.id) && room.kid.last && room.kid.last.cell === cell.id && room.kid.last.phase === 'game' && Number.isInteger(room.kid.last.sd)) {
+      const p = room.kid.last;
+      tvsReady = room.kid.clock().then(c => ({ sd: p.sd, start: perfAt(p.at + TVS_LEAD - (c ? c.off : 0)) }));
+    }
     overlay.hidden = true; overlay.replaceChildren(); overlay.classList.remove('result');
     body.replaceChildren(); ui.say(''); ui.count(null); ui.tell(null); ui.practice(i === 1 && !tv ? 0 : null);
     setGuide(PHASES[i][0]);
@@ -196,6 +211,7 @@ export default function mount(root, ctx) {
     strip.classList.remove('off');
     resList = r.list;
     drawStrip();
+    for (const f of resSubs) try { f(resList, gameAt); } catch (e) { console.error(e); }
   }, room.TV_TICK) : null;
 
   const kit = {
@@ -230,7 +246,7 @@ export default function mount(root, ctx) {
       if (roomCell) {
         const m = /(\d+)번 중 (\d+)번/.exec(r.title || '');
         const n = m ? +m[1] : (r.replay || []).length, k = m ? +m[2] : (r.replay || []).filter(Boolean).length;
-        sentP = room.kid.send(cell.id, stars, k, n);
+        sentP = room.kid.send(cell.id, stars, k, n, r.ans || null);
       }
       ui.tell(null); ui.say(''); ui.count(null); ui.practice(null);
       const pose = stars >= 3 ? 'happy' : stars >= 1 ? 'play' : 'idle';   /* 평가 3차: 점수와 상관없는 만세 X */
@@ -270,6 +286,13 @@ export default function mount(root, ctx) {
       window.__cellResult = { id: cell.id, stars, ...r };
     },
     setAuto: fn => { auto = fn; },
+    // 소리는 TV 하나 · 답은 각자 — 이 판이 그 모드면 { role: 'tv' | 'kid', ready: Promise<{ sd, start(performance.now ms) } | null> } · 아니면 null
+    tvs: () => (tvsReady ? { role: troom ? 'tv' : 'kid', ready: tvsReady } : null),
+    // TV: 모인 결과가 새로 올 때마다 fn(list, gameAt) — 정리 함수를 돌려줌
+    onRes: fn => { resSubs.add(fn); if (resList.length) fn(resList, gameAt); return () => resSubs.delete(fn); },
+    refreshRes: () => { if (stripLoop) stripLoop.now(); },
+    // 아이: 판마다 답 글자 보내기(TV 비율 막대)
+    sendAns: ans => (inRoom ? room.kid.progress(cell.id, ans) : Promise.resolve(false)),
     // 판 씨앗(N2) — 시험 덮어쓰기(?seed=N · 저장 'seed') > 방 아이 기기(방 · 칸 · 선생님 알림 시각) > 방이 열린 TV(같은 값) > 혼자(그때그때)
     //  같은 방 같은 판이면 TV와 아이 기기가 같은 차례 — DB 규칙은 그대로(pub.at은 이미 있음)
     seed() {

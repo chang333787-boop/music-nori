@@ -20,8 +20,8 @@ const visit = (id, path = []) => {
 };
 for (const c of CELLS) visit(c.id);
 // 첫 판
-assert.equal(FIRST.length, 13);
-assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 13칸');
+assert.equal(FIRST.length, 14);
+assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 14칸');
 for (const id of FIRST) assert.ok(cellById(id).game, id + ' 확인 게임 설명');
 // 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다
 for (const [i, id] of ORDER.entries()) for (const p of cellById(id).pre) if (FIRST.includes(p)) assert.ok(ORDER.indexOf(p) < i, `${id}보다 ${p}가 먼저`);
@@ -170,4 +170,27 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   delete globalThis.localStorage;
 }
-console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2)`);
+// ── 장1 장단보 채우기(11-08 · docs/gugak.md 표기 그대로) ──
+{
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const jd = await import('../app/js/cells/jd1.js');
+  const T = { deong: '덩', kung: '쿵', deok: '덕' }, txt = d => d.pat.map(x => (x ? T[x] : '_')).join('');
+  assert.equal(txt(jd.JANGDAN.JJ), '덩__쿵__쿵_덕쿵__', '자진모리 A꼴(교과서 가장 흔한 꼴)');
+  assert.equal(txt(jd.JANGDAN.JJB), '덩_덕쿵덕_쿵_덕쿵덕_', '자진모리 B꼴');
+  assert.equal(txt(jd.JANGDAN.SM), '덩__덩_덕쿵덕_', '민요 세마치');
+  assert.equal(txt(jd.JANGDAN.SME), '덩__쿵_덕___', '세마치 맺는 꼴');
+  for (const d of Object.values(jd.JANGDAN)) { assert.equal(d.pat.length, d.beats * d.sub, d.name + ' 칸 수'); assert.equal(d.pat[0], 'deong', d.name + ' 첫 칸 덩'); }
+  assert.deepEqual(jd.JANGDAN.JJ.acc, [0, 8]); assert.deepEqual(jd.JANGDAN.SM.acc, [0]);
+  // 빈칸은 늘 소리가 있는 칸 · 답 셋이 고르게(덩 3 · 쿵 4 · 덕 4) · 묶음 = 판 수
+  const ans = jd.PLAN.flatMap(p => p.blank.map(i => p.def.pat[i]));
+  assert.ok(ans.every(Boolean), '빈칸은 소리가 있는 칸');
+  assert.deepEqual(['deong', 'kung', 'deok'].map(k => ans.filter(x => x === k).length), [3, 4, 4]);
+  assert.equal(jd.GROUP.reduce((a, b) => a + b, 0), ans.length);
+  assert.ok(jd.symSVG('deong').includes('<circle') && jd.symSVG('deong').includes('<line') && !jd.symSVG('kung').includes('<line') && !jd.symSVG('deok').includes('<circle'), '부호 ⦶ ○ |');
+  const all = ans.map(() => true);
+  assert.equal(jd.tipOf(jd.PLAN, all), '덩 · 쿵 · 덕을 듣고 장단보 빈칸을 모두 채웠어요.');
+  const deokMiss = ans.map(x => x !== 'deok');
+  assert.match(jd.tipOf(jd.PLAN, deokMiss), /덕\(채편\)/);
+  delete globalThis.localStorage;
+}
+console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 장1 장단 표기`);

@@ -33,7 +33,7 @@ for (const p of PARTS) if (p.lane) assert.equal(STEP_TEXT[p.key].length, p.max +
 const L0 = levelsOf({});
 assert.deepEqual(L0, { bear: 1, bunny: 0, bird: 0, hog: 0, turtle: 0 });
 const ALL = levelsOf(Object.fromEntries(FIRST.map(id => [id, { stars: 1 }])));
-assert.equal(stepsOf(ALL), 13);
+assert.equal(stepsOf(ALL), FIRST.length);
 assert.deepEqual(levelsOf({ so3: { stars: 2 }, ri1: { stars: 0 }, ri2: { stars: 3 } }), { bear: 1, bunny: 1, bird: 0, hog: 1, turtle: 0 });
 assert.deepEqual(newParts({ bunny: 1 }, { bear: 1, bunny: 2, bird: 1, hog: 0, turtle: 0 }), [{ key: 'bunny', from: 1, to: 2 }, { key: 'bird', from: 0, to: 1 }]);
 assert.equal(partOfCell('ri4').key, 'hog'); assert.equal(partOfCell('ak2').key, 'turtle'); assert.equal(partOfCell('so5').key, 'bunny');

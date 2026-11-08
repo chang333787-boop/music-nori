@@ -1,0 +1,29 @@
+/* 장1 장단보 채우기 — 교과서 장단보 모양(가로 한 줄 · 소박 한 칸 · 박 = 실선 · 소박 = 점선 · 칸 위 '>' · 칸 안 부호 · 칸 아래 구음 · docs/gugak.md)
+   보기 = 위 장단보 + 아래 예시 카드 다섯 · 연습/게임 = 왼쪽 장단보 + 오른쪽 답 셋(덩 · 쿵 · 덕) */
+.jang{position:relative;width:100%;min-height:0;display:grid;gap:22px;align-items:center}
+.jang-show{grid-template-rows:auto auto;align-content:center}
+.jang-play{grid-template-columns:minmax(0,1fr) auto;gap:24px}
+.jd-board{background:var(--surface);border:3px solid var(--ink);border-radius:22px;padding:14px 18px 16px}
+.jd-name{display:flex;align-items:baseline;gap:14px;font-family:var(--head);font-size:26px;margin-bottom:10px}
+.jd-name small{font-family:var(--body);font-size:18px;color:var(--ink-2)}
+.jd-row{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:#FFFDF8}
+.jd-cell{display:grid;grid-template-rows:28px 52px 32px;justify-items:center;align-items:center;padding:4px 0 6px;border-left:2px dashed rgba(59,42,30,.4);transition:background 120ms}
+.jd-cell.head{border-left:3px solid var(--ink)}
+.jd-cell:first-child{border-left:0}
+.jd-acc{font-family:var(--head);font-size:24px;line-height:1;color:var(--ink)}
+.jd-sym{display:flex;align-items:center;justify-content:center}
+.jd-sym .q{font-family:var(--head);font-size:36px;font-weight:400;color:var(--go)}
+.jd-syl{font-family:var(--head);font-size:24px;line-height:1}
+.jd-cell.now{background:var(--sun-t,#FBEFC8)}
+.jd-cell.target{box-shadow:inset 0 0 0 4px var(--go)}
+.jd-cell.blank:not(.target) .q{color:var(--ink-2)}
+.jd-cell.ok{background:#E3F0DC}
+.jd-cell.miss{background:#F1E2D6}
+.jd-ans .chip svg{width:44px;height:44px}
+/* 보기 — 장단보는 조금 낮게 · 예시 카드 다섯은 한 줄에 같은 높이(부호와 이름을 한 줄로) */
+.jang-show .jd-cell{grid-template-rows:24px 42px 28px;padding:2px 0 4px}
+.jang-show .jd-board{padding:10px 16px 12px}
+.jd-ex b{display:flex;align-items:center;gap:8px}
+.jd-ex .jd-exsym{display:inline-flex}
+.bexgroup.jd-exgroup .bexgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.bexgroup.jd-exgroup .excard{min-height:112px;width:auto}

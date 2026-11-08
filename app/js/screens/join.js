@@ -100,6 +100,15 @@ export default function mount(root, ctx) {
   async function doJoin() {
     if (busy || pal < 0 || !no || digits.length !== 4) return;
     busy = true; msg = ''; drawPal();
+    if (await room.codeChanged()) {                   // 앱이 새로 올라왔으면 새로 고친 뒤 들어가기(TV와 같은 판으로 · X3)
+      busy = false; if (gone) return;
+      msg = '앱이 새로 바뀌었어요 — 새로 고친 뒤 들어가요';
+      drawPal();
+      const re = h('button', { type: 'button', class: 'go big jreload' }, '새로 고치기');
+      onPress(re, () => location.reload());
+      box.querySelector('.jfoot').replaceChildren(h('p', { class: 'jmsg', role: 'alert' }, msg), re);
+      return;
+    }
     const r = await room.kid.join(digits, no, pal);
     busy = false;
     if (gone) return;

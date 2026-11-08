@@ -51,6 +51,16 @@ export function loop(fn, ms) {
   return { stop() { on = false; clearTimeout(timer); document.removeEventListener('visibilitychange', vis); }, now: tick };
 }
 
+// 앱이 이 화면을 연 뒤에 새로 올라왔나(version.json ≠ 연 판) — 방에 들어가기 · 방 열기 전에(TV와 아이 기기 판이 다르면 시간표 · 규칙이 어긋남)
+export async function codeChanged() {
+  try {
+    const cur = localStorage.getItem('mn.ver');
+    const r = await fetch('version.json', { cache: 'no-store' });
+    const V = await r.json();
+    return !!(cur && V && V.v && V.v !== cur);
+  } catch { return false; }
+}
+
 // ── 선생님 ──
 let chain = Promise.resolve();                  // 단계 쓰기는 차례대로(빨리 넘겨도 순서가 뒤집히지 않게)
 export const teacher = {
@@ -83,12 +93,18 @@ export const teacher = {
   // 방 닫기 — 이 기기에서만 잊음(서버 방은 12시간 뒤 저절로 풀림). 아이들은 대기 화면으로
   close() { const t = this.get(); if (t) this.pub('so3', 'wait', t); lsSet('troom', null); },
   // 지금 놀이 · 단계 알리기 → { ok, net, at(서버 시각) }
-  pub(cell, phase, t = this.get()) {
+  //  extra.sd = 판 씨앗(소리는 TV 하나 · 답은 각자 — 아이 기기가 같은 판 차례를 만듦) · off = 서버 시각 − 이 기기 시각(ms · 쓰고 받은 시간의 가운데로 어림)
+  pub(cell, phase, t = this.get(), extra = {}) {
     if (!t || !okCell(cell) || !(phase in PH)) return Promise.resolve({ ok: false, net: true });
     const job = chain.then(async () => {
-      const r = await call('PUT', `rooms/${t.room}/t`, { tok: t.tok, pub: { cell, phase, at: TS } });
-      if (r.ok) window.__roomPub = { cell, phase, at: r.data && r.data.pub && r.data.pub.at, t: Date.now() };   // 시험용
-      return { ok: r.ok, net: r.net, at: r.ok && r.data && r.data.pub ? r.data.pub.at : 0 };
+      const pub = { cell, phase, at: TS };
+      if (Number.isInteger(extra.sd)) pub.sd = extra.sd >>> 0;
+      const w0 = Date.now(), p0 = performance.now();
+      const r = await call('PUT', `rooms/${t.room}/t`, { tok: t.tok, pub });
+      const at = r.ok && r.data && r.data.pub ? r.data.pub.at : 0;
+      const off = at ? at - (w0 + (performance.now() - p0) / 2) : 0;
+      if (r.ok) window.__roomPub = { cell, phase, at, sd: pub.sd, off, t: Date.now() };   // 시험용
+      return { ok: r.ok, net: r.net, at, off };
     });
     chain = job.catch(() => null);
     return job;
@@ -107,7 +123,7 @@ const subs = new Set();
 const emit = () => { for (const f of subs) { try { f(); } catch (e) { console.error(e); } } };
 export const kid = {
   online: true,
-  last: null,                                   // 마지막으로 읽은 선생님 놀이 { cell, phase, at }
+  last: null,                                   // 마지막으로 읽은 선생님 놀이 { cell, phase, at, sd? }
   get() {
     const k = lsGet('kroom');
     if (!k || !okRoom(k.room) || !k.dev) return null;
@@ -148,11 +164,12 @@ export const kid = {
     emit();
   },
   // 확인 게임 결과 보내기(덮어씀)
-  async send(cell, s, k, n) {
+  async send(cell, s, k, n, ans = null) {
     const me = this.get();
     if (!me || !okCell(cell)) return false;
     const c = v => Math.max(0, Math.min(99, Math.round(Number(v) || 0)));
     const body = { a: me.a, no: me.no, c: cell, s: Math.max(0, Math.min(3, s | 0)), k: c(k), n: c(n), at: TS };
+    if (typeof ans === 'string' && /^[A-Za-z0-9.]{0,24}$/.test(ans)) body.ans = ans;
     let r = null;
     for (let i = 0; i < 3; i++) {                           // 인터넷이 잠깐 끊겼으면 조용히 다시(서버가 거절하면 그만)
       r = await call('PUT', `rooms/${me.room}/res/${me.dev}`, body);
@@ -161,6 +178,26 @@ export const kid = {
     }
     window.__roomSent = { cell, s, k, n, ok: r.ok };        // 시험용
     return r.ok;
+  },
+  // 서버 시각 맞추기 — 내 결과 칸에 서버 시각만 덧씀(PATCH)을 세 번, 가장 빨리 돌아온 것으로 off = 서버 − 이 기기(ms)
+  async clock(tries = 3) {
+    const me = this.get();
+    if (!me) return null;
+    let best = null;
+    for (let i = 0; i < tries; i++) {
+      const w0 = Date.now(), p0 = performance.now();
+      const r = await call('PATCH', `rooms/${me.room}/res/${me.dev}`, { at: TS }, 3000);
+      const rtt = performance.now() - p0;
+      if (r.ok && r.data && typeof r.data.at === 'number' && (!best || rtt < best.rtt)) best = { rtt, off: r.data.at - (w0 + rtt / 2) };
+    }
+    window.__roomClock = best;                               // 시험용
+    return best;
+  },
+  // 판마다 답 글자(TV 비율 막대용) — 끝나기 전에는 s = k = n = 0(TV 띠가 '끝낸 아이'로 세지 않게)
+  progress(cell, ans) {
+    const me = this.get();
+    if (!me || !okCell(cell) || !/^[A-Za-z0-9.]{0,24}$/.test(ans)) return Promise.resolve(false);
+    return call('PATCH', `rooms/${me.room}/res/${me.dev}`, { c: cell, s: 0, k: 0, n: 0, ans, at: TS }).then(r => r.ok);
   },
   // 이 칸이 지금 선생님 칸인가
   isTeacherCell(id) { return !!(this.get() && this.last && this.last.cell === id && this.last.phase !== 'wait'); },

@@ -24,9 +24,10 @@ export function saveResult(id, r) {
   const at = Date.now();
   const row = { at, s, k, n, l, tip: r.tip || '' };
   if (r.sd != null) row.sd = r.sd;                    // 판 씨앗(N2 · 같은 판을 다시 만들 수 있게)
+  if (r.mode) row.r = r.mode;                         // 'tvs' = 소리는 TV 하나 · 답은 각자로 한 판(혼자 한 판과 가름)
   const hist = [...(Array.isArray(old.hist) ? old.hist : []), row].slice(-HIST_MAX);
   p[id] = { ...old, stars: Math.max(old.stars || 0, s), at, hist };
-  lsSet('prog', p);
+  if (!lsSet('prog', p) && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('save-fail'));   // 저장이 막힌 기기(개인 창 · 꽉 참) — 톱니에 주황 점(X3)
   return p[id].stars;
 }
 

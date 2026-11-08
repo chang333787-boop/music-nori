@@ -71,6 +71,7 @@ export default function mount(root, ctx) {
   async function openRoom() {
     if (busy) return;
     busy = true; msg = ''; draw();
+    if (await room.codeChanged()) { busy = false; if (gone) return; msg = '앱이 새로 바뀌었어요 — 새로 고친 뒤 열어요'; draw(); const re = h('button', { type: 'button', class: 'go' }, '새로 고치기'); onPress(re, () => location.reload()); ctl.append(re); return; }   // TV와 아이 기기를 같은 판으로(X3)
     const r = await room.teacher.open();
     busy = false;
     if (gone) return;

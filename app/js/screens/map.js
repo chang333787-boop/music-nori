@@ -1,4 +1,4 @@
-// 음악 마을 지도 — 갈래 넷(소리 · 가락 · 박·리듬 · 악보)의 첫 판 13칸. 잠그지 않음 · 추천 다음 칸만 크게
+// 음악 마을 지도 — 갈래 넷(소리 · 가락 · 박·리듬 · 악보)의 첫 판 14칸(박·리듬 길 끝 = 장1 장단보 · 국악 첫걸음). 잠그지 않음 · 추천 다음 칸만 크게
 import { h, onPress, lsGet, lsSet } from '../util.js';
 import { friendImg } from '../band.js';
 import { CELLS, LANES, ORDER, cellById, nextCell, cellName } from '../../../engine/cells.js';

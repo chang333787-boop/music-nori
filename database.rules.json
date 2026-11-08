@@ -20,6 +20,7 @@
             "cell": { ".validate": "newData.isString() && newData.val().matches(/^[a-z]{2,4}[0-9]{1,2}$/)" },
             "phase": { ".validate": "newData.isString() && newData.val().matches(/^(wait|show|follow|game|done)$/)" },
             "at": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "sd": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4294967295" },
             "$other": { ".validate": false }
           },
           "$other": { ".validate": false }
@@ -36,6 +37,7 @@
             "k": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
             "n": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
             "at": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "ans": { ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9.]{0,24}$/)" },
             "$other": { ".validate": false }
           }
         },

@@ -118,8 +118,21 @@ const tap = (page, sel) => page.locator(sel).first().click();
     await shot(K, '4c_kid_cell_game');
 
     // ── 4. 아이 자동으로 게임 끝 → 결과 보냄 ──
-    const kidDone = await until(() => K.evaluate(() => { if (window.__cellResult) return window.__cellResult; window.__cellAuto && window.__cellAuto(); return null; }), 150000, 160);
+    const kidDoneP = until(() => K.evaluate(() => { if (window.__cellResult) return window.__cellResult; window.__cellAuto && window.__cellAuto(); return null; }), 150000, 160);
+    if (SHOTS) { await T.waitForTimeout(16000); await shot(T, '4d_tv_tvs_mid'); await shot(K, '4e_kid_tvs_mid'); }   // TV 소리 모드 한가운데(비율 막대)
+    const kidDone = await kidDoneP;
     check('아이 확인 게임 끝(별 셋)', kidDone && kidDone.stars === 3, kidDone && kidDone.stars);
+    // 소리는 TV 하나 · 답은 각자(11-08 T1) — 두 기기가 같은 판 시간표 · 아이 기기엔 비율 막대 X · TV엔 막대 · 아이 기록 r = 'tvs'
+    {
+      const kt = await K.evaluate(() => window.__tvs && { role: window.__tvs.role, sd: window.__tvs.sd, wall: performance.timeOrigin + window.__tvs.start, clock: window.__roomClock });
+      const tt = await T.evaluate(() => window.__tvs && { role: window.__tvs.role, sd: window.__tvs.sd, wall: performance.timeOrigin + window.__tvs.start, ratio: window.__tvsRatio, bar: !!document.querySelector('.tvs-ratio') });
+      const skew = kt && tt ? Math.abs(kt.wall - tt.wall) : null;
+      check(`TV 소리 모드 — 같은 씨앗 · 시간표 어긋남 ${skew == null ? '?' : Math.round(skew)}ms(서버 왕복 ${kt && kt.clock ? Math.round(kt.clock.rtt) : '?'}ms)`, kt && tt && kt.role === 'kid' && tt.role === 'tv' && kt.sd === tt.sd && skew < 400, { kt, tt });
+      const seen = await until(() => T.evaluate(() => window.__tvsSeen || 0), 5000);
+      check(`TV에 비율 막대(아이 답이 모임 · 최고 ${seen})`, tt && tt.bar && seen >= 1, { ratio: tt && tt.ratio, seen });
+      const kr = await K.evaluate(() => ({ bar: !!document.querySelector('.tvs-ratio'), r: JSON.parse(localStorage.getItem('mn.prog') || '{}').so4?.hist?.slice(-1)[0]?.r }));
+      check('아이 기기엔 비율 막대 X · 기록 r = tvs', !kr.bar && kr.r === 'tvs', kr);
+    }
     const sent = await until(() => K.evaluate(() => window.__roomSent), 8000);
     const sentAt = Date.now();
     check('아이 결과 보냄', sent && sent.ok && sent.cell === 'so4' && sent.s === 3 && sent.n > 0, sent);

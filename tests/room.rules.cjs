@@ -28,6 +28,19 @@ let fail = 0; const check = (name, cond, info) => { if (cond) console.log('✓ '
   check('정해지지 않은 칸(이름 등)은 못 씀', !r.ok, r.status);
   r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 9, k: 12, n: 12, at: TS });
   check('별 4개 이상은 못 씀', !r.ok, r.status);
+  // 소리는 TV 하나 · 답은 각자(11-08 · 교사 승인 '추천으로') — pub.sd(판 씨앗 숫자) · res.ans(판마다 답 글자) · 서버 시각 맞추기(PATCH at)
+  r = await call('PUT', `rooms/${room}/t`, { tok, pub: { cell: 'so4', phase: 'game', at: TS, sd: 123456789 } });
+  check('판 씨앗(숫자)을 알림', r.ok && r.data && r.data.pub.sd === 123456789, r);
+  r = await call('PUT', `rooms/${room}/t`, { tok, pub: { cell: 'so4', phase: 'game', at: TS, sd: 'abc' } });
+  check('판 씨앗이 숫자가 아니면 거절', !r.ok, r.status);
+  r = await call('PATCH', `rooms/${room}/res/abcd1234`, { c: 'so4', s: 0, k: 0, n: 0, ans: 'UD.x', at: TS });
+  check('판마다 답 글자를 보냄', r.ok && r.data && r.data.ans === 'UD.x', r);
+  r = await call('PATCH', `rooms/${room}/res/abcd1234`, { ans: '철수' });
+  check('답 칸에 글자 말고 다른 것은 거절', !r.ok, r.status);
+  r = await call('PATCH', `rooms/${room}/res/abcd1234`, { at: TS });
+  check('서버 시각 맞추기(PATCH at)가 시각을 돌려줌', r.ok && r.data && typeof r.data.at === 'number', r.data);
+  r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 3, k: 12, n: 12, ans: 'UUDDUDUDUUDD', at: TS });
+  check('끝 결과와 답 글자를 함께 보냄', r.ok, r);
   r = await call('GET', `rooms/${room}/res`);
   check('TV는 결과를 읽음', r.ok && r.data && r.data.abcd1234 && r.data.abcd1234.s === 3, r.data);
   r = await call('PUT', `rooms/9${room.slice(1)}x/own`, { tok, at: TS });

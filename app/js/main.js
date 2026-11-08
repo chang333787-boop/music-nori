@@ -118,6 +118,8 @@ function askLeave(k) {
   stay.focus();
 }
 room.kid.on(() => { renderRight(); if (room.kid.get()) music.stop(true); });
+// 이 기기에 저장이 안 되면(개인 창 · 저장소 꽉 참) 톱니에 주황 점 + 한 번 알림 — 별 · 기록이 남지 않음을 선생님이 알게(X3)
+window.addEventListener('save-fail', () => { if (document.body.dataset.savefail) return; document.body.dataset.savefail = '1'; toast('이 기기에 저장이 안 돼요 — 별과 기록이 남지 않아요', 3600); });
 window.addEventListener('room-gone', () => toast('방이 끝났어요'));
 
 async function route() {

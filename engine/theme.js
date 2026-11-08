@@ -36,13 +36,13 @@ export const COMP = { C: [60, 64, 67], Am: [57, 60, 64], F: [57, 60, 65], G: [55
 export const tonesOf = name => (chordByName(name) || chordByName('C')).pcs;
 export const isChordTone = (p, name) => tonesOf(name).includes(pc(p));
 
-// ── 친구 다섯 = 다섯 줄 · 첫 판 13칸 = 13계단 ──
+// ── 친구 다섯 = 다섯 줄 · 첫 판 14칸 = 14계단(11-08 장1 장단보 → 고슴도치 여섯째 계단 '장구') ──
 //  곰 = 반주(처음부터) · 토끼 = 반짝 소리(소리 갈래) · 참새 = 가락(가락 갈래) · 고슴도치 = 북(박·리듬 갈래) · 거북 = 베이스(악보 갈래)
 export const PARTS = [
   { key: 'bear', lane: null, name: '반주', max: 1 },
   { key: 'bunny', lane: 'sound', name: '반짝 소리', max: 3 },
   { key: 'bird', lane: 'melody', name: '가락', max: 3 },
-  { key: 'hog', lane: 'rhythm', name: '북', max: 5 },
+  { key: 'hog', lane: 'rhythm', name: '북', max: 6 },
   { key: 'turtle', lane: 'score', name: '낮은 소리', max: 2 },
 ];
 // 진행(prog) → 줄마다 계단 { bear:1, bunny:0~3, … } — 그 갈래 첫 판 칸 중 별 하나 이상 받은 칸 수
@@ -64,7 +64,7 @@ export const partOfCell = id => { const c = cellById(id); return c ? PARTS.find(
 export const STEP_TEXT = {
   bunny: ['', '트라이앵글', '글로켄슈필', '첼레스타'],
   bird: ['', '가락 앞부분', '가락 뒷부분', '가락 화음'],
-  hog: ['', '큰북', '작은북', '하이햇', '마디 끝 채움', '심벌'],
+  hog: ['', '큰북', '작은북', '하이햇', '마디 끝 채움', '심벌', '장구'],
   turtle: ['', '낮은 소리', '걷는 낮은 소리'],
 };
 
@@ -91,6 +91,7 @@ export function themeBar(i, lv) {
   if (hg >= 2) { const fill = hg >= 4 && phraseEnd; ev.push(D('hog', 'snare', 1, 0.45)); if (!fill) ev.push(D('hog', 'snare', 3, 0.45)); else [3, 3.25, 3.5, 3.75].forEach((b, k) => ev.push(D('hog', 'snare', b, 0.3 + k * 0.06))); }
   if (hg >= 3) for (let k = 0; k < 8; k++) ev.push(D('hog', 'hat', k / 2, k % 2 ? 0.22 : 0.32));
   if (hg >= 5 && secStart) ev.push(D('hog', 'cymbal', 0, 0.4));
+  if (hg >= 6 && bar % 2 === 1) ev.push(D('hog', 'kung', 0, 0.38), D('hog', 'deok', 1.5, 0.3));   // 장구(장1 장단보) — 두 마디마다 쿵 · 덕
   // 참새 — 가락(플루트): 1 A만 · 2 모두 · 3 + B에 아래 화음 음
   const bd = lv.bird;
   if (bd >= 2 || (bd >= 1 && !inB)) for (const n of MEL[bar]) {

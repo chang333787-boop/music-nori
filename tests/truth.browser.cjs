@@ -121,6 +121,22 @@ const server = http.createServer((req, res) => {
     await page.locator('.cbar button', { hasText: '연습해' }).click();   // 진짜 누름(onPress = pointerdown)
     await page.waitForTimeout(400);
     if ((await page.evaluate(() => window.__cellPhase())) !== 'follow') bad('흰 단추일 때 눌러도 연습으로 가야 함'); else ok('흰 단추일 때도 누르면 연습(잠금 X)');
+    // 7. X3 — 저장이 막히면 톱니에 주황 점 · 앱이 새로 올라왔는지 확인
+    await page.goto(base + '#/');
+    await page.waitForTimeout(600);
+    const x3 = await page.evaluate(async () => {
+      const K = await import('./app/js/cellkit.js'), R = await import('./app/js/room.js');
+      const orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) { if (k === 'mn.prog') throw new Error('꽉 참'); return orig.call(this, k, v); };
+      K.saveResult('so4', { stars: 1, kept: 9, total: 12 });
+      Storage.prototype.setItem = orig;
+      await new Promise(z => setTimeout(z, 50));
+      const dot = document.body.dataset.savefail === '1' && getComputedStyle(document.querySelector('.icon-btn[href="#/teacher"]'), '::after').content !== 'none';
+      const same = await R.codeChanged();
+      const real = localStorage.getItem('mn.ver'); localStorage.setItem('mn.ver', 'old'); const changed = await R.codeChanged(); localStorage.setItem('mn.ver', real);
+      return { dot, same, changed };
+    });
+    if (!x3.dot || x3.same || !x3.changed) bad('X3: ' + JSON.stringify(x3)); else ok('저장이 막히면 톱니에 주황 점 · 앱이 새로 올라오면 알아챔');
     if (errs.length) bad('콘솔 오류: ' + errs.join(' | ')); else ok('콘솔 오류 0');
   } catch (e) { bad(String(e && e.stack || e)); }
   await browser.close(); server.close();
