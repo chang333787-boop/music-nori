@@ -2,6 +2,8 @@
 //  왼쪽 위: 그림 악보 편집판(세로 = 높이 · 가로 = 시간 · 음 = 길이만큼 긴 블록 · 셈여림 = 블록 굵기) ↔ 오선(보기만)
 //  오른쪽: 부탁 카드 하나 + 곡 전체(박자표 · 빠르기 · 셈여림 · 악기) · 아래: 고른 음 도구 + '듣기'(주황은 이것 하나)
 //  무엇을 바꾸든 소리 · 악보 · 장면이 그 자리에서 함께 바뀐다. 곡 고치기는 모두 engine/edit.js(순수 함수 · tests/edit.test.mjs)
+//  부탁은 잠그지 않는다(교사 선 '잠금 X' · 11-08): 카드 위 점 = 단추 · 누르면 그 부탁을 바로 연다(앞 부탁을 끝냈는지 묻지 않음).
+//   진행 저장 play.card = 끝낸 가장 큰 부탁 번호(1부터)만 — 점으로 앞 부탁을 골라도 줄지 않는다.
 //  자동 시험: window.__playAuto() = 지금 부탁을 푸는 맞는 행동 하나 · window.__playState() = { card, done, ok, all }
 import { h, svg, onPress, lsGet, lsSet, josa } from '../util.js';
 import { Player } from '../audio.js';
@@ -31,7 +33,6 @@ const FOLK = [
   { id: 'auclair', bars: 4, name: 'Au clair de la lune · 프랑스' },
   { id: 'frere', bars: 8, name: 'Frère Jacques · 프랑스' },
   { id: 'haenschen', bars: 4, name: 'Hänschen klein · 독일' },
-  { id: 'kuckuck', bars: 4, name: 'Kuckuck · 오스트리아' },
 ];
 function folkDef(f) {
   const d = songById(f.id);
@@ -258,7 +259,8 @@ export default function mount(root, ctx) {
   let sel = -1;                           // 고른 덩어리의 첫 조각(song.ev 차례)
   const restMem = new Map();              // 쉼표로 바꾼 자리(틱) → 원래 높이(다시 음으로 할 때)
   let heard = -1;                         // 마지막으로 바꾼 뒤 '듣기'로 들은 데까지(틱)
-  let cardNo = Math.max(0, Math.min(CARDS.length, Number(lsGet('play.card', 0)) || 0));
+  let best = Math.max(0, Math.min(CARDS.length, Number(lsGet('play.card', 0)) || 0));   // 끝낸 가장 큰 부탁 번호(1부터) — 늘기만 함
+  let cardNo = best;                      // 지금 연 부탁(0부터) — 처음엔 끝낸 다음 부탁 · 점을 눌러 아무 부탁이나
   let card = null;                        // { def, base, info, st, msg, need, doneMsg, done, note, bear }
   let player = null, pre = null, raf = 0, playT0 = 0, playSec = 0, nowIdx = -1, msgUntil = 0, msgText = '';
   let L = null, staffEls = null, pickerEl = null, anim = null;
@@ -492,21 +494,33 @@ export default function mount(root, ctx) {
     card.done = true; card.st = 'done';
     if (card.bear) setPose(card.bear, 'bear', 'play');
     if (card.def.key === 'make') saveCurrent(true);
-    lsSet('play.card', cardNo + 1);
+    if (cardNo + 1 > best) { best = cardNo + 1; lsSet('play.card', best); }
     sfxGood();
     renderAll();
   }
-  function nextCard() { cardNo = Math.min(CARDS.length, cardNo + 1); lsSet('play.card', cardNo); stopAll(); startCard(); }
+  function nextCard() { cardNo = Math.min(CARDS.length, cardNo + 1); stopAll(); startCard(); }
+  // 점을 눌러 부탁 열기 — 잠금 X · 진행(best)은 그대로 · 곡도 그대로(새로 하려면 '처음 곡으로')
+  function openCard(k) {
+    if (k === cardNo && card) return;
+    const kb = document.activeElement && document.activeElement.closest && document.activeElement.closest('.pc-dots');
+    cardNo = k; stopAll(); startCard();
+    if (kb) { const b = cardEl.querySelector(`.pc-dots button[data-k="${k}"]`); if (b) b.focus(); }   // 키보드로 골랐으면 그 점에 그대로
+  }
   function renderCard() {
-    const dots = h('span', { class: 'pc-dots', 'aria-hidden': 'true' }, ...CARDS.map((_, k) => h('i', { class: k < cardNo || (k === cardNo && card && card.done) ? 'on' : k === cardNo ? 'now' : '' })));
+    // 점 = 부탁 단추(44 × 44 칸 여덟 개가 카드 맨 위 한 줄 · 보이는 점은 그 안에 14px) · 채움 = 끝냄 · 고리 = 지금(아직 안 끝낸) 부탁
+    //  '부탁 n / 8' 글은 뺐다 — 단추 여덟 칸이 카드 폭을 다 써서(지금 자리는 고리 · 화면 읽기는 aria-current)
+    const dots = h('div', { class: 'pc-dots', role: 'group', 'aria-label': '부탁 고르기' }, ...CARDS.map((_, k) => {
+      const on = k < best || (k === cardNo && card && card.done), now = k === cardNo && card && !card.done;
+      return press(h('button', { type: 'button', class: [on ? 'on' : '', now ? 'now' : ''].join(' ').trim(), 'data-k': k, 'aria-label': `부탁 ${k + 1}`, 'aria-current': k === cardNo && card ? 'step' : null }, h('i', {})), () => openCard(k));
+    }));
     if (!card) {
-      const again = press(h('button', { type: 'button' }, '처음 부탁부터'), () => { cardNo = 0; lsSet('play.card', 0); startCard(); });
-      cardEl.replaceChildren(h('div', { class: 'pc-top' }, h('span', { class: 'pc-no' }, '부탁 끝'), dots),
+      const again = press(h('button', { type: 'button' }, '처음 부탁부터'), () => { cardNo = 0; stopAll(); startCard(); });
+      cardEl.replaceChildren(dots,
         h('p', { class: 'pc-text' }, `부탁 ${CARDS.length}개를 다 했어요`),
         h('p', { class: 'pc-hint' }, "이제 마음대로 바꿔 봐요. '곡 바꾸기'에서 다른 곡도 열 수 있어요."), h('div', { class: 'pc-act' }, again));
       return;
     }
-    const kids = [h('div', { class: 'pc-top' }, h('span', { class: 'pc-no' }, `부탁 ${cardNo + 1} / ${CARDS.length}`), dots),
+    const kids = [dots,
       h('p', { class: 'pc-text' }, card.def.text(card))];
     const nextBtn = card.done ? press(h('button', { type: 'button', class: 'pc-next' }, cardNo + 1 < CARDS.length ? '다음 부탁' : '부탁 끝'), () => nextCard()) : null;
     if (card.bear) kids.push(h('div', { class: 'pc-scene' + (card.done ? ' awake' : '') }, card.bear, h('span', { class: 'zz' }, card.done ? '깼어요!' : '쿨쿨'), card.done ? h('div', { class: 'pc-act in' }, nextBtn) : null));
@@ -797,7 +811,7 @@ export default function mount(root, ctx) {
     if (card.st === 'ready') { if (!(player && player.playing)) startPlay(); return 'listen'; }
     return card.def.auto(card, A);
   };
-  window.__playState = () => ({ card: Math.min(cardNo + 1, CARDS.length), done: cardNo + (card && card.done ? 1 : 0), ok: card ? card.done : true, all: !card, key: card ? card.def.key : 'end', st: card ? card.st : 'end' });
+  window.__playState = () => ({ card: Math.min(cardNo + 1, CARDS.length), done: best, ok: card ? card.done : true, all: !card, key: card ? card.def.key : 'end', st: card ? card.st : 'end' });
 
   // 처음: 곡을 열고 지금 부탁 카드를 건다(그림 자리는 그릇 크기가 잡힌 뒤)
   startCard();

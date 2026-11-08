@@ -5,6 +5,7 @@ import * as music from '../music.js';
 import { ORDER, cellById, LANES, cellName } from '../../../engine/cells.js';
 import { BANDS } from '../../../engine/judge.js';
 import { getProg } from '../cellkit.js';
+import { SONGS } from '../../../engine/songs/index.js';
 
 export default function mount(root, ctx) {
   const { device } = ctx;
@@ -22,7 +23,7 @@ export default function mount(root, ctx) {
       sp ? '맞춤 · 음높이별 크기 저장됨' : '안 맞춰도 돼요 — 높낮이 놀이 전에 권해요', false),
     card('records', '이 기기 기록 보기', '칸마다 최근 10번 — 날짜 · 별 · 맞힌 수 · 틀린 갈래. 표로 복사해 과정 평가 자료로 써요.',
       nRec ? `기록 ${nRec}개 · 이름 없이 이 기기에만` : '아직 기록이 없어요', false),
-    card('credits', '출처와 저작권', '곡마다 권리 근거, 옮겨 온 코드, 글꼴 이용 조건.', '곡 30곡 · 노랫말 없음', false),
+    card('credits', '출처와 저작권', '곡마다 권리 근거, 옮겨 온 코드, 글꼴 이용 조건.', `곡 ${SONGS.length}곡 · 노랫말 없음`, false),
     lowCard(), startPick(), deviceCard()));
 
   // 1~2학년 안내 — 누르는 카드 아님(판정 너그러움은 '지연 맞추기' 결과 화면에서 바꿈)
