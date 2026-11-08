@@ -4,8 +4,9 @@
 //   · 미국 기준(us): 1930년까지 공표된 곡만 '가능'(서버 = GitHub Pages, 미국).
 //   · 노랫말: 이번 판은 넣지 않는다(lyrics.verdict = '안 씀'). 한국어 번안 가사는 절대 X.
 //   · 판본: 교과서·악보집·인터넷 편곡을 베끼지 않는다. 출처 둘 이상을 대조해 공통 원형만 —
-//           대조한 출처를 적고, 못 했으면 checked:false(공개 전에 다시 할 일).
-//   · 애매하면 뺀다. 앱(index.js)에는 melody.verdict·us 가 둘 다 '가능'인 줄만 들어간다.
+//           대조한 출처를 적고, 못 했으면 checked:false — 그 곡은 앱에 넣지 않는다(대조 뒤에 넣음).
+//   · 애매하면 뺀다(상담해서 살리지 않음 — 교사 결정). 앱(index.js)에는 melody.verdict·us 가 둘 다 '가능'이고
+//     자작이거나 edition.checked:true 인 줄만 들어간다(tests/songs.test.mjs가 막음 · 11-08 대조 전 9곡 내림).
 //  출처의 '확인' 날짜는 이 대장을 쓴 날 페이지(위키 원문 wikitext의 악보 블록)를 읽은 날이다.
 
 const DAY = '2026-11-07';
@@ -46,7 +47,7 @@ export const LEDGER = [
   OWN('ri5-march', '두 박 행진', SK5('2/4'), '통과 · 최고 0% · 기준 40%'),
   OWN('ri5-waltz', '세 박 왈츠', SK5('3/4'), '통과 · 최고 0% · 기준 40%'),
 
-  // ────────── 외국 전래 12곡(앱에 있음) ──────────
+  // ────────── 외국 전래 7곡(앱에 있음 · 판본 대조 끝) ──────────
   { id: 'ahvous', title: '작은 별 가락(프랑스 민요 「Ah! vous dirai-je, maman」)', kind: '외국 전래',
     melody: { who: '작자 미상(18세기 프랑스 민요)', died: null, published: '1761(첫 출판 — 영어·프랑스어 위키백과)',
       verdict: '가능', why: '작자 미상 옛 민요 · 1761년 출판', us: '가능' },
@@ -125,54 +126,7 @@ export const LEDGER = [
       note: '첫 도막(넷째 마디)만 넣음 — 여기까지는 독일판과 일본 번안판의 음·리듬 비율이 같음. 그 뒤는 끝맺음이 갈림(독일판 도로 끝 · 일본·한국 번안판 미로 끝). 바장조 → 다장조.' },
     checkedAt: DAY, note: '한국어 「나비야」 가사는 작사 미상 번안 — 안 씀. 제목도 원어로' },
 
-  { id: 'kuckuck', title: 'Kuckuck, Kuckuck(오스트리아 민요)', kind: '외국 전래',
-    melody: { who: '작자 미상(오스트리아·바이에른 민요 「Stieglitz, Stieglitz」 가락 · 1817 전승)', died: null,
-      published: '1842(이 가락으로 첫 인쇄 — 독일어 위키백과)', verdict: '가능', why: '작자 미상 옛 민요 · 1842년 인쇄', us: '가능' },
-    lyrics: NO_LYRICS,
-    edition: { sources: [
-      src('독일어 위키백과 「Kuckuck, Kuckuck, ruft’s aus dem Wald」 악보(두 성부 중 윗성부)', 'https://de.wikipedia.org/wiki/Kuckuck,_Kuckuck,_ruft%E2%80%99s_aus_dem_Wald')],
-      checked: false, note: '대조 못 함 — 글로 된 악보 출처가 한 곳뿐(영어·일본어 위키엔 악보 없음). 공개 전에 옛 노래책 스캔과 다시 대조. 사장조 → 다장조.' },
-    checkedAt: DAY, note: '독일어 가사 Hoffmann von Fallersleben · 한국어 번안 「뻐꾸기」(박목월설) 안 씀' },
-
-  { id: 'weasel', title: 'Pop Goes the Weasel(영국 동요)', kind: '외국 전래',
-    melody: { who: '작자 미상(영국 동요 · 춤곡)', died: null, published: '1852~1853(악보 출판 — 영어·프랑스어 위키백과)',
-      verdict: '가능', why: '작자 미상 · 1850년대 출판', us: '가능' },
-    lyrics: NO_LYRICS,
-    edition: { sources: [
-      src('영어 위키백과 「Pop Goes the Weasel」 악보', 'https://en.wikipedia.org/wiki/Pop_Goes_the_Weasel'),
-      src('프랑스어 위키백과 「Pop Goes the Weasel」 악보(영어판과 같은 표기를 옮김)', 'https://fr.wikipedia.org/wiki/Pop_Goes_the_Weasel')],
-      checked: false, note: '대조 못 함 — 두 위키 판이 같은 표기를 옮긴 것이라 독립 출처가 아님. 공개 전에 1850년대 악보 스캔과 다시 대조.' },
-    checkedAt: DAY, note: '' },
-
-  { id: 'mulberry', title: 'Here We Go Round the Mulberry Bush(영국 동요)', kind: '외국 전래',
-    melody: { who: '작자 미상(18세기 중반 런던 곡조 「Nancy Dawson」)', died: null,
-      published: '18세기 중반 곡조 · 『The Baby\'s Opera』(1877, 1900판)에 실림(영어 위키문헌 목록)', verdict: '가능',
-      why: '작자 미상 옛 곡조 · 19세기 노래책에 실림', us: '가능' },
-    lyrics: NO_LYRICS,
-    edition: { sources: [
-      src('영어 위키백과 「Here We Go Round the Mulberry Bush」 악보(사장조)', 'https://en.wikipedia.org/wiki/Here_We_Go_Round_the_Mulberry_Bush')],
-      checked: false, note: '대조 못 함 — 한 곳뿐. 『The Baby\'s Opera』 위키문헌 쪽은 그림만이라 음을 못 읽음. 공개 전에 옛 노래책 스캔과 다시 대조. 사장조 → 다장조(가장 낮은 음 G3).' },
-    checkedAt: DAY, note: '' },
-
-  { id: 'surlepont', title: 'Sur le pont d\'Avignon(프랑스 민요)', kind: '외국 전래',
-    melody: { who: '작자 미상(프랑스 민요 · 1853년 아당이 오페라에 써서 퍼짐)', died: null,
-      published: '1853 무렵(프랑스어 위키백과) · 1870 Weckerlin', verdict: '가능', why: '작자 미상 옛 민요(아당 1856 사망)', us: '가능' },
-    lyrics: NO_LYRICS,
-    edition: { sources: [WECK(34),
-      src('영어 위키백과 「Sur le Pont d\'Avignon」 악보(Weckerlin 1870을 옮긴 것)', 'https://en.wikipedia.org/wiki/Sur_le_Pont_d%27Avignon')],
-      checked: false,
-      note: '옛 판(1870)과는 맞춰 봄. 영어판은 같은 옛 판을 옮긴 것이라 둘째 독립 출처가 아님. 프랑스어 위키판은 못갖춘마디·리듬이 다른 갈래(변형이 많은 노래). 공개 전에 다른 옛 판 하나와 더 대조. 사장조 → 다장조.' },
-    checkedAt: DAY, note: '' },
-
-  { id: 'choux', title: 'Savez-vous planter les choux(프랑스 민요)', kind: '외국 전래',
-    melody: { who: '작자 미상(프랑스 민요)', died: null, published: '1870(Weckerlin 노래책에 실림)',
-      verdict: '가능', why: '작자 미상 옛 민요 · 1870년 출판', us: '가능' },
-    lyrics: NO_LYRICS,
-    edition: { sources: [WECK(108)],
-      checked: false, note: '옛 판(1870) 한 곳만 읽음 — 둘째 출처와 대조 못 함. 바장조 → 다장조(가장 낮은 음 B3).' },
-    checkedAt: DAY, note: '' },
-
-  // ────────── 클래식 6곡(앱에 있음 · 주제 몇 마디만) ──────────
+  // ────────── 클래식 2곡(앱에 있음 · 주제 몇 마디만 · 판본 대조 끝) ──────────
   { id: 'ode', title: '환희의 송가 주제(베토벤 교향곡 9번)', kind: '클래식',
     melody: { who: 'Ludwig van Beethoven', died: 1827, published: '1824 완성·초연(영어 위키백과)',
       verdict: '가능', why: '작곡자 1827년 사망', us: '가능' },
@@ -195,6 +149,55 @@ export const LEDGER = [
       note: '두 판 음·리듬·셈여림(p → pp → ff) 같음. 원조(다장조) 그대로. 끝의 놀람 화음(솔·시·솔 세 음)은 한 음 소리라 맨 윗음 G5 하나로 줄임.' },
     checkedAt: DAY, note: '' },
 
+  // ────────── 대조 전 — 앱에서 내린 곡 9(11-08 · 가락은 git 기록에 · 대조 끝나면 index.js에 되살림) ──────────
+  //  옛 출처 둘 이상과 대조해 edition.checked:true로 바꾼 뒤에만 되살린다(내리기 전 마지막 판 = 커밋 1778524의 index.js).
+  { id: 'kuckuck', title: 'Kuckuck, Kuckuck(오스트리아 민요)', kind: '외국 전래',
+    melody: { who: '작자 미상(오스트리아·바이에른 민요 「Stieglitz, Stieglitz」 가락 · 1817 전승)', died: null,
+      published: '1842(이 가락으로 첫 인쇄 — 독일어 위키백과)', verdict: '가능', why: '작자 미상 옛 민요 · 1842년 인쇄', us: '가능' },
+    lyrics: NO_LYRICS,
+    edition: { sources: [
+      src('독일어 위키백과 「Kuckuck, Kuckuck, ruft’s aus dem Wald」 악보(두 성부 중 윗성부)', 'https://de.wikipedia.org/wiki/Kuckuck,_Kuckuck,_ruft%E2%80%99s_aus_dem_Wald')],
+      checked: false, note: '대조 못 함 — 글로 된 악보 출처가 한 곳뿐(영어·일본어 위키엔 악보 없음). 공개 전에 옛 노래책 스캔과 다시 대조. 사장조 → 다장조.' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림 · 독일어 가사 Hoffmann von Fallersleben · 한국어 번안 「뻐꾸기」(박목월설) 안 씀' },
+
+  { id: 'weasel', title: 'Pop Goes the Weasel(영국 동요)', kind: '외국 전래',
+    melody: { who: '작자 미상(영국 동요 · 춤곡)', died: null, published: '1852~1853(악보 출판 — 영어·프랑스어 위키백과)',
+      verdict: '가능', why: '작자 미상 · 1850년대 출판', us: '가능' },
+    lyrics: NO_LYRICS,
+    edition: { sources: [
+      src('영어 위키백과 「Pop Goes the Weasel」 악보', 'https://en.wikipedia.org/wiki/Pop_Goes_the_Weasel'),
+      src('프랑스어 위키백과 「Pop Goes the Weasel」 악보(영어판과 같은 표기를 옮김)', 'https://fr.wikipedia.org/wiki/Pop_Goes_the_Weasel')],
+      checked: false, note: '대조 못 함 — 두 위키 판이 같은 표기를 옮긴 것이라 독립 출처가 아님. 공개 전에 1850년대 악보 스캔과 다시 대조.' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림' },
+
+  { id: 'mulberry', title: 'Here We Go Round the Mulberry Bush(영국 동요)', kind: '외국 전래',
+    melody: { who: '작자 미상(18세기 중반 런던 곡조 「Nancy Dawson」)', died: null,
+      published: '18세기 중반 곡조 · 『The Baby\'s Opera』(1877, 1900판)에 실림(영어 위키문헌 목록)', verdict: '가능',
+      why: '작자 미상 옛 곡조 · 19세기 노래책에 실림', us: '가능' },
+    lyrics: NO_LYRICS,
+    edition: { sources: [
+      src('영어 위키백과 「Here We Go Round the Mulberry Bush」 악보(사장조)', 'https://en.wikipedia.org/wiki/Here_We_Go_Round_the_Mulberry_Bush')],
+      checked: false, note: '대조 못 함 — 한 곳뿐. 『The Baby\'s Opera』 위키문헌 쪽은 그림만이라 음을 못 읽음. 공개 전에 옛 노래책 스캔과 다시 대조. 사장조 → 다장조(가장 낮은 음 G3).' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림' },
+
+  { id: 'surlepont', title: 'Sur le pont d\'Avignon(프랑스 민요)', kind: '외국 전래',
+    melody: { who: '작자 미상(프랑스 민요 · 1853년 아당이 오페라에 써서 퍼짐)', died: null,
+      published: '1853 무렵(프랑스어 위키백과) · 1870 Weckerlin', verdict: '가능', why: '작자 미상 옛 민요(아당 1856 사망)', us: '가능' },
+    lyrics: NO_LYRICS,
+    edition: { sources: [WECK(34),
+      src('영어 위키백과 「Sur le Pont d\'Avignon」 악보(Weckerlin 1870을 옮긴 것)', 'https://en.wikipedia.org/wiki/Sur_le_Pont_d%27Avignon')],
+      checked: false,
+      note: '옛 판(1870)과는 맞춰 봄. 영어판은 같은 옛 판을 옮긴 것이라 둘째 독립 출처가 아님. 프랑스어 위키판은 못갖춘마디·리듬이 다른 갈래(변형이 많은 노래). 공개 전에 다른 옛 판 하나와 더 대조. 사장조 → 다장조.' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림' },
+
+  { id: 'choux', title: 'Savez-vous planter les choux(프랑스 민요)', kind: '외국 전래',
+    melody: { who: '작자 미상(프랑스 민요)', died: null, published: '1870(Weckerlin 노래책에 실림)',
+      verdict: '가능', why: '작자 미상 옛 민요 · 1870년 출판', us: '가능' },
+    lyrics: NO_LYRICS,
+    edition: { sources: [WECK(108)],
+      checked: false, note: '옛 판(1870) 한 곳만 읽음 — 둘째 출처와 대조 못 함. 바장조 → 다장조(가장 낮은 음 B3).' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림' },
+
   { id: 'mountain', title: '산왕의 궁전에서 주제(그리그 「페르 귄트」)', kind: '클래식',
     melody: { who: 'Edvard Grieg', died: 1907, published: '1888(「페르 귄트」 모음곡 1번 Op.46 출판 — 영어 위키백과 「Peer Gynt (Grieg)」) · 1876 초연',
       verdict: '가능', why: '작곡자 1907년 사망 · 1888년 출판', us: '가능' },
@@ -204,7 +207,7 @@ export const LEDGER = [
       src('영어 위키백과 「In the Hall of the Mountain King」 악보(독일어판과 같은 표기)', 'https://en.wikipedia.org/wiki/In_the_Hall_of_the_Mountain_King')],
       checked: false,
       note: '대조 못 함 — 두 위키 판의 네 마디가 음까지 같지만 같은 표기를 옮겨 쓴 것으로 보여 독립 출처가 아님(일본어 위키엔 악보 없음). 공개 전에 1888년 모음곡 판(IMSLP 작품 페이지)과 다시 대조. 나단조 → 가단조(조표 없음)로 옮기고 높게(A4~A5) 적음 — 원곡은 낮은 바순·첼로.' },
-    checkedAt: DAY, note: '' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림' },
 
   { id: 'brahms', title: '자장가(브람스 Op.49-4)', kind: '클래식',
     melody: { who: 'Johannes Brahms', died: 1897, published: '1868년 11월 Simrock 출판(영어 위키백과 「Wiegenlied (Brahms)」)',
@@ -216,7 +219,7 @@ export const LEDGER = [
       src('일본어 위키백과 「子守歌 (ブラームス)」 악보(같은 표기)', 'https://ja.wikipedia.org/wiki/%E5%AD%90%E5%AE%88%E6%AD%8C_(%E3%83%96%E3%83%A9%E3%83%BC%E3%83%A0%E3%82%B9)')],
       checked: false,
       note: '대조 못 함 — 세 위키 판이 한 표기를 옮겨 쓴 것이라 독립 출처가 아님. 공개 전에 1868년 Simrock 판(IMSLP 작품 페이지)과 다시 대조. 꾸밈음(앞꾸밈·뒤꾸밈) 둘은 뺌. 내림마장조 → 다장조.' },
-    checkedAt: DAY, note: '독일어 가사(민요시집·Scherer)·한국어 번역 가사 안 씀' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림 · 독일어 가사(민요시집·Scherer)·한국어 번역 가사 안 씀' },
 
   { id: 'k525', title: '아이네 클라이네 나흐트무지크 1악장 첫 주제(모차르트 K.525)', kind: '클래식',
     melody: { who: 'Wolfgang Amadeus Mozart', died: 1791, published: '1827 무렵 André 출판(영어 위키백과)',
@@ -226,7 +229,7 @@ export const LEDGER = [
       src('영어 위키백과 「Eine kleine Nachtmusik」 1악장 첫 주제 악보', 'https://en.wikipedia.org/wiki/Eine_kleine_Nachtmusik')],
       checked: false,
       note: '대조 못 함 — 이 주제의 글로 된 악보는 영어판 한 곳(독일어판엔 2~4악장 주제만 있고 그 셋은 영어판과 같음). 공개 전에 옛 판 스캔과 다시 대조. 사장조 → 다장조(G4~G5).' },
-    checkedAt: DAY, note: '' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림' },
 
   { id: 'canon', title: '캐논 되풀이 베이스(파헬벨)', kind: '클래식',
     melody: { who: 'Johann Pachelbel', died: 1706, published: '1919년 Gustav Beckmann이 처음 출판(영어 위키백과)',
@@ -237,7 +240,7 @@ export const LEDGER = [
       src('독일어 위키백과 「Kanon und Gigue in D-Dur (Pachelbel)」 악보(같은 표기)', 'https://de.wikipedia.org/wiki/Kanon_und_Gigue_in_D-Dur_(Pachelbel)')],
       checked: false,
       note: '대조 못 함 — 두 위키 판이 같은 표기를 옮긴 것. 베이스 여덟 음(라장조 D-A-B-F♯-G-D-G-A)은 두 판 글 설명과도 같음. 1919년 첫 출판본은 편집자 판이라, 공개 전에 옛 필사본 계열 출처와 다시 대조. 라장조 → 다장조 · 높게(C4~C5) 적고 두 번 되풀이.' },
-    checkedAt: DAY, note: '' },
+    checkedAt: DAY, note: '대조 전 — 지금 판에 가락 없음(11-08) · 대조 뒤 git에서 되살림' },
 
   // ────────── 국내 전래 — 대장 줄만(옛 출처 대조 전 · 앱에 아직 안 넣음) ──────────
   ...[

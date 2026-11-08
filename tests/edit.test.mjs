@@ -49,6 +49,12 @@ ok('toMel 왕복 — 앱 곡 모두(셈여림 · 못갖춘마디 · 6/8 · 16분
   assert.ok(E.toMel(song('haydn94')).startsWith('!p '));
   assert.ok(E.toMel(song('haydn94')).includes('!ff G5q'));
   assert.equal(E.toMel(S(INSA)), INSA);
+  // 못갖춘마디 앱 곡(대조 전)은 11-08에 내렸다 — 시험용 짧은 가락으로 같은 길(3/4 · 6/8 못갖춘마디)을 계속 본다
+  for (const [mel, meter] of [['E4e E4e | G4q. E4e E4q | G4h E4q | C4h', [3, 4]], ['C4q E4e | G4q C5e G4q E4e | C4q Re', [6, 8]]]) {
+    const s = S(mel, meter);
+    assert.ok(s.pickup > 0 && s.errors.length === 0, mel);
+    roundTrip(s);
+  }
 });
 
 ok('음계 한 칸', () => {

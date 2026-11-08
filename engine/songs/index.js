@@ -1,4 +1,6 @@
-// 앱 곡 30개 — 가락만(노랫말 없음). 권리 근거는 같은 폴더 ledger.js(곡 권리 대장) · 규칙은 docs/rights.md.
+// 앱 곡 21개 — 가락만(노랫말 없음). 권리 근거는 같은 폴더 ledger.js(곡 권리 대장) · 규칙은 docs/rights.md.
+//  옛 곡은 판본 대조가 끝난 것(대장 edition.checked:true)만 둔다 — 대조 전 9곡은 11-08에 가락째 내림(대장 줄만 남김 ·
+//  대조 뒤 git에서 되살림 · '애매하면 상담 없이 뺀다' 교사 결정). tests/songs.test.mjs가 막는다.
 //  적는 법은 engine/song.js 맨 위 주석. 모두 다장조(key 0)로 옮겨 적었다(원조는 대장 note에).
 //  cells = 이 곡을 쓰는 칸(계획서 칸 이름). 높낮이 칸(소·가)에 쓰는 곡은 C4~E5 안.
 //  곡을 더할 때: 대장 줄 먼저 → 여기 → node tests/songs.test.mjs (docs/rights.md '곡 하나 더하는 차례')
@@ -35,7 +37,7 @@ export const SONGS = [
   // 리2 = 4분음표·4분쉼표만 · 한 음 높이
   { id: 'ri2-ttasum', title: '따 따 쉼', meter: [4, 4], tempo: 104, key: 0, cells: ['리2'],
     mel: 'G4q G4q G4q Rq | G4q Rq G4q Rq | G4q G4q Rq G4q | G4q G4q G4q Rq',
-    use: '메기면 받기 — 소리(따)와 쉼(쉼)을 박 위에 두드리기' },
+    use: '따라 치기 — 소리(따)와 쉼(쉼)을 박 위에 두드리기' },
   // 리4 = 2분음표 섞임 · 한 음 높이
   { id: 'ri4-balloon', title: '길게 부는 풍선', meter: [4, 4], tempo: 100, key: 0, cells: ['리4'],
     mel: 'G4q G4q G4h | G4h G4h | G4q Rq G4h | G4h Rh',
@@ -48,7 +50,7 @@ export const SONGS = [
     mel: 'C4q G4q G4q | E4q G4q G4q | C4q G4q G4q | C4h.',
     use: '행진일까 왈츠일까 — 셋씩 묶음(쿵 짝 짝) · 「두 박 행진」과 짝' },
 
-  // ── 외국 전래 12곡(가락만 · 노랫말 X) ──
+  // ── 외국 전래 7곡(가락만 · 노랫말 X · 판본 대조 끝) ──
   { id: 'ahvous', title: '작은 별 가락(프랑스 민요 「Ah! vous dirai-je, maman」)', meter: [2, 4], tempo: 100, key: 0,
     cells: ['형2', '반2'],
     mel: 'C4q C4q | G4q G4q | A4q A4q | G4h | F4q F4q | E4q E4q | D4q D4q | C4h | G4q G4q | F4q F4q | E4q E4q | E4q D4q | G4q G4q | F4q F4q | E4q E4q | E4q D4q | C4q C4q | G4q G4q | A4q A4q | G4h | F4q F4q | E4q E4q | D4q D4q | C4h',
@@ -77,28 +79,8 @@ export const SONGS = [
     cells: ['건2'],
     mel: 'G4e E4e E4q | F4e D4e D4q | C4e D4e E4e F4e | G4e G4e G4q',
     use: '도레미파솔 다섯 손가락이 차례로 — 셋째 마디에서 한 칸씩 오르기' },
-  { id: 'kuckuck', title: 'Kuckuck, Kuckuck(오스트리아 민요)', meter: [3, 4], tempo: 112, key: 0,
-    cells: ['리5'],
-    mel: 'G4q E4q Rq | G4q E4q Rq | D4q C4q D4q | C4h. | D4q D4q E4q | F4h D4q | E4q E4q F4q | G4h E4q | G4h E4q | G4h E4q | F4q E4q D4q | C4h.',
-    use: '3/4 — 뻐꾸기 솔-미로 시작하는 세 박 묶음' },
-  { id: 'weasel', title: 'Pop Goes the Weasel(영국 동요)', meter: [6, 8], tempo: 120, key: 0,
-    cells: ['리9'],
-    mel: 'C4q C4e D4q D4e | E4e G4e E4e C4q. | C4q C4e D4q D4e | E4q. C4e Re Re | C4q C4e D4q D4e | E4e G4e E4e C4q. | A4e Re Re D4q F4e | E4q. C4e Re Re',
-    use: '6/8 · \'펑!\' 자리 높은 음 뒤의 쉼' },
-  { id: 'mulberry', title: 'Here We Go Round the Mulberry Bush(영국 동요)', meter: [6, 8], tempo: 120, key: 0,
-    cells: ['리9'],
-    mel: 'C4e C4e C4e C4q E4e | G4q E4e C4q C4e | D4q D4e D4q C4e | B3q A3e G3q. | C4e C4e C4e C4q E4e | G4q E4e C4q C4e | D4q D4e G3q G3e | C4q. C4q.',
-    use: '6/8 — 4분음표+8분음표(긴-짧)가 이어지는 둥글게 도는 놀이 노래' },
-  { id: 'surlepont', title: 'Sur le pont d\'Avignon(프랑스 민요)', meter: [2, 4], tempo: 96, key: 0,
-    cells: ['리8'],
-    mel: 'C4e C4e C4q | D4e D4e D4q | E4e. F4s G4e C4e | B3e. C4s D4e G3e | C4e C4e C4q | D4e D4e D4q | E4e. F4s G4e C4e | D4e B3e C4e Re | C4e. C4s C4e C4e | D4q C4e Re | C4e. C4s C4e C4e | D4q C4e Re',
-    use: '점8분+16분 · 8분쉼표가 마디 끝에' },
-  { id: 'choux', title: 'Savez-vous planter les choux(프랑스 민요)', meter: [6, 8], tempo: 120, key: 0,
-    cells: ['리10', '리9'],
-    mel: 'C4q E4e | G4q C5e G4q E4e | C4q. B3q C4e | D4q D4e C4q D4e | E4q C4e C4q E4e | G4q C5e G4q E4e | C4q. B3q C4e | D4q F4e E4q D4e | C4q Re',
-    use: '못갖춘마디(세 8분음표 앞서 시작) — 끝 마디가 그만큼 짧다' },
 
-  // ── 클래식 6곡(주제 몇 마디만) ──
+  // ── 클래식 2곡(주제 몇 마디만 · 판본 대조 끝) ──
   { id: 'ode', title: '환희의 송가 주제(베토벤 교향곡 9번)', meter: [4, 4], tempo: 100, key: 0,
     cells: ['건2', '리9'],
     mel: 'E4q E4q F4q G4q | G4q F4q E4q D4q | C4q C4q D4q E4q | E4q. D4e D4h | E4q E4q F4q G4q | G4q F4q E4q D4q | C4q C4q D4q E4q | D4q. C4e C4h',
@@ -107,22 +89,6 @@ export const SONGS = [
     cells: ['셈1'],
     mel: '!p C4e C4e E4e E4e | G4e G4e E4q | F4e F4e D4e D4e | B3e B3e G3q | C4e C4e E4e E4e | G4e G4e E4q | C5e C5e F#4e F#4e | G4q G3e Re | !pp C4e C4e E4e E4e | G4e G4e E4q | F4e F4e D4e D4e | B3e B3e G3q | C4e C4e E4e E4e | G4e G4e E4q | C5e C5e F#4e F#4e | G4e Re !ff G5q',
     use: '여리게(p) → 더 여리게(pp) → 갑자기 아주 세게(ff)' },
-  { id: 'mountain', title: '산왕의 궁전에서 주제(그리그 「페르 귄트」)', meter: [4, 4], tempo: 120, key: 0,
-    cells: ['빠2', '셈2'],
-    mel: '!pp A4e B4e C5e D5e E5e C5e E5q | D#5e B4e D#5q D5e Bb4e D5q | A4e B4e C5e D5e E5e C5e E5e A5e | G5e E5e C5e E5e G5q Rq',
-    use: '같은 주제를 되풀이하며 점점 빠르게·점점 세게(원곡은 pp에서 시작)' },
-  { id: 'brahms', title: '자장가(브람스 Op.49-4)', meter: [3, 4], tempo: 72, key: 0,
-    cells: ['셈1', '리10'],
-    mel: '!p E4e E4e | G4q. E4e E4q | G4q Rq E4e G4e | C5q B4q. A4e | A4q G4q D4e E4e | F4q D4q D4e E4e | F4q Rq D4e F4e | B4e A4e G4q B4q | C5q Rq C4e C4e | C5h A4e F4e | G4h E4e C4e | F4q G4q A4q | G4h C4e C4e | C5h A4e F4e | G4h E4e C4e | F4q E4q D4q | C4h',
-    use: '여리게 부르는 3/4 · 8분음표 둘로 시작하는 못갖춘마디' },
-  { id: 'k525', title: '아이네 클라이네 나흐트무지크 1악장 첫 주제(모차르트 K.525)', meter: [4, 4], tempo: 120, key: 0,
-    cells: ['화1'],
-    mel: 'C5q Re G4e C5q Re G4e | C5e G4e C5e E5e G5q Rq | F5q Re D5e F5q Re D5e | F5e D5e B4e D5e G4q Rq',
-    use: '으뜸화음(도미솔) 따라 오르고, 딸림화음(솔시레파) 따라 내려오기' },
-  { id: 'canon', title: '캐논 되풀이 베이스(파헬벨)', meter: [4, 4], tempo: 72, key: 0,
-    cells: ['화1', '반1'],
-    mel: 'C5q G4q A4q E4q | F4q C4q F4q G4q | C5q G4q A4q E4q | F4q C4q F4q G4q',
-    use: '두 마디 베이스가 계속 되풀이 — 그 위에 화음이 바뀌어 간다' },
 ];
 
 const BY_ID = new Map(SONGS.map(s => [s.id, s]));

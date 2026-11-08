@@ -1,7 +1,8 @@
 // 곡 시험 — node tests/songs.test.mjs (의존성 없음)
-//  30곡 마디 검사 · id 겹침 · 권리 대장(가락·미국 기준 '가능') · 노랫말 칸 없음 · 칸 이름 ·
+//  21곡 마디 검사 · id 겹침 · 권리 대장(가락·미국 기준 '가능') · 노랫말 칸 없음 · 칸 이름 ·
 //  자작 곡이 칸 규칙 안 · 높낮이 칸 음역 C4~E5 · 닮음 검사(해시 파일만 읽음).
-//  끝에 '공개 전 할 일'(판본 대조 안 된 곡)을 경고로 찍는다 — 실패로 치지 않는다.
+//  판본 대조: 앱 곡은 자작이거나 대장 edition.checked === true 여야 한다 — 아니면 실패(11-08 · '애매하면 뺀다' 교사 결정).
+//   음성 시험으로 대조 안 된 가짜 곡을 끼워 이 검사가 실제로 실패를 내는지도 본다.
 import assert from 'node:assert/strict';
 import { makeSong } from '../engine/song.js';
 import { parsePitch, durTicks } from '../engine/theory.js';
@@ -34,8 +35,14 @@ let checks = 0;
 const ok = (cond, msg) => { assert.ok(cond, msg); checks++; };
 const songs = SONGS.map(s => ({ def: s, song: makeSong(s) }));
 
+// 판본 대조 안 된 곡 찾기 — 대장 줄이 없거나, 자작이 아닌데 edition.checked !== true 인 곡의 id 목록(빈 목록 = 통과)
+const unchecked = (list, rowOf) => list.filter(s => {
+  const r = rowOf(s.id);
+  return !r || (r.kind !== '자작' && !(r.edition && r.edition.checked === true));
+}).map(s => s.id);
+
 // 1. 곡 수 · id
-ok(SONGS.length === 30, `곡은 정확히 30곡이어야 함 — 지금 ${SONGS.length}곡`);
+ok(SONGS.length === 21, `곡은 정확히 21곡이어야 함 — 지금 ${SONGS.length}곡(곡을 더하거나 빼면 이 숫자와 docs/rights.md 표를 같이)`);
 const ids = SONGS.map(s => s.id);
 ok(new Set(ids).size === ids.length, `곡 id 겹침: ${ids.filter((x, i) => ids.indexOf(x) !== i).join(', ')}`);
 const lids = LEDGER.map(r => r.id);
@@ -107,7 +114,22 @@ for (const r of LEDGER) {
   ok(r.kind === '자작' ? !!r.made : !!r.edition, `${at} 자작은 made, 나머지는 edition`);
 }
 const kinds = k => SONGS.filter(s => ledgerById(s.id).kind === k).length;
-ok(kinds('자작') === 12 && kinds('외국 전래') === 12 && kinds('클래식') === 6, `구성 자작 12·외국 전래 12·클래식 6 — 지금 ${kinds('자작')}·${kinds('외국 전래')}·${kinds('클래식')}`);
+ok(kinds('자작') === 12 && kinds('외국 전래') === 7 && kinds('클래식') === 2, `구성 자작 12·외국 전래 7·클래식 2 — 지금 ${kinds('자작')}·${kinds('외국 전래')}·${kinds('클래식')}`);
+
+// 4-1. 판본 대조 — 앱 곡은 자작이거나 대조 끝(checked:true)만. 대조 전 곡은 대장 줄만 두고 가락은 index.js에서 뺀다
+{
+  const bad = unchecked(SONGS, ledgerById);
+  ok(bad.length === 0, `판본 대조 안 된 곡이 앱에 있음: ${bad.map(id => `${id}(${ledgerById(id)?.edition?.note || '대장 줄 없음'})`).join(' / ')} — 대조해 checked:true로 하거나 index.js에서 빼기`);
+  // 음성 시험 — 대조 안 된(checked:false) 비자작 대장 줄을 가진 가짜 곡을 끼우면 이 검사가 그 곡을 잡아야 한다
+  const fake = { id: 'zz-unchecked', title: 'zz', meter: [4, 4], tempo: 100, key: 0, cells: ['리2'], use: '-', mel: 'G4q G4q G4q G4q' };
+  const rows = new Map([[fake.id, { id: fake.id, kind: '외국 전래', edition: { sources: [], checked: false, note: '시험용' } }]]);
+  const caught = unchecked([...SONGS, fake], id => rows.get(id) || ledgerById(id));
+  ok(caught.length === 1 && caught[0] === fake.id, `[음성 시험] checked:false 가짜 곡을 못 잡음 — 잡힌 것: ${caught.join(',') || '없음'}`);
+  // 대조 끝으로 바꾸면(checked:true) 통과 · 대장 줄이 없으면 잡음 — 검사가 checked 값을 실제로 보는지
+  rows.get(fake.id).edition.checked = true;
+  ok(unchecked([...SONGS, fake], id => rows.get(id) || ledgerById(id)).length === 0, '[음성 시험] checked:true 가짜 곡은 통과해야 함');
+  ok(unchecked([fake], () => null).join() === fake.id, '[음성 시험] 대장 줄 없는 곡은 잡아야 함');
+}
 
 // 5. 닮음 검사(해시 파일만 읽음)
 const hashes = loadHashes();
@@ -132,11 +154,10 @@ const top = sim.reduce((a, b) => (b.best.g > a.best.g ? b : a));
   for (const r of res) ok(!r.pass && r.best.g >= LIMIT, `[역시험 ${r.id}] 베낀 곡을 못 잡음(${pct(r.best.g)})`);
 }
 
-// 6. 공개 전 할 일(실패 아님)
-const todo = SONGS.map(s => ledgerById(s.id)).filter(r => r.edition && !r.edition.checked);
-if (todo.length || warn.length) {
-  console.warn(`⚠ 공개 전 할 일 — 판본 대조 안 된 곡 ${todo.length}개:`);
-  for (const r of todo) console.warn(`   · ${r.id} ${r.title} — ${r.edition.note}`);
-  for (const w of warn) console.warn(`   · 닮음 기록 어긋남 ${w}`);
+// 6. 닮음 기록 어긋남(실패 아님 — 대장 글만 고치면 됨)
+if (warn.length) {
+  console.warn('⚠ 대장의 닮음 기록이 지금 계산과 다름:');
+  for (const w of warn) console.warn(`   · ${w}`);
 }
-console.log(`✓ 곡 시험 통과 — 30곡 · 확인 ${checks}개 · 닮음 최고 ${pct(top.best.g)}(${top.id} ↔ ${top.best.name}) · 판본 대조 남은 곡 ${todo.length}개`);
+const held = LEDGER.filter(r => r.kind !== '자작' && r.kind !== '국내 전래' && !songById(r.id) && !r.id.startsWith('x-')).length;
+console.log(`✓ 곡 시험 통과 — ${SONGS.length}곡(자작 ${kinds('자작')}·외국 전래 ${kinds('외국 전래')}·클래식 ${kinds('클래식')}) · 확인 ${checks}개 · 닮음 최고 ${pct(top.best.g)}(${top.id} ↔ ${top.best.name}) · 판본 대조 안 된 곡 0(대조 전 ${held}곡은 대장에만)`);
