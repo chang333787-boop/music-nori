@@ -14,6 +14,9 @@ import * as room from '../room.js';
 import { cellById, LANES, missingPre, nextCell, cellName, easyText } from '../../../engine/cells.js';
 import * as K from '../cellkit.js';
 import { TV_STEPS, TV_SCRIPT } from '../../../engine/tvscript.js';
+import { starSounds } from '../music.js';
+import * as music from '../music.js';
+import { levelsOf, newParts } from '../../../engine/theme.js';
 
 const PHASES = [['show', '보기'], ['follow', '연습'], ['game', '확인 게임']];
 const warned = new Set();                    // 이 창에서 한 번만 안내
@@ -116,7 +119,7 @@ export default function mount(root, ctx) {
     if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
     const again = resultShown && i === 2;           // 결과 뒤 '한 번 더' → 새 판(앞 판 결과는 띠에서 뺌)
     resultShown = false;
-    phase = i; auto = null;
+    phase = i; auto = null; K.sfx.reset(); music.stopFx();   // 이어 맞힘 사다리는 단계마다 처음부터 · 결과 팡파르는 멈춤
     if (troom) room.teacher.pub(cell.id, PHASES[i][0]).then(r => { if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
     overlay.hidden = true; overlay.replaceChildren(); overlay.classList.remove('result');
     body.replaceChildren(); ui.say(''); ui.count(null); ui.tell(null); ui.practice(i === 1 && !tv ? 0 : null);
@@ -204,7 +207,11 @@ export default function mount(root, ctx) {
     finish(r) {
       if (gone) return;
       const stars = r.starOn.filter(Boolean).length;
+      const before = K.getProg(), best0 = (before[cell.id] && before[cell.id].stars) || 0, lv0 = levelsOf(before);
       if (!tv) K.saveResult(cell.id, { ...r, stars });   // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음 · 기록은 원래 말 그대로(선생님이 봄)
+      // 결과 소리 — 별 하나씩(도 미 솔) · 셋이면 팡파르 · 이번에 처음 받은 별엔 '새 별' · 처음 화면 음악에 새 줄이 생겼으면 한 줄(docs/sound.md §5)
+      const delays = starSounds(stars, r.starOn);
+      const fresh = tv || !music.enabled() ? [] : newParts(lv0, levelsOf(K.getProg()));   // 배경 음악을 안 트는 기기(끔 · 방)면 X
       resultShown = true;
       // 방에 있는 아이 기기 + 선생님 칸이면 결과를 TV로(맞힌 수 = 제목 'N번 중 M번' · 없으면 다시 보기 줄)
       const roomCell = inRoom && (room.kid.last ? room.kid.isTeacherCell(cell.id) : startAt > 0 || !!(ctx.args && ctx.args[1]));
@@ -216,7 +223,8 @@ export default function mount(root, ctx) {
       ui.tell(null); ui.say(''); ui.count(null); ui.practice(null);
       const pose = stars >= 3 ? 'happy' : stars >= 1 ? 'play' : 'idle';   /* 평가 3차: 점수와 상관없는 만세 X */
       overlay.classList.add('result');
-      const shown = low ? { ...r, title: E(r.title), facts: (r.facts || []).map(E), rules: (r.rules || []).map(E), tip: E(r.tip) } : r;
+      const shown0 = low ? { ...r, title: E(r.title), facts: (r.facts || []).map(E), rules: (r.rules || []).map(E), tip: E(r.tip) } : r;
+      const shown = { ...shown0, delays, newFrom: tv ? 3 : best0, fresh };
       overlay.replaceChildren(h('div', { class: 'resultwrap' }, K.resultCard(shown), friendImg(friend, pose, { label: false, cls: 'resultpal' })));
       overlay.hidden = false;
       bar.mid(h('span', { class: 'steps labeled' }, ...PHASES.map(([, name]) => h('span', { class: 'st done' }, h('span', { class: 'd' }), name))));

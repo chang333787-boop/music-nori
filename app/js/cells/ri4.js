@@ -7,7 +7,8 @@
 //  11-07 평가 2차: 긴 음 다루는 말은 하나로(HOW) · 준비 박 숫자 · 판정 말은 말풍선(ui.tell) · 음 번호는 ui.count · 연습 점은 ui.practice
 //   지금 선(재생선)과 '지금' 막대 = 잉크 · 지난 박 = 진한 점 · 남은 박 = 빈 동그라미 · 마디 세로줄은 리5(마디)에서 배우므로 여기선 그리지 않음
 //  11-07 평가 3차: 하늘 띠 90px · 준비 박 점 X(숫자는 길 왼쪽 빈 곳 · 세는 동안만) · ‘따’ ‘따아’ 모두 왼쪽 정렬 · 막대 채움 · 풍선은 transform · 반주는 한 마디씩 예약
-import { bpmOf, releaseGrade, HOLD_WIN, layoutNotes, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, fireUp, startCard, noteSVG, SYL, LEN, exampleGroup, countTeller, barPump } from './_beat.js';
+import { bpmOf, releaseGrade, HOLD_WIN, layoutNotes, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, fireUp, startCard, noteSVG, SYL, LEN, exampleGroup, countTeller, barPump, accompSound, endChord } from './_beat.js';
+import { chordAt, holdPitch } from '../../../engine/theme.js';
 import { windows } from '../../../engine/judge.js';
 
 const PX = 170, COUNT = 4, PITCH = 67;                      // 박 하나 = 170px · 솔(G4) 한 음
@@ -115,11 +116,8 @@ function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
   const nb = Math.ceil(lane.beats / 4);
   const pump = barPump(ac, T, nb + 2, i => tOf((i - 1) * 4), i => {
     if (i === 0) { for (let k = 0; k < COUNT; k++) engine.click(tOf(k - COUNT), k === 0, bus); return; }
-    if (i === nb + 1) { engine.note('marimba', 60, tOf(lane.beats), beat * 2, 0.45, bus); return; }
-    for (let b = (i - 1) * 4; b < Math.min(i * 4, lane.beats); b++) {
-      engine.drum('hat', tOf(b), b % 4 === 0 ? 0.4 : 0.28, bus);
-      if (b % 4 === 0) engine.note('marimba', [48, 53, 55, 48][(b / 4) % 4], tOf(b), beat * 1.6, 0.4, bus);
-    }
+    if (i === nb + 1) { endChord(engine, bus, tOf(lane.beats), beat); return; }
+    accompSound(engine, bus, tOf((i - 1) * 4), beat, i - 1, { sal: 'pulse' }, Math.min(4, lane.beats - (i - 1) * 4));   // 주제곡 반주(박과 화음만)
   });
   const notes = lane.notes.map(n => ({ ...n, at: tOf(n.beat), res: null, press: null, down: null, bal: null }));
   let holding = null, tone = null, gone = false, raf = 0, ended = false, nextN = 0;
@@ -130,7 +128,6 @@ function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
   function down(e) {
     if (gone) return;
     const ms = e && e.timeStamp ? e.timeStamp : performance.now();
-    tone = engine.note('recorder', PITCH, ac.currentTime, 8, 0.7, bus);
     // 판정 창 안에서 가장 가까운, 아직 안 누른 음
     let best = -1, bestAbs = Infinity;
     notes.forEach((n, i) => {
@@ -139,6 +136,9 @@ function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
       if (d < -w.early || d > w.late) return;
       if (Math.abs(d) < bestAbs) { best = i; bestAbs = Math.abs(d); }
     });
+    // 내 음 = 그 음표 자리 반주 화음에 맞는 미 · 솔 · 라(솔에 가까운 것) — 길게 부는 음이 가락이 됨(docs/sound.md §4)
+    const at = best >= 0 ? notes[best].beat : Math.max(0, Math.floor((ac.currentTime - t0) / beat + 0.5));
+    tone = engine.note('recorder', holdPitch(chordAt(Math.floor(at / 4), at % 4)), ac.currentTime, 8, 0.7, bus);
     if (best < 0) return;
     const n = notes[best];
     n.press = bestAbs <= w.great ? 'great' : 'ok';

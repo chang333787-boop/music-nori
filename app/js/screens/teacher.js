@@ -1,6 +1,7 @@
 // 선생님 칸 — 아이 화면에서 뺀 기기 설정과 출처. 처음 화면 오른쪽 위 톱니로 들어온다.
 //  성취기준 점검(11-08): '이 기기 기록 보기'(과정 평가 자료 · #/records) · 1~2학년 안내 카드(누르는 카드 아님)
 import { h, onPress, lsGet, lsSet } from '../util.js';
+import * as music from '../music.js';
 import { ORDER, cellById, LANES, cellName } from '../../../engine/cells.js';
 import { BANDS } from '../../../engine/judge.js';
 import { getProg } from '../cellkit.js';
@@ -22,7 +23,7 @@ export default function mount(root, ctx) {
     card('records', '이 기기 기록 보기', '칸마다 최근 10번 — 날짜 · 별 · 맞힌 수 · 틀린 갈래. 표로 복사해 과정 평가 자료로 써요.',
       nRec ? `기록 ${nRec}개 · 이름 없이 이 기기에만` : '아직 기록이 없어요', false),
     card('credits', '출처와 저작권', '곡마다 권리 근거, 옮겨 온 코드, 글꼴 이용 조건.', '곡 30곡 · 노랫말 없음', false),
-    lowCard(), startPick(), resetCard()));
+    lowCard(), startPick(), deviceCard()));
 
   // 1~2학년 안내 — 누르는 카드 아님(판정 너그러움은 '지연 맞추기' 결과 화면에서 바꿈)
   function lowCard() {
@@ -39,14 +40,20 @@ export default function mount(root, ctx) {
     sel.addEventListener('change', () => { lsSet('startCell', sel.value); ctx.toast('시작 칸을 바꿨어요'); });
     return h('div', { class: 'card tcard tplain' }, h('b', {}, '시작 칸'), h('span', {}, "처음 화면의 '다음 칸'이 여기서부터 추천돼요. 3학년은 솔·미나 마디·박자표부터."), sel);
   }
-  // 이 기기 기록 지우기 — 여러 아이가 한 기기를 돌려 쓸 때(별 · 결과 기록 · 징검다리 단계 모두)
-  function resetCard() {
+  // 이 기기 — 배경 음악 켜기/끄기(docs/sound.md · 처음 화면 · 지도에서만) + 기록 지우기(여러 아이가 한 기기를 돌려 쓸 때 · 별 · 결과 기록 · 징검다리 단계)
+  function deviceCard() {
+    const bgm = h('button', { type: 'button' });
+    const draw = () => { const on = lsGet('bgm', true) !== false; bgm.textContent = on ? '배경 음악 켜짐' : '배경 음악 꺼짐'; bgm.setAttribute('aria-pressed', String(on)); };
+    onPress(bgm, () => { music.setEnabled(lsGet('bgm', true) === false); draw(); });
+    draw();
     const btn = h('button', { type: 'button' }, '기록 지우기');
     onPress(btn, () => {
       if (!btn.dataset.sure) { btn.dataset.sure = '1'; btn.textContent = '정말 지울까요? 한 번 더'; return; }
-      lsSet('prog', {}); lsSet('tap.best', {}); lsSet('tap.step', 1);
+      lsSet('prog', {}); lsSet('tap.best', {}); lsSet('tap.step', 1); lsSet('bgm.heard', null); lsSet('map.seen', null);
       btn.textContent = '지웠어요'; delete btn.dataset.sure;
     });
-    return h('div', { class: 'card tcard tplain' }, h('b', {}, '기록 지우기'), h('span', {}, '칸의 별과 결과 기록, 징검다리 단계를 지워요. 지연·스피커 맞춤은 그대로예요.'), btn);
+    return h('div', { class: 'card tcard tplain' }, h('b', {}, '이 기기'),
+      h('span', {}, '배경 음악은 처음 화면 · 지도에서만 작게 나와요(칸 안 · 방 번호 기기 X). 기록 지우기는 별 · 결과 기록 · 징검다리 단계를 지워요.'),
+      h('div', { class: 'trow' }, bgm, btn));
   }
 }

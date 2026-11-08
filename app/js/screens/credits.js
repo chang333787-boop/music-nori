@@ -10,6 +10,7 @@ const ROWS = [
   ['악보 글꼴 Noto Music', 'Google Fonts — 높은음자리표·쉼표 글자만 받음', 'SIL Open Font License 1.1'],
   ['글꼴 Jua', 'Google Fonts', 'SIL Open Font License 1.1'],
   ['효과음 · 악기 소리', 'Web Audio로 직접 합성(소리 파일 없음)', '—'],
+  ['주제곡 「숲속 음악대」 · 반주 · 팡파르', '이 앱에서 새로 지음(engine/theme.js · 2026-11-08) — 유명 곡 닮음 검사 통과', 'MIT(이 저장소)'],
   ['음악대 그림 · 배경 · 징검돌', 'OpenAI 코덱스 이미지 생성으로 그림(2026-11-07) — 모델 시트 한 장을 기준으로 자세를 그리고 tools/img_prep.py로 손질 · 이 앱 전용', 'MIT(이 저장소)'],
 ];
 

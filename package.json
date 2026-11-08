@@ -4,7 +4,7 @@
   "type": "module",
   "description": "음악 놀이터(가제목) — 초등 1~6학년이 음악 개념을 듣고, 두드리고, 바꿔 보며 배우는 놀이 앱",
   "scripts": {
-    "test": "node tools/ver.mjs --check && node tests/engine.test.mjs && node tests/cells.test.mjs && node tests/beatcells.test.mjs && node tests/edit.test.mjs && node tests/songs.test.mjs",
+    "test": "node tools/ver.mjs --check && node tests/engine.test.mjs && node tests/theme.test.mjs && node tests/cells.test.mjs && node tests/beatcells.test.mjs && node tests/edit.test.mjs && node tests/songs.test.mjs",
     "ver": "node tools/ver.mjs",
     "test:browser": "node tests/app.test.cjs && node tests/cells.browser.cjs && node tests/play.browser.cjs && node tests/pitch.test.cjs",
     "test:db": "node tests/room.rules.cjs && node tests/room.browser.cjs",

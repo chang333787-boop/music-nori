@@ -1,10 +1,12 @@
 // 앱 시작 — 주소 뒤 #/이름 으로 화면을 고른다. 화면 모듈 = export default mount(root, ctx) → 정리 함수
 //  머리띠: 왼쪽 뒤로 · 제목(+맡은 친구 얼굴) · 가운데 단계(화면이 채움) · 오른쪽 처음 화면은 선생님 톱니, 놀이 화면은 화면이 채움
-import { h, toast } from './util.js';
+import { h, toast, josa } from './util.js';
 import { engine } from './audio.js';
 import { device } from './device.js';
 import { friendImg, BAND } from './band.js';
 import * as room from './room.js';
+import * as music from './music.js';
+import { STEP_TEXT } from '../../engine/theme.js';
 import './eq.js';                       // 스피커 점검 값(음높이별 크기)을 모든 소리에
 
 const ROUTES = {
@@ -32,9 +34,29 @@ const barR = document.getElementById('barR');
 let cleanup = null, token = 0, parent = '', rightNode = null, isHome = false;
 
 // 첫 두드림에 소리 길을 연다(브라우저는 사람이 누르기 전에는 소리를 막는다)
-const unlock = () => { try { engine.ensure(); } catch { /* 소리가 없는 기기 */ } };
+const unlock = () => { try { engine.ensure(); music.kick(); } catch { /* 소리가 없는 기기 */ } };
 window.addEventListener('pointerdown', unlock, { capture: true });
 window.addEventListener('keydown', unlock, { capture: true });
+// 배경 음악(docs/sound.md) — 방에 들어온 아이 기기는 X(교실 소음)
+music.setGate(() => !room.kid.get());
+const MUSIC_ROUTES = new Set(['', 'map']);
+// 새 줄 한 줄(머리띠 아래 · 5초 · 막지 않음) — "참새가 가락 앞부분 소리를 더했어요" · 처음 화면이든 지도든 새 줄이 처음 울릴 때
+music.onFresh(fresh => {
+  document.querySelectorAll('.freshbanner').forEach(e => e.remove());
+  const name = k => (BAND.find(b => b.key === k) || {}).name || '';
+  const text = fresh.length === 1 ? `${josa(name(fresh[0].key), '이/가')} ${STEP_TEXT[fresh[0].key][fresh[0].to]} 소리를 더했어요` : `${josa(fresh.map(x => name(x.key)).join(' · '), '이/가')} 새 소리를 더했어요`;
+  const b = h('div', { class: 'freshbanner', role: 'status' }, ...fresh.map(x => friendImg(x.key, 'face', { label: false })), h('span', {}, text));
+  document.body.append(b);
+  setTimeout(() => b.remove(), 5200);
+});
+// 이동 단추 누름 소리(아주 작게) — 화면을 옮기는 단추만(링크 카드 · 지도 칸 · 주황 단추 · 뒤로).
+//  문제 소리를 바로 내는 단추(예시 카드 · 다시 듣기 · 막대 건반 · 답 · 톡)는 뺀다 — 듣기 직전에 다른 소리가 끼지 않게(docs/sound.md §1)
+window.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  const b = e.target.closest && e.target.closest('a.btn, .mnode, button.go, #back');
+  if (!b || b.disabled || b.matches('[data-tap], .excard, .ans')) return;
+  music.uiTick();
+}, { capture: true });
 
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L15 3.5h-4l-.3 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.3 2.5h4l.3-2.5a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>';
 
@@ -94,7 +116,7 @@ function askLeave(k) {
   document.body.append(m);
   stay.focus();
 }
-room.kid.on(renderRight);
+room.kid.on(() => { renderRight(); if (room.kid.get()) music.stop(true); });
 window.addEventListener('room-gone', () => toast('방이 끝났어요'));
 
 async function route() {
@@ -112,6 +134,8 @@ async function route() {
   bar.mid(null);
   bar.right(null);
   main.replaceChildren();
+  music.stopFx();                       // 결과 별 소리 · 팡파르는 화면을 떠나면 멈춤
+  music.wantMusic(MUSIC_ROUTES.has(key));
   try {
     const mod = await r.load();
     if (my !== token) return;

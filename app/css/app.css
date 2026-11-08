@@ -82,6 +82,12 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .star{display:flex;align-items:center;gap:12px;font-family:var(--head);font-size:19px;color:var(--ink-2)}
 .star svg{width:40px;height:40px;flex:none}
 .star.on{color:var(--ink);font-weight:700}
+/* 결과 별 — 소리에 맞춰 하나씩 톡(docs/sound.md §5 · --d = music.starSounds가 준 ms) · 처음 받은 별엔 '새 별' */
+.star.pop svg{animation:starpop 420ms cubic-bezier(.3,1.5,.5,1) var(--d,0ms) both}
+@keyframes starpop{0%{transform:scale(.45);opacity:.3}60%{transform:scale(1.18);opacity:1}100%{transform:none;opacity:1}}
+.star .newstar{font-family:var(--head);font-size:15px;line-height:1;color:var(--ink);background:var(--great-t,#F7E3A8);border:2px solid var(--ink);border-radius:999px;padding:4px 10px;margin-left:-4px}
+.freshline{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-family:var(--head);font-size:20px;border-top:2px dashed rgba(59,42,30,.35);padding-top:10px}
+.freshline .pal{width:40px;height:40px;object-fit:contain}
 
 /* ── 처음 화면: 무대 띠 + 카드 줄 ── */
 .home{display:grid;grid-template-rows:minmax(0,1fr) 250px;gap:20px;height:100%}
@@ -92,6 +98,12 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .friend:active,.friend.press{transform:none;box-shadow:none}
 .friend .pal{height:min(200px,66%);width:auto;max-width:94%;object-fit:contain;transform-origin:50% 100%}
 .friend.nod .pal{animation:nod 300ms ease-out}
+/* 모이는 음악대 — 연주 중인 친구는 박에 맞춰 끄덕임(--beat · --bob-delay = 첫 박) */
+.stage.playing .friend.joined:not(.nod) .pal{animation:bob var(--beat,.6s) ease-in-out var(--bob-delay,0s) infinite}
+@keyframes bob{0%,100%{transform:translateY(2px) scaleY(.97)}45%{transform:translateY(-5px)}}
+.freshbanner{position:fixed;z-index:30;left:50%;top:calc(var(--barh) + 14px);transform:translateX(-50%);display:flex;align-items:center;gap:10px;white-space:nowrap;font-family:var(--head);font-size:22px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;box-shadow:0 4px 0 var(--ink);padding:6px 20px 6px 8px;pointer-events:none;animation:bannerio 5s ease-out both}
+.freshbanner .pal{width:44px;height:44px;object-fit:contain}
+@keyframes bannerio{0%{opacity:0;transform:translate(-50%,-8px)}8%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,0)}}
 @keyframes nod{0%{transform:none}35%{transform:translateY(4px) scaleY(.94)}70%{transform:translateY(-6px)}100%{transform:none}}
 .friend .tag{font-family:var(--head);font-size:22px;line-height:1;box-shadow:0 3px 0 var(--ink);background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:9px 18px;color:var(--ink)}
 .friend:focus-visible{outline:none}
@@ -229,6 +241,10 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .mnode .mname{font-family:var(--head);font-size:21px;white-space:nowrap}
 .mnode .mstars{display:flex;gap:2px}
 .mnode .mstars svg{width:22px;height:22px}
+/* 새로 별을 받은 칸 — 한 번 반짝(0.6초) */
+.mnode.fresh .mstars svg{animation:starpop 600ms cubic-bezier(.3,1.5,.5,1) 250ms both}
+.mnode.fresh .mdot{animation:freshdot 600ms ease-out 250ms both}
+@keyframes freshdot{0%{box-shadow:0 0 0 0 var(--great)}50%{box-shadow:0 0 0 8px var(--great)}100%{box-shadow:0 0 0 0 transparent}}
 .mnode.next{box-shadow:0 4px 0 var(--ink),0 0 0 4px var(--paper),0 0 0 8px var(--go)}
 .mnode .mtag{position:absolute;left:12px;top:-20px;font-family:var(--head);font-size:16px;line-height:1;color:#fff;background:var(--go);border:2px solid var(--ink);border-radius:999px;padding:4px 12px}
 
@@ -265,6 +281,8 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .teacher .tcard .st.need{color:var(--ink);font-weight:700}
 .teacher a.tcard::after{content:'열기 ›';margin-top:auto;align-self:flex-end;font-family:var(--head);font-size:20px;color:var(--ink-2)}
 .teacher .tplain{box-shadow:none;cursor:default}
+.teacher .trow{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto}
+.teacher .trow button{min-height:52px;font-size:19px;padding:0 16px}
 .tselect{font:inherit;font-size:20px;min-height:56px;border:3px solid var(--ink);border-radius:14px;padding:6px 12px;background:var(--surface);color:var(--ink);max-width:100%}
 
 /* ── 이 기기 기록(#/records) — 표만 안에서 스크롤(화면은 스크롤 0) ── */

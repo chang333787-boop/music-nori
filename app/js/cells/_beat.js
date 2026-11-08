@@ -6,6 +6,7 @@
 //  판정 창은 engine/judge.js windows(학년군 · 가장 짧은 음 간격의 35%까지). 기기 지연(device.latencyMs)은 두드림에서 뺀다.
 import { windows } from '../../../engine/judge.js';
 import { audioToPerf } from '../clock.js';
+import { accompBar, cadence } from '../../../engine/theme.js';
 
 // ── 빠르기(학년군마다) ──
 export const TEMPO = {
@@ -111,6 +112,17 @@ export function killBus(engine, b) {
   try { b.gain.cancelScheduledValues(now); b.gain.setValueAtTime(b.gain.value, now); b.gain.linearRampToValueAtTime(0, now + 0.05); } catch { /* */ }
   setTimeout(() => { try { b.disconnect(); } catch { /* */ } }, 300);
 }
+// ── 주제곡 반주(docs/sound.md §4 — 박과 화음만 · 맞혀야 할 리듬은 치지 않음 · 낮은 소리가 박을 잡음) ──
+//  tb = 마디 시작(오디오 초) · i = 주제곡 마디 · opts = accompBar 옵션(sal · mel · spans) · beats = 그 마디에서 울릴 박 수(끝이 짧으면)
+const evSound = (engine, bus, tb, beat, e) => { const t = tb + e.b * beat; if (e.kind === 'note') engine.note(e.inst, e.p, t, e.d * beat, e.vel, bus); else engine.drum(e.drum, t, e.vel, bus, e.span); };
+export function accompSound(engine, bus, tb, beat, i, opts = {}, beats = 4) {
+  let n = 0;
+  for (const e of accompBar(i, opts)) if (e.b < beats) { evSound(engine, bus, tb, beat, e); n++; }
+  if (typeof window !== 'undefined') window.__accomp = (window.__accomp || 0) + n;   // 자동 시험이 읽음(반주가 울렸는지)
+  return n;
+}
+// 끝 화음(다장조 으뜸화음 — 주제곡 마침)
+export function endChord(engine, bus, t, beat) { for (const e of cadence()) evSound(engine, bus, t, beat, e); }
 // 지금 '들리는' 오디오 시각(초) — 그림은 소리에 맞춘다(징검다리와 같음)
 export const heardNow = ac => ac.currentTime - (ac.outputLatency || ac.baseLatency || 0);
 // 오디오 시각 → 들리는 화면 시각(ms)
@@ -136,7 +148,7 @@ export function pressInput(ui, kit, { onDown, onUp = null, label = '톡!', aria 
   let held = false;
   const down = e => { if (onUp) { if (held) return; held = true; } onDown(e); };
   const up = e => { if (!held) return; held = false; onUp && onUp(e); };
-  const btn = h('button', { type: 'button', class: 'go huge', 'aria-label': aria }, label);
+  const btn = h('button', { type: 'button', class: 'go huge', 'aria-label': aria, 'data-tap': '' }, label);
   const bp = e => { if (e.button > 0) return; e.preventDefault(); btn.classList.add('press'); down(e); };
   const bu = () => btn.classList.remove('press');
   btn.addEventListener('pointerdown', bp);

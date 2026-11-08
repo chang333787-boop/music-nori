@@ -61,7 +61,9 @@ export class Engine {
       // [MUSIC-ORCH-1] 오케스트라 악기
       violin: this._violin, strings: this._strings, cello: this._cello, contrabass: this._contrabass, pizz: this._pizz,
       flute: this._flute, clarinet: this._clarinet, oboe: this._oboe, trumpet: this._trumpet, horn: this._horn, tuba: this._tuba,
-      harp: this._harp, celesta: this._celesta, glock: this._glock, choir: this._choir, timpani: this._timpani }[inst] || this._piano;
+      harp: this._harp, celesta: this._celesta, glock: this._glock, choir: this._choir, timpani: this._timpani,
+      // [SOUND-1] 가벼운 반주 소리(소리 장치 둘) — 배경 음악 · 박 놀이 반주가 동시에 많이 울려도 크롬북 소리 스레드가 버티게(docs/sound.md)
+      keys: this._keys, lead: this._lead }[inst] || this._piano;
     return fn.call(this, f, t, Math.max(0.05, dur), vel, out, inst, art);
   }
   // [MUSIC-ORCH-1] 뜯는 소리(하프 · 피치카토) 줄 버퍼를 미리 만든다 — 틀기 전에 한 번(재생 중에 만들다 박이 늦지 않게)
@@ -166,6 +168,29 @@ export class Engine {
     src.connect(lp).connect(g).connect(out);
     src.start(t); src.stop(t + 2.2);
     return this._handle(g, [src], 0.08, t + 2.2);
+  }
+  // [SOUND-1] 건반(전자 피아노 결) — 사인 + 둘째 배음 삼각파(빨리 사라짐) · 저절로 줄어들어 길게 남지 않음(최대 1.15초)
+  _keys(f, t, dur, vel, out) {
+    const ctx = this.ctx, g = ctx.createGain(), g2 = ctx.createGain(), end = t + Math.min(dur, 0.9);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel * 0.4, t + 0.006);
+    g.gain.setTargetAtTime(vel * 0.12, t + 0.008, 0.28); g.gain.setTargetAtTime(0, end, 0.07);
+    g2.gain.setValueAtTime(0.22, t); g2.gain.setTargetAtTime(0, t, 0.12);
+    const o1 = this._osc('sine', f, t), o2 = this._osc('triangle', f * 2, t);
+    o1.connect(g); o2.connect(g2).connect(g); g.connect(out);
+    for (const o of [o1, o2]) { o.start(t); o.stop(end + 0.25); }
+    return this._handle(g, [o1, o2], 0.07, end + 0.25);
+  }
+  // [SOUND-1] 가락(가벼운 피리 결) — 삼각파 + 옥타브 위 사인 조금 · 떨림 · 숨소리 없음
+  _lead(f, t, dur, vel, out) {
+    const ctx = this.ctx, g = ctx.createGain(), lp = ctx.createBiquadFilter(), g2 = ctx.createGain(), end = t + dur;
+    lp.type = 'lowpass'; lp.frequency.value = Math.min(6000, f * 4);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel * 0.34, t + 0.03);
+    g.gain.setTargetAtTime(vel * 0.27, t + 0.04, 0.1); g.gain.setTargetAtTime(0, end, 0.05);
+    g2.gain.value = 0.12;
+    const o1 = this._osc('triangle', f, t), o2 = this._osc('sine', f * 2, t);
+    o1.connect(lp); o2.connect(g2).connect(lp); lp.connect(g).connect(out);
+    for (const o of [o1, o2]) { o.start(t); o.stop(end + 0.3); }
+    return this._handle(g, [o1, o2], 0.05, end + 0.3);
   }
   _bass(f, t, dur, vel, out) {
     const ctx = this.ctx, g = ctx.createGain(), lp = ctx.createBiquadFilter(), end = t + dur;

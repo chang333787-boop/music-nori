@@ -4,6 +4,9 @@
 //   ui  = { stage(무대 그릇), bar(아래 띠), say(글), setBar(...단추) }
 //   kit = { engine, device, band, next(), pass(), finish(결과), setAuto(fn), ... }
 import { h, lsGet, lsSet, onPress } from './util.js';
+import { goodSound } from './music.js';
+import { friendImg } from './band.js';
+import { STEP_TEXT } from '../../engine/theme.js';
 
 // ── 진행 · 결과 기록(기기에만 · 이름 없음) ──
 //  { [칸]: { stars(최고 별), at(마지막), hist: [{ at, s(별), k(맞힌 수), n(전체), tip(틀린 갈래 한 줄) }](최근 10개) } }
@@ -50,15 +53,36 @@ export function resultCard(r) {
     h('h2', {}, r.title),
     replay,
     h('div', { class: 'facts' }, ...(r.facts || []).flatMap((f, i) => (i ? [h('br'), f] : [f]))),
-    h('div', { class: 'stars' }, ...r.rules.map((t, k) => h('div', { class: 'star' + (r.starOn[k] ? ' on' : ''), html: STAR_SVG(r.starOn[k]) + `<span>${t}</span>` }))),
-    r.tip ? h('div', { class: 'tip' }, r.tip) : null);
+    starRow(r.rules, r.starOn, r),
+    r.tip ? h('div', { class: 'tip' }, r.tip) : null,
+    freshLine(r.fresh));
+}
+// 별 줄 — 켜진 별은 소리에 맞춰 하나씩 톡(delays · music.starSounds) · 이번에 처음 받은 별엔 '새 별'(newFrom = 전에 받은 최고 별 수)
+export function starRow(rules, starOn, { delays = null, newFrom = 3 } = {}) {
+  let j = 0, lit = 0;
+  return h('div', { class: 'stars' }, ...rules.map((t, k) => {
+    const on = !!starOn[k], d = on && delays ? delays[j++] : null;
+    if (on) lit++;
+    const el = h('div', { class: 'star' + (on ? ' on' : '') + (d != null ? ' pop' : ''), style: d != null ? { '--d': d + 'ms' } : null, html: STAR_SVG(on) + `<span>${t}</span>` });
+    if (on && lit > newFrom) el.append(h('b', { class: 'newstar' }, '새 별'));
+    return el;
+  }));
+}
+// 처음 화면 음악에 새 줄이 생겼으면 한 줄(친구 얼굴 + 무엇이 더해졌는지)
+export function freshLine(fresh) {
+  if (!fresh || !fresh.length) return null;
+  return h('div', { class: 'freshline' }, ...fresh.map(x => friendImg(x.key, 'face', { label: false })),
+    h('span', {}, `처음 화면 음악에 ${fresh.map(x => STEP_TEXT[x.key][x.to]).join(' · ')} 소리가 더해졌어요`));
 }
 
 // ── 소리 ──
-// 맞음 = 마림바 두 음 위로 · 삐끗 = 나무 소리 하나(혼내는 소리 X)
+// 맞음 = 마림바 두 음 위로 — 이어서 맞힐수록 한 칸씩 올라감(솔 라 도 레 미 → 여섯째부터 화음 · docs/sound.md §5)
+// 삐끗 = 나무 소리 하나(혼내는 소리 X) · 사다리는 처음부터 · 칸 단계가 바뀌면 cell.js가 reset
 export const sfx = {
-  good(engine) { const t = engine.ensure().currentTime + 0.01; engine.note('marimba', 79, t, 0.12, 0.45); engine.note('marimba', 84, t + 0.09, 0.2, 0.45); },
-  oops(engine) { const t = engine.ensure().currentTime + 0.01; engine.drum('gi', t, 0.6); engine.note('marimba', 62, t + 0.05, 0.25, 0.35); },
+  k: 0,
+  good() { this.k++; goodSound(this.k); },
+  oops(engine) { this.k = 0; const t = engine.ensure().currentTime + 0.01; engine.drum('gi', t, 0.6); engine.note('marimba', 62, t + 0.05, 0.25, 0.35); },
+  reset() { this.k = 0; },
 };
 // 음 차례 틀기 — notes = [{ p, d(초), gap(초) , inst, vel }] → 끝나는 시각(초 뒤)
 export function playSeq(engine, notes, { inst = 'xylo', vel = 0.8, at = 0.05, out = null } = {}) {

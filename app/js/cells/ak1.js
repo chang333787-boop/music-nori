@@ -16,6 +16,8 @@ import { audioToPerf } from '../clock.js';
 import { SONGS } from '../../../engine/songs/index.js';
 import { parseMel } from '../../../engine/song.js';
 import { TPQ } from '../../../engine/theory.js';
+import { harmonize } from '../../../engine/theme.js';
+import { accompSound } from './_beat.js';
 
 const ROWS = {
   2: { p: [67, 64], name: ['높은 소리', '낮은 소리'], at: ['위', '아래'], keys: ['↑', '↓'] },
@@ -284,8 +286,10 @@ export default {
       cnt = -1;
       const ac = engine.ensure(), beat = 60 / L.bpm, t0 = ac.currentTime + 0.5, tStart = t0 + 4 * beat;
       for (let k = 0; k < 4; k++) V.click(t0 + k * beat, k === 0);
+      // 마디마다 반주 화음 — 그 마디 막대 음(솔 · 미 · 라)에 맞춰 고름(docs/sound.md §4)
+      const chords = Array.from({ length: Math.ceil(L.beats / 4) }, (_, k) => harmonize(L.notes.filter(nt => nt.r >= 0 && nt.b >= k * 4 && nt.b < k * 4 + 4).map(nt => ({ p: R.p[nt.r], b: nt.b - k * 4, d: nt.d }))));
       run = {
-        L, bars, ac, beat, t0, tStart, end: tStart + L.beats * beat, hat: 0,
+        L, bars, ac, beat, t0, tStart, end: tStart + L.beats * beat, hat: 0, chords,
         outLat: ac.outputLatency || ac.baseLatency || 0, lat: device.latencyMs || 0,
         win: windows('low', beat * 1000),
         notes: L.notes.map((nt, k) => ({ ...nt, t: tStart + nt.b * beat, st: null, k })),
@@ -334,8 +338,12 @@ export default {
         const now = run.ac.currentTime - run.outLat;
         const b = (now - run.tStart) / run.beat;
         S.headAt(Math.max(0, Math.min(run.L.beats, b)));
-        // 박 소리(작게) — 한 줄을 통째로 예약하지 않고 0.3초 앞만(동시 소리 줄이기)
-        while (run.hat < run.L.beats && run.tStart + run.hat * run.beat < run.ac.currentTime + 0.3) { engine.drum('hat', run.tStart + run.hat * run.beat, 0.22, V.out); run.hat++; }
+        // 반주(주제곡 결 — 낮은 소리 · 화음 · 박마다 작은 햇) — 한 마디씩, 0.3초 앞만(동시 소리 줄이기)
+        while (run.hat < run.L.beats && run.tStart + run.hat * run.beat < run.ac.currentTime + 0.3) {
+          const k = run.hat / 4;
+          accompSound(engine, V.out, run.tStart + run.hat * run.beat, run.beat, 0, { sal: 'pulse', spans: [{ b: 0, len: 4, name: run.chords[k] }] }, Math.min(4, run.L.beats - run.hat));
+          run.hat += 4;
+        }
         // 넷 세기 — 악보 가운데 큰 숫자 1 2 3 4(박마다 한 번만 바꿈 · 세는 동안만)
         const ci = Math.floor((now - run.t0) / run.beat);
         if (ci !== cnt && ci >= 0 && ci <= 4) {

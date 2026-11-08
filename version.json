@@ -1,5 +1,5 @@
 {
- "v": "bf2f645a06e9",
+ "v": "1b7d094bb152",
  "files": [
   "app/css/app.css",
   "app/css/cells/_mel.css",
@@ -40,6 +40,7 @@
   "app/js/device.js",
   "app/js/eq.js",
   "app/js/main.js",
+  "app/js/music.js",
   "app/js/notation.js",
   "app/js/recorder.js",
   "app/js/room.js",
@@ -64,6 +65,7 @@
   "engine/song.js",
   "engine/songs/index.js",
   "engine/songs/ledger.js",
+  "engine/theme.js",
   "engine/theory.js",
   "engine/tvscript.js"
  ]

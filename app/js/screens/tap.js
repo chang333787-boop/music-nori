@@ -8,22 +8,25 @@ import { h, onPress, lsGet, lsSet } from '../util.js';
 import { friendImg, setPose, preload, IMG_DIR } from '../band.js';
 import { audioToPerf } from '../clock.js';
 import { windows, judgeTaps, BANDS, STAR_RULES } from '../../../engine/judge.js';
-import { saveResult } from '../cellkit.js';
+import { saveResult, getProg, starRow, freshLine } from '../cellkit.js';
+import { starSounds, stopFx, enabled as musicOn } from '../music.js';
+import { levelsOf, newParts, themeRun } from '../../../engine/theme.js';
+import { accompSound, endChord } from '../cells/_beat.js';
 import * as room from '../room.js';
 
 const TEMPI = { low: [100, 110, 120], mid: [84, 100, 116], high: [76, 96, 120] };
+// sal = 반주에서 박이 드러나는 정도(docs/sound.md §4): 3 큰북이 박마다 · 2 큰북 1·3박 · 1 북 없이 가락과 화음만(음악 속에서 박 찾기 · 1~2학년은 2)
 const STEPS = [
-  { name: '박 점을 보며', speed: 1, helper: true },
-  { name: '박 점 없이', speed: 1, helper: false },
-  { name: '조금 빠르게', speed: 2, helper: true },
-  { name: '빠르게, 박 점 없이', speed: 2, helper: false },
+  { name: '박 점을 보며', speed: 1, helper: true, sal: 3 },
+  { name: '박 점 없이', speed: 1, helper: false, sal: 2 },
+  { name: '조금 빠르게', speed: 2, helper: true, sal: 3 },
+  { name: '빠르게, 박 점 없이', speed: 2, helper: false, sal: 1 },
 ];
 const COUNT = 4, WARM = 2, SCORED = 24, BEATS = WARM + SCORED;
 // 세상(가로로 긴 강) 크기 — 화면은 고슴도치를 따라 옮겨 간다
 const SP = 92, GROUP_GAP = 34, BANK_L = 230, BANK_R = 260, WARM_X = 300;
 const stoneWX = i => (i < WARM ? WARM_X + i * SP : WARM_X + WARM * SP + GROUP_GAP + (i - WARM) * SP + Math.floor((i - WARM) / 4) * GROUP_GAP);
 const WORLD_W = stoneWX(BEATS - 1) + 90 + BANK_R;
-const STAR = on => `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3l5 11 12 1.4-9 8.2 2.6 11.9L20 29.6 9.4 35.5 12 23.6 3 15.4 15 14z" fill="${on ? '#E0A100' : '#FFFFFF'}" stroke="#3B2A1E" stroke-width="3" stroke-linejoin="round"/></svg>`;
 
 export default function mount(root, ctx) {
   const { engine, device, bar } = ctx;
@@ -86,7 +89,7 @@ export default function mount(root, ctx) {
     mode = 'play';
     overlay.hidden = true;
     pauseBtn.hidden = false;
-    const tapBtn = h('button', { type: 'button', class: 'go huge', 'aria-label': '톡 — 두드리기' }, '톡!');
+    const tapBtn = h('button', { type: 'button', class: 'go huge', 'aria-label': '톡 — 두드리기', 'data-tap': '' }, '톡!');
     onPress(tapBtn, e => tap(e));
     tapbar.replaceChildren(tapBtn, h('span', { class: 'key' }, h('span', { class: 'kbd' }, '스페이스'), ' 키도 돼요'));
   }
@@ -127,8 +130,10 @@ export default function mount(root, ctx) {
     if (misses.length) tip = `${misses.slice(0, 4).map(n => n + '번째').join(' · ')}${misses.length > 4 ? ` 외 ${misses.length - 4}개` : ''} 박을 놓쳤어요.`;
     if (hits.length >= 4) tip += (tip ? ' 누른 박은 ' : '누른 박은 ') + (mean < -35 ? '조금 빠른 편이에요 — 소리를 듣고 눌러요.' : mean > 35 ? '조금 늦은 편이에요 — 다음 박을 미리 느껴 봐요.' : '박과 거의 같은 때였어요.');
     if (!hits.length) tip = '톡!을 박마다 한 번씩 눌러요. 화면 아무 곳이나 눌러도 돼요.';
+    const best0 = best[step] || 0, lv0 = levelsOf(getProg());
     if (r.stars > (best[step] || 0)) { best[step] = r.stars; lsSet('tap.best', best); }
     saveResult('ri1', { stars: r.stars, kept: r.kept, total: r.total, tip });   // 마을 지도 '일정박' 칸 별 + 결과 기록(선생님 칸 '이 기기 기록')
+    const delays = starSounds(r.stars, r.starOn), fresh = musicOn() ? newParts(lv0, levelsOf(getProg())) : [];   // 별 하나씩 소리 · 새 별(이 단계 최고보다) · 처음 화면 음악에 새 줄
     if (room.kid.isTeacherCell('ri1')) room.kid.send('ri1', r.stars, r.kept, r.total);   // 방 번호 다같이 — 선생님 칸이면 TV로
     bar.mid(stepsUI());
     overlay.className = 'overlay result';
@@ -136,8 +141,9 @@ export default function mount(root, ctx) {
       h('h2', {}, `${r.total}번 중 ${r.kept}번 맞혔어요`),
       replay,
       h('div', { class: 'facts' }, `이어서 맞힌 최고 기록 ${r.streak}번`, h('br'), `그중 딱 맞은 박 ${r.great}번`),
-      h('div', { class: 'stars' }, ...STAR_RULES.map((t, k) => h('div', { class: 'star' + (r.starOn[k] ? ' on' : ''), html: STAR(r.starOn[k]) + `<span>${t}</span>` }))),
-      tip ? h('div', { class: 'tip' }, tip) : null));
+      starRow(STAR_RULES, r.starOn, { delays, newFrom: best0 }),
+      tip ? h('div', { class: 'tip' }, tip) : null,
+      freshLine(fresh)));
     overlay.hidden = false;
     const again = h('button', { type: 'button', class: r.stars === 0 ? 'go huge' : '' }, '다시');
     onPress(again, start);
@@ -158,23 +164,18 @@ export default function mount(root, ctx) {
   // ── 한 판 ──
   function start() {
     const ac = engine.ensure();
-    stopAudio();
+    stopAudio(); stopFx();                         // 결과 팡파르가 울리는 중에 '다시'를 눌러도 겹치지 않게
     const st = STEPS[step - 1], bpm = TEMPI[band][st.speed], beat = 60 / bpm;
     const bus = engine.bus();
     const t0 = ac.currentTime + 0.4;
     // 소리는 0.3초 앞만 예약(한 판을 한꺼번에 예약하면 노드 350개 · 느린 크롬북에서 긴 작업 — 성능 11-07)
     const sched = [];
     for (let i = 0; i < COUNT; i++) { const t = t0 + i * beat; sched.push({ t, f: () => engine.click(t, i === 0, bus) }); }
-    const bass = [48, 53, 55, 48, 53, 55, 48];
-    for (let i = 0; i < BEATS; i++) {
-      const t = t0 + (COUNT + i) * beat, k = i - WARM, down = k >= 0 ? k % 4 === 0 : i === 0;
-      sched.push({ t, f: () => {
-        engine.drum(down ? 'kick' : 'hat', t, down ? 0.75 : 0.45, bus);
-        if (k >= 0 && k % 4 === 0) engine.note('marimba', bass[(k / 4) % bass.length], t, beat * 1.8, 0.5, bus);
-        if (k >= 0 && k % 4 === 2) engine.note('marimba', bass[Math.floor(k / 4) % bass.length] + 16, t, beat * 0.9, 0.32, bus);
-      } });
-    }
-    { const t = t0 + (COUNT + BEATS) * beat; sched.push({ t, f: () => engine.note('marimba', 72, t, beat * 2, 0.6, bus) }); }   // 마무리 소리
+    // 연습 박 둘 = 북으로 들어가기 · 채점 박 24 = 주제곡 여섯 마디(1~4 · 7~8 마침) 위에서 — 박은 음악 속에 있다(docs/sound.md §4)
+    for (let i = 0; i < WARM; i++) { const t = t0 + (COUNT + i) * beat; sched.push({ t, f: () => engine.drum(i === 0 ? 'kick' : 'hat', t, i === 0 ? 0.75 : 0.45, bus) }); }
+    const sal = band === 'low' ? Math.max(2, st.sal) : st.sal, bars = themeRun(SCORED / 4);
+    bars.forEach((bi, j) => { const t = t0 + (COUNT + WARM + j * 4) * beat; sched.push({ t, f: () => accompSound(engine, bus, t, beat, bi, { sal, mel: true }) }); });
+    { const t = t0 + (COUNT + BEATS) * beat; sched.push({ t, f: () => endChord(engine, bus, t, beat) }); }   // 마무리 = 주제곡 마침 화음
     let si = 0;
     const pump = () => { while (si < sched.length && sched[si].t < ac.currentTime + 0.3) sched[si++].f(); };
     pump();

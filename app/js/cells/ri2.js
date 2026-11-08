@@ -7,7 +7,7 @@
 //   '지금' 카드 = 잉크 고리 + 작은 세모 · 지난 박 = 진한 점 · 남은 박 = 빈 동그라미
 //  1~2학년(band low)은 머리 없는 막대 음표로 그린다.
 //  11-07 평가 3차: 준비 박 숫자는 판 가운데 큰 숫자(세는 동안만 · 오른쪽 위 상자 X) · 반주는 네 박씩 0.3초 앞에만 예약(동시 소리 166 → 75) · ‘따’ ‘쉼’ 둥근 따옴표
-import { bpmOf, judgeEcho, classifyTap, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, startCard, noteSVG, palmSVG, exampleGroup, countTeller, barPump } from './_beat.js';
+import { bpmOf, judgeEcho, classifyTap, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, startCard, noteSVG, palmSVG, exampleGroup, countTeller, barPump, accompSound, endChord } from './_beat.js';
 import { windows } from '../../../engine/judge.js';
 
 const ORD = ['첫째', '둘째', '셋째', '넷째'];
@@ -79,12 +79,11 @@ function echoRun(kit, ui, view, { rounds, bpm, onRound, onEnd }) {
   const nBars = 1 + rounds.length * 2;
   const pump = barPump(ac, T, nBars + (rounds.length > 1 ? 1 : 0), i => tOf(i * 4), i => {
     if (i === 0) { for (let k = 0; k < COUNT; k++) engine.click(tOf(k), k === 0, bus); return; }
-    if (i === nBars) { engine.drum('deong', tOf(total), 0.8, bus); engine.note('marimba', 72, tOf(total), beat * 2, 0.55, bus); return; }
+    if (i === nBars) { engine.drum('deong', tOf(total), 0.8, bus); endChord(engine, bus, tOf(total), beat); return; }
     const rd = rounds[(i - 1) >> 1], call = (i - 1) % 2 === 0;
-    for (let k = 0; k < 4; k++) {
-      pulse(engine, tOf(i * 4 + k), bus, k === 0 ? 0.42 : 0.3);
-      if (call && rd.pat[k] === 'ta') callSound(engine, tOf(i * 4 + k), bus);
-    }
+    // 반주(주제곡 화음 · 낮은 소리 · 박마다 작은 햇)는 고슴도치 차례 · 내 차례 내내 이어짐 — 쉼에도 박은 흐른다(docs/sound.md §4) · 답 리듬은 고슴도치 북만
+    accompSound(engine, bus, tOf(i * 4), beat, i - 1, { sal: 'pulse' });
+    for (let k = 0; k < 4; k++) if (call && rd.pat[k] === 'ta') callSound(engine, tOf(i * 4 + k), bus);
   });
   const st = rounds.map(() => ({ taps: [], marks: [null, null, null, null], done: false }));
   const runId = ++RUN;
