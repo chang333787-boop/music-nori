@@ -5,15 +5,27 @@
 //   kit = { engine, device, band, next(), pass(), finish(결과), setAuto(fn), ... }
 import { h, lsGet, lsSet, onPress } from './util.js';
 
-// ── 진행(기기에만) ── { [칸]: { stars, at } }
+// ── 진행 · 결과 기록(기기에만 · 이름 없음) ──
+//  { [칸]: { stars(최고 별), at(마지막), hist: [{ at, s(별), k(맞힌 수), n(전체), tip(틀린 갈래 한 줄) }](최근 10개) } }
+//  hist = 과정 중심 평가 자료(선생님 칸 '이 기기 기록 보기' · #/records). 예전 모양 { stars, at }도 그대로 읽힌다(hist 없음)
+export const HIST_MAX = 10;
 export const getProg = () => lsGet('prog', {});
-export function saveStars(id, stars) {
+// r = 결과 카드 자료(cell.js finish) 또는 { stars, kept, total, tip }(징검다리) — k/n은 다시 보기 줄(replay)에서, 없으면 kept/total
+export function saveResult(id, r) {
   const p = getProg();
-  const old = p[id] ? p[id].stars : 0;
-  p[id] = { stars: Math.max(old, stars), at: Date.now() };
+  const old = p[id] && typeof p[id] === 'object' ? p[id] : {};
+  const s = r.stars ?? (r.starOn || []).filter(Boolean).length;
+  const rep = Array.isArray(r.replay) && r.replay.length ? r.replay : null;
+  const k = rep ? rep.filter(Boolean).length : r.kept ?? null, n = rep ? rep.length : r.total ?? null;
+  const at = Date.now();
+  const hist = [...(Array.isArray(old.hist) ? old.hist : []), { at, s, k, n, tip: r.tip || '' }].slice(-HIST_MAX);
+  p[id] = { ...old, stars: Math.max(old.stars || 0, s), at, hist };
   lsSet('prog', p);
   return p[id].stars;
 }
+
+// ── 성취기준 줄(선생님 화면만) — 기호 하나씩 끊기지 않게([4음02-01]◎ 가운데에서 줄이 바뀌지 않게) ──
+export const stdEl = (std, cls = 'stdl') => h('span', { class: cls, title: '◎ 직접 · ○ 요소 기초' }, ...(std || []).flatMap(([code, m], i) => [i ? ' ' : null, h('span', { class: 'sc' }, `[${code}]${m}`)]));
 
 // ── 별 ──
 export const STAR_SVG = on => `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3l5 11 12 1.4-9 8.2 2.6 11.9L20 29.6 9.4 35.5 12 23.6 3 15.4 15 14z" fill="${on ? '#E0A100' : '#FFFFFF'}" stroke="#3B2A1E" stroke-width="3" stroke-linejoin="round"/></svg>`;

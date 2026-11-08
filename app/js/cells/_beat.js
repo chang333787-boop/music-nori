@@ -1,5 +1,5 @@
 // 박·리듬 칸 공용 도우미(리2 · 리4 · 리5 · 리6) — 칸 파일이 아니다(이름 앞 _ · 칸 지도에 없음)
-//  · 판정(순수 계산 · DOM 없음 · node 시험 tests/beatcells.test.mjs): 메기면 받기 · 길게 누르기 · 센박에만
+//  · 판정(순수 계산 · DOM 없음 · node 시험 tests/beatcells.test.mjs): 따라 치기 · 길게 누르기 · 센박에만
 //  · 박 시계(오디오 시각 ↔ 화면 시각 — 징검다리 screens/tap.js와 같은 방법 · clock.js audioToPerf)
 //  · 음표 그림(쉬운 SVG 글 · 1~2학년은 머리 없는 막대 음표) · 두드림/누르기 입력 · 자동 시험 두드림
 //  · 마디 하나씩 예약(barPump) · 준비 박 세기 = 판 가운데 큰 숫자(countTeller)
@@ -9,7 +9,7 @@ import { audioToPerf } from '../clock.js';
 
 // ── 빠르기(학년군마다) ──
 export const TEMPO = {
-  echo: { low: 92, mid: 100, high: 108 },      // 리2 메기면 받기
+  echo: { low: 92, mid: 100, high: 108 },      // 리2 따라 치기
   hold: { low: 76, mid: 80, high: 88 },        // 리4 풍선(길게 누르기는 조금 느리게)
 };
 export const bpmOf = (kind, band) => (TEMPO[kind][band] || TEMPO[kind].mid);
@@ -29,7 +29,7 @@ export function classifyTap(t, beatsMs, pat, w, beatMs) {
   return { k, kind: Math.abs(d) <= w.great ? 'great' : 'ok', off: d };
 }
 
-// 메기면 받기 판정 — pat = ['ta' | 'rest', …] · beatsMs = 받는 박 시각(ms) · taps = 두드린 시각(ms, 같은 시계)
+// 따라 치기 판정 — pat = ['ta' | 'rest', …] · beatsMs = 받는 박 시각(ms) · taps = 두드린 시각(ms, 같은 시계)
 //  → beats[k].got = 'great' | 'ok' | 'miss'(따를 놓침) | 'rest'(쉼 지킴) | 'resthit'(쉼에 쳤어요) · ok = 모두 맞음
 export function judgeEcho(pat, beatsMs, taps, { band = 'mid', latency = 0, beatMs } = {}) {
   if (beatMs == null) beatMs = beatsMs.length > 1 ? beatsMs[1] - beatsMs[0] : 600;
@@ -80,7 +80,7 @@ export function judgeHolds(notes, holds, { band = 'mid', latency = 0, beatMs = 6
   return { notes: out, kept: out.filter(x => x.ok).length, total: out.length, win: w };
 }
 
-// 센박에만 톡 — 마디마다 [센, 여, 여…]를 메기면 받기와 같은 틀로(센 = 따 · 여린박 = 쉼)
+// 센박에만 톡 — 마디마다 [센, 여, 여…]를 따라 치기와 같은 틀로(센 = 따 · 여린박 = 쉼)
 export function strongPattern(meter, bars) {
   const pat = [];
   for (let b = 0; b < bars; b++) for (let i = 0; i < meter; i++) pat.push(i === 0 ? 'ta' : 'rest');
@@ -171,8 +171,9 @@ export const fireUp = () => window.dispatchEvent(new PointerEvent('pointerup', {
 // ── 시작 카드(가운데 카드 + 아래 '시작' 하나 · 징검다리와 같은 모양) ──
 export function startCard(ui, kit, { title, sub = [], onStart }) {
   const { h, onPress } = kit;
+  const ez = kit.ez || (t => t);                       // 1~2학년 판 쉬운 말(칸 화면이 줌)
   const card = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
-    h('h2', {}, title), ...sub.map(s => (typeof s === 'string' ? h('p', { class: 'sub' }, s) : s))));
+    h('h2', {}, ez(title)), ...sub.map(s => (typeof s === 'string' ? h('p', { class: 'sub' }, ez(s)) : s))));
   ui.stage.append(card);
   const go = h('button', { type: 'button', class: 'go huge' }, '시작');
   onPress(go, () => { card.remove(); onStart(); });

@@ -4,6 +4,8 @@ import { h, onPress } from '../util.js';
 import { Player } from '../audio.js';
 import { renderStaff } from '../notation.js';
 import { makeSong, toEvents, toStaffSong } from '../../../engine/song.js';
+// 곡 쓰임 글 — 대장(engine/songs/index.js · 고치지 않는 파일)의 옛 칸 이름을 화면에서만 지금 이름으로(리2 '메기면 받기' → '따라 치기' · 성취기준 점검 11-08)
+const useText = u => String(u || '').replace(/메기면 받기/g, '따라 치기');
 
 const INSTS = [['piano', '피아노'], ['xylo', '실로폰'], ['recorder', '리코더'], ['flute', '플루트']];
 const KIND_NAME = { '자작': '새로 지은 곡', '외국 전래': '여러 나라 옛 노래', '클래식': '클래식 주제', '국내 전래': '우리 전래 노래' };
@@ -41,7 +43,7 @@ export default function mount(root, ctx) {
     const meter = (def.meter || [4, 4]).join('/');
     view.replaceChildren(
       h('h2', {}, def.title),
-      h('p', { class: 'meta' }, `${meter}박자 · ${def.use || ''}`),
+      h('p', { class: 'meta' }, `${meter}박자 · ${useText(def.use)}`),
       ...(cur.errors.length ? [h('p', { class: 'warn' }, '마디 검사: ' + cur.errors.join(' / '))] : []),
       h('div', { class: 'row' }, playBtn, instSeg),
       h('div', { class: 'staffbox' }, staff.el),

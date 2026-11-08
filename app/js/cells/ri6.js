@@ -120,7 +120,7 @@ function boxView(kit) {
       const lock = i < locked;
       const e = blockEl(kit, k, { tag: lock ? 'div' : 'button', cls: (lock ? 'lock' : 'in') + (i === popAt ? ' pop' : ''), h: BH });
       e.style.left = `${(t / DUR.q) * C + 4}px`;                 /* 자리는 한 번 정함(움직임 X) — 튀어 들어옴 · 누름은 transform */
-      if (!lock) { e.setAttribute('aria-label', `${NAME[k]} 빼기`); kit.onPress(e, () => onRemove && onRemove(i)); }
+      if (!lock) { e.setAttribute('aria-label', kit.ez(`${NAME[k]} 빼기`)); kit.onPress(e, () => onRemove && onRemove(i)); }
       layer.append(e);
       t += TICK[k];
     });
@@ -143,7 +143,7 @@ function boxView(kit) {
     state: () => fillBar(blocks.map(k => TICK[k])),
     lightCell(i, on) { if (cells[i]) cells[i].classList.toggle('lit', on); },
     blinkEmpty(i) { if (cells[i] && cells[i].animate) cells[i].animate([{ backgroundColor: '#E3DCD2' }, { backgroundColor: 'transparent' }], { duration: 420, easing: 'ease-out' }); },   /* 강제 레이아웃 X(성능 · 평가 3차) */
-    say(t) { msg.textContent = t || ''; },                     // 아래 한 줄 — 까닭이 있으면 '몇 박 찼나' 대신 보임
+    say(t) { msg.textContent = kit.ez(t || ''); },             // 아래 한 줄 — 까닭이 있으면 '몇 박 찼나' 대신 보임(1~2학년 판 = 쉬운 말)
     quiz(on) { el.classList.toggle('quiz', on); },              // 연습: 고르기 전에는 '몇 박 찼나' 글 · 박 점을 숨김
     close() { box.classList.add('closed'); },
     leave() { box.classList.add('gone'); },
@@ -193,9 +193,10 @@ export default {
     let bus = newBus(engine);
     const stop = () => { T.clear(); killBus(engine, bus); bus = newBus(engine); lightOnly(box, -1); };
     const cards = EXAMPLES.map(ex => {
-      const btn = h('button', { type: 'button', class: 'excard r6-ex', 'aria-label': `${ex.title} — ${ex.sub} 들어 보기` },
-        h('b', {}, ex.title),
-        h('span', { class: 'r6-exmini' }, ...ex.blocks.map(k => h('i', { class: `k-${k}`, style: { width: `${LEN[k] * 22 - 3}px` } })), ex.isNew ? h('em', { class: 'r6-new' }, '새 음표') : null),
+      const title = kit.ez(ex.title);
+      const btn = h('button', { type: 'button', class: 'excard r6-ex', 'aria-label': `${title} — ${ex.sub} 들어 보기` },
+        h('b', {}, title),
+        h('span', { class: 'r6-exmini' }, ...ex.blocks.map(k => h('i', { class: `k-${k}`, style: { width: `${LEN[k] * 22 - 3}px` } })), ex.isNew ? h('em', { class: 'r6-new' }, kit.ez('새 음표')) : null),
         h('span', {}, ex.sub));
       onPress(btn, () => {
         stop();
@@ -276,7 +277,7 @@ export default {
     const box = boxView(kit);
     // 블록 판 — 다섯 블록을 처음부터 깔고, 판마다 쓰지 않는 블록은 잠가서 숨김(평가 3차: 남은 블록은 세로 가운데로 모임)
     const tray = kit.answers(ALL.map(k => ({ key: k, label: SHORT[k], chip: trayChip(kit, k), locked: true })), k => put(k), { cls: 'r6-ans r6-tray' });
-    ALL.forEach(k => tray.btn(k).setAttribute('aria-label', `${NAME[k]} 넣기`));
+    ALL.forEach(k => tray.btn(k).setAttribute('aria-label', kit.ez(`${NAME[k]} 넣기`)));
     ui.stage.append(h('div', { class: 'r6 r6-play' }, box.el, tray.el));
     const listen = h('button', { type: 'button' }, '들어 보기');
     const bus = newBus(engine);
@@ -286,7 +287,7 @@ export default {
 
     const card = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
       h('h2', {}, '택배 상자 채우기'),
-      h('p', { class: 'sub' }, '음표 블록을 상자에 넣어 박 자리 넷을 채워요'),
+      h('p', { class: 'sub' }, kit.ez('음표 블록을 상자에 넣어 박 자리 넷을 채워요')),
       h('p', { class: 'sub' }, `블록을 누르면 상자에 들어가요·상자 ${PLAN.length}개`)));
     ui.stage.append(card);
     const go = h('button', { type: 'button', class: 'go huge' }, '시작');

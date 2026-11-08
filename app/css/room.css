@@ -89,7 +89,7 @@
 /* ── TV 칸: 모인 결과 띠(안내 줄 오른쪽) ── */
 .cellscreen.tvmode{grid-template-columns:minmax(0,1fr)}
 .tvguide{min-width:0}
-.tvguide.hasroom{gap:14px}
+.tvguide.hasroom{gap:10px}
 .rstrip{flex:0 1 auto;max-width:62%;min-width:0;display:flex;align-items:center;gap:10px;background:var(--surface);border:3px solid var(--ink);border-radius:14px;padding:4px 8px;min-height:56px}
 .tvguide.folded .rstrip{margin-left:auto;max-width:none}
 .rstrip.off{border-style:dashed}
@@ -111,6 +111,7 @@
 .rsall-top{display:flex;align-items:center;justify-content:space-between;gap:20px}
 .rsall-top h2{font-size:32px}
 .rsall-top button{min-height:56px;font-size:22px}
+.rsall-btns{display:flex;gap:12px}
 .rsall-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-content:start;gap:10px;overflow:hidden}
 .rsall-grid .rs-chip{justify-content:flex-start;gap:6px;min-width:0;overflow:hidden}
 .rsall-grid .rs-chip img,.rsall-grid .rs-chip svg.pal{width:44px;height:44px}

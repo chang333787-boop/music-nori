@@ -21,6 +21,7 @@ const ROUTES = {
   calib: { load: () => import('./screens/calib.js'), title: '지연 맞추기', parent: 'teacher' },
   speaker: { load: () => import('./screens/speaker.js'), title: '스피커 점검', parent: 'teacher' },
   credits: { load: () => import('./screens/credits.js'), title: '출처와 저작권', parent: 'teacher' },
+  records: { load: () => import('./screens/records.js'), title: '이 기기 기록', parent: 'teacher' },
 };
 
 const main = document.getElementById('main');

@@ -24,6 +24,7 @@ export default {
 - `engine`(소리) · `device` · `band`(low·mid·high — 박 판정 너그러움) · `cell` · `friend`(갈래 친구)
 - `h` · `onPress`(누르는 순간 반응) · `friendImg(친구, 자세)` · `setPose(그림, 친구, 자세)` — 자세: idle · play · happy · oops(고슴도치만 jump 더)
 - `next()` 다음 단계 · `pass(글)` 연습을 지남(→ '확인 게임' 단추) · `finish(결과)` 확인 게임 끝
+- `ez(글)` — 1~2학년 판(`band === 'low'` · 판정 '넉넉하게')이면 쉬운 말 바꾸기 표(`engine/cells.js` easyText — 4분음표 → 따 · 2분음표 → 긴 따 · 박자표 → 묶음 표시 …)를 거친 글, 아니면 그대로. `ui.say` · `ui.tell` · `answers` 글 라벨 · 결과 카드 · 시작 카드는 칸 화면이 알아서 거치므로, **칸이 무대에 직접 그리는 글**(범례 · 예시 카드 · 까닭 한 줄)만 `kit.ez`로 감싼다. 표로 안 되는 말('박자' · '마디'처럼 칸마다 뜻이 다르거나 받침이 바뀌는 말)은 그 칸에서 `kit.band === 'low'`로 나눈다
 - `answers(items, onPick)` — **고르기 답 단추 묶음(무대 오른쪽 세로 한 줄 · 흰 바탕 · 잉크 외곽선 · 왼쪽 그림 칩 · 28px 글)**. items = `[{ key, label, chip, locked }]` → `{ el, btn(k), lock(k, on), mark(k, 'right'|'wrong'), clear() }`. 게임 중 고를 것이 늘어나면 처음부터 다 깔고 `locked`로 잠가 둔다(자리가 밀리지 않게)
 - `setAuto(fn)` — **자동 시험용 '지금 맞는 행동 하나'**. 단계마다 꼭 정한다(보기: 예시 하나씩 누르다 `next()` · 따라 하기: 맞는 답 · 확인 게임: 시작 단추 → 맞는 답 / 맞는 때 두드림). `tests/cells.browser.cjs`가 0.16초마다 부른다
 - `sfx.good(engine)` · `sfx.oops(engine)` · `playSeq(engine, [{p, d, gap}], {inst})` → `{ starts, end, ac }` · `msUntil(ac, t)` · `timers()`(정리 때 한꺼번에 멈춤) · `rng(seed)` · `shuffle`
@@ -35,6 +36,7 @@ export default {
 `{ title: '12번 중 10번 맞혔어요', replay: [true, false, …], facts: ['가장 길게 이어서 6번'], starOn: [①, ②, ③], rules: ['절반 넘게 맞혔어요', '5번 이어서 맞혔어요', '모두 맞혔어요'], tip: '사실 한 줄' }`
 - 별 셋은 기준 글과 함께. 받은 별만 채움. 칭찬은 기준을 넘었을 때만, 무엇을 잘했는지 사실로
 - tip = 틀린 곳에서 찾은 사실("높이 차이가 작을 때 헷갈렸어요") — 빈 칭찬 X
+- 칸 화면이 결과를 기기에 남긴다(`cellkit.saveResult` — 날짜 · 별 · 맞힌 수/전체(replay에서) · tip, 칸마다 최근 10개) → 선생님 칸 '이 기기 기록 보기'(#/records). 그래서 tip은 '틀린 갈래' 한 줄로 읽혀야 한다
 
 ## 한 칸이 도는 순서(계획서)
 1. **보기** — 예시 카드에는 누를 수 있다는 표시(스피커 그림)와 묶음 위 "눌러서 들어 봐요" · 예시 여러 개(다른 악기 · 다른 높이/길이). 소리와 그림이 함께 · 기호는 소리와 함께 반짝

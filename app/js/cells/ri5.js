@@ -105,11 +105,12 @@ function boardView(kit, { labels = false } = {}) {
     }
     if (labels && L.dots.length) {
       const first = L.dots.filter(d => d.seg === 0 && d.bar === 0), x0 = first[0].x - 30, x1 = first[first.length - 1].x + 30;
-      el.append(h('span', { class: 'r5-brace', style: { left: `${x0}px`, width: `${x1 - x0}px` } }, h('b', {}, '한 마디')));
+      const low = kit.band === 'low';                         // 1~2학년 판: 마디 → 묶음 · 센박 → 쿵 · 박자표 → 묶음 표시(용어 X)
+      el.append(h('span', { class: 'r5-brace', style: { left: `${x0}px`, width: `${x1 - x0}px` } }, h('b', {}, low ? '한 묶음' : '한 마디')));
       el.append(h('span', { class: 'r5-lab line', style: { left: `${L.lines[0].x}px` } }, '세로줄'));
-      el.append(h('span', { class: 'r5-lab strong', style: { left: `${first[0].x}px` } }, '센박(쿵) = 큰 점'));
+      el.append(h('span', { class: 'r5-lab strong', style: { left: `${first[0].x}px` } }, low ? '쿵 = 큰 점' : '센박(쿵) = 큰 점'));
       // 박자표 설명은 박자표 바로 옆(위 숫자를 가리킴) — 고슴도치 오른쪽부터
-      el.append(h('span', { class: 'r5-call', style: { left: `${HOGW + 4}px`, width: `${L.ts[0].x - 32 - (HOGW + 4)}px` } }, h('b', {}, '박자표'), h('span', {}, '위 숫자는'), h('span', {}, '한 마디의 박 수')));
+      el.append(h('span', { class: 'r5-call', style: { left: `${HOGW + 4}px`, width: `${L.ts[0].x - 32 - (HOGW + 4)}px` } }, h('b', {}, low ? '묶음 표시' : '박자표'), h('span', {}, '위 숫자는'), h('span', {}, low ? '한 묶음의 박 수' : '한 마디의 박 수')));
     }
     light(lit);
     return dots;
@@ -217,7 +218,7 @@ export default {
   show(ui, kit) {
     const { h, onPress, engine } = kit;
     const T = kit.timers();
-    ui.say('박을 몇 개씩 묶는지가 박자예요 — 한 묶음이 한 마디');
+    ui.say(kit.band === 'low' ? '박을 몇 개씩 묶는지 들어 봐요 — 쿵에서 새 묶음이 시작돼요' : '박을 몇 개씩 묶는지가 박자예요 — 한 묶음이 한 마디');
     const board = boardView(kit, { labels: true });
     const counter = countTeller(board.el);
     let bus = null, raf = 0, pump = null;
@@ -275,7 +276,7 @@ export default {
       if (right) {
         kit.sfx.good(kit.engine); streak++; ui.practice(streak); kit.setPose(view.hog, kit.friend, 'happy');
         ui.tell('맞아요', 'good');
-        view.msg.textContent = `${cur.m === 2 ? '두' : '세'} 박씩 묶였어요 — ${cur.m}/4·${WORD[cur.m]}`;
+        view.msg.textContent = `${cur.m === 2 ? '두' : '세'} 박씩 묶였어요 — ${kit.band === 'low' ? '' : cur.m + '/4·'}${WORD[cur.m]}`;
         if (streak >= 3) { passed = true; T.after(700, () => { round.stop(); pick.off(); kit.pass('세 번 이어서 묶음을 맞혔어요'); }); return; }
       } else {
         kit.sfx.oops(kit.engine); streak = 0; ui.practice(0); kit.setPose(view.hog, kit.friend, 'oops');
@@ -321,7 +322,7 @@ export default {
       pick.mark(m, right ? 'right' : 'wrong');
       results.push(right);
       if (!right) wrongs.push(PLAN[i]);
-      view.msg.textContent = `${want}/4 ${NAME[want]} — ${WORD[want]}`;
+      view.msg.textContent = `${kit.band === 'low' ? '' : want + '/4 '}${NAME[want]} — ${WORD[want]}`;
       if (right) { kit.sfx.good(engine); kit.setPose(view.hog, kit.friend, 'happy'); ui.tell('맞아요', 'good'); }
       else { kit.sfx.oops(engine); kit.setPose(view.hog, kit.friend, 'oops'); ui.tell(`${want === 2 ? '두' : '세'} 박씩이었어요`, 'oops', 1800); }
       T.after(right ? 1300 : 2000, next);
@@ -334,7 +335,7 @@ export default {
     };
     const card = startCard(ui, kit, {
       title: '행진일까 왈츠일까?',
-      sub: [`① 반주를 듣고 몇 박씩 묶였는지 골라요·${PLAN.length}번`, `② 마지막엔 센박(큰 점)에만 톡!·${FINAL.segs.reduce((n, s) => n + s.bars, 0)}마디`],
+      sub: [`① 반주를 듣고 몇 박씩 묶였는지 골라요·${PLAN.length}번`, `② 마지막엔 센박(큰 점)에만 톡!·${FINAL.segs.reduce((n, s) => n + s.bars, 0)}${kit.band === 'low' ? '묶음' : '마디'}`],
       onStart: () => { ui.setBar(replayButton(kit, () => { if (i >= 0 && i < PLAN.length && !answered && !gone) start(); })); next(); },
     });
     function next() {
@@ -428,11 +429,11 @@ export default {
       else if (twistWrong && twistWrong === wrongs.length) tip = '빠르기가 바뀐 판(7·8번째)에서 헷갈렸어요. 빠르기가 아니라 큰 소리(쿵)가 몇 박마다 오는지 세어 봐요.';
       else if (wrongs.length > meters.length - barOk) tip = `고르기에서 ${wrongs.length}번 헷갈렸어요. ‘쿵’에서 하나, 둘, (셋)을 세어 봐요.`;
       else if (j.restHits) tip = `여린박(작은 점)에 친 적이 ${j.restHits}번 있었어요. 큰 점에서만 톡!`;
-      else tip = `센박을 놓친 마디가 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!`;
+      else tip = kit.band === 'low' ? `쿵을 놓친 묶음이 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!` : `센박을 놓친 마디가 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!`;
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: all, group: [results.length, meters.length],
-        facts: [`① 묶음 고르기 ${results.length}번 중 ${pickOk}번을 맞혔어요`, `② 센박 마디 ${meters.length}개 중 ${barOk}개를 맞혔어요`],
+        facts: [`① 묶음 고르기 ${results.length}번 중 ${pickOk}번을 맞혔어요`, kit.band === 'low' ? `② 쿵에만 톡 ${meters.length}묶음 중 ${barOk}묶음을 맞혔어요` : `② 센박 마디 ${meters.length}개 중 ${barOk}개를 맞혔어요`],
         starOn: s.starOn, rules: s.rules, tip,
       });
     }

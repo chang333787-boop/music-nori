@@ -2,7 +2,7 @@
 //  선생님 도구(지연 · 스피커 · 출처)는 머리띠 오른쪽 톱니 안(11-07 처음 보는 눈 평가).
 import { h, onPress, lsGet } from '../util.js';
 import { BAND, friendImg, setPose, friendSound, preload, IMG_DIR } from '../band.js';
-import { cellById, LANES, nextCell, ORDER } from '../../../engine/cells.js';
+import { cellById, LANES, nextCell, ORDER, cellName, easyText } from '../../../engine/cells.js';
 import { getProg } from '../cellkit.js';
 
 
@@ -32,13 +32,13 @@ export default function mount(root, ctx) {
   const done = ORDER.filter(id => prog[id] && prog[id].stars >= 1).length;
   let main;
   if (nx) {
-    const c = cellById(nx), fr = LANES[c.lane].friend;
+    const c = cellById(nx), fr = LANES[c.lane].friend, band = ctx.device.band;   // 1~2학년 판(band low)이면 쉬운 이름
     main = h('a', { class: 'btn acard wide', href: '#/' + (c.route || 'cell/' + nx), style: { '--a-t': `var(--${fr}-t)` } },
       h('span', { class: 'art' }, friendImg(fr, 'play', { label: false })),
       h('span', { class: 'txt' },
         h('small', { class: 'kicker' }, done ? '다음 놀이' : '처음 놀이'),
-        h('b', {}, c.name),
-        h('small', {}, c.game),
+        h('b', {}, cellName(c, band)),
+        h('small', {}, band === 'low' ? easyText(c.game) : c.game),
         h('span', { class: 'gotag' }, '시작')));
   } else {
     main = h('a', { class: 'btn acard wide', href: '#/map', style: { '--a-t': 'var(--hog-t)' } },

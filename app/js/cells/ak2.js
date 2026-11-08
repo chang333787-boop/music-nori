@@ -92,7 +92,7 @@ export default {
   show(ui, kit) {
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
-    ui.say('오선은 다섯 줄 — 줄에도, 줄 사이에도 음표를 놓아요');
+    ui.say(kit.band === 'low' ? '다섯 줄 — 줄에도, 줄 사이에도 음을 놓아요' : '오선은 다섯 줄 — 줄에도, 줄 사이에도 음표를 놓아요');
     const st = bigStaff(kit, { gap: 50, labels: true });
     let shown = [];
     // 처음 모습 — 도 · 미 · 솔 · 라를 계단처럼(도는 아래 덧줄)
@@ -136,7 +136,7 @@ export default {
     const lightBar = k => bars.forEach((x, j) => { x.n.classList.toggle('on', j === k); x.b.classList.toggle('on', j === k); });
     const quiet = () => { T.clear(); V.cut(); lightBar(-1); };
     const card = (head, sub, cls = '') => h('button', { type: 'button', class: ('excard k2-ex ' + cls).trim() }, h('span', { class: 'k2-exhead' }, speaker(h), ...head), h('span', { class: 'k2-exsub' }, sub));
-    const morph = card([h('b', {}, '그림 악보 → 오선')], '막대가 다섯 줄 위에 내려앉아요', 'wide');
+    const morph = card([h('b', {}, kit.ez('그림 악보 → 오선'))], '막대가 다섯 줄 위에 내려앉아요', 'wide');
     onPress(morph, () => {
       quiet(); drawBars();
       const s = playBeats(V, kit, mel, { tempo: song.tempo, inst: 'xylo' });
@@ -147,14 +147,14 @@ export default {
     });
     const cards = EXAMPLES.map(ex => {
       const p = PITCH[ex.pos];
-      const btn = card([badge(h, p), h('b', {}, posName(ex.pos))], ex.sub);
+      const btn = card([badge(h, p), h('b', {}, kit.ez(posName(ex.pos)))], kit.ez(ex.sub));
       onPress(btn, () => {
         quiet(); bars = [];
         drawSteps(ex.pos);
         st.mark(ex.pos);
         const nt = shown.find(n => n.pos === ex.pos);
         nt.n.classList.add('on');
-        if (ex.pos === -2) st.tag(ex.pos, ex.x + '%', posName(ex.pos));
+        if (ex.pos === -2) st.tag(ex.pos, ex.x + '%', kit.ez(posName(ex.pos)));
         V.play(kit, [{ p, d: 0.8 }], { inst: 'xylo' });
         btn.classList.add('heard');
       });
@@ -196,9 +196,9 @@ export default {
       if (busy || !cur) return;
       busy = true;
       const right = line === isLine(cur.pos);
-      st.mark(cur.pos); st.tag(cur.pos, '50%', posName(cur.pos));
+      st.mark(cur.pos); st.tag(cur.pos, '50%', kit.ez(posName(cur.pos)));
       markPick(A, isLine(cur.pos) ? 'line' : 'space', line ? 'line' : 'space'); judge(ui, right, { eye: true });
-      msg.textContent = why(cur.pos);
+      msg.textContent = kit.ez(why(cur.pos));
       if (right) {
         kit.sfx.good(engine); streak++; ui.practice(streak);
         if (streak >= 3) { kit.pass(); return; }
@@ -234,7 +234,7 @@ export default {
     ], k => choose(k), { cls: 'k2-ans four' });
     const relabel = () => TWIST.forEach((pos, k) => {
       const b = A.btn(k);
-      b.querySelector('.lab').textContent = posName(pos);
+      b.querySelector('.lab').textContent = kit.ez(posName(pos));
       b.querySelector('.chip').innerHTML = chipOf(pos);
       A.lock(k, false);
     });
@@ -285,7 +285,7 @@ export default {
       const ans = want(cur), right = k === ans;
       results.push(right);
       markPick(A, ans, k);
-      st.mark(cur.pos); st.tag(cur.pos, '50%', posName(cur.pos));
+      st.mark(cur.pos); st.tag(cur.pos, '50%', kit.ez(posName(cur.pos)));
       judge(ui, right, { missed: k == null, eye: true });
       if (right) { kit.sfx.good(engine); pose('happy'); T.after(1000, next); return; }
       kit.sfx.oops(engine); pose('oops');

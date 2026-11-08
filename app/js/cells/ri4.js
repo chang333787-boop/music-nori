@@ -228,15 +228,16 @@ export default {
     const pair = (kind, beats, text, sub) => h('div', { class: 'r4-pair' },
       h('span', { class: 'r4-psym', html: noteSVG(kind, { stick, size: 64 }) }),
       h('span', { class: 'r4-pbar ' + kind }, ...Array.from({ length: beats }, () => h('i'))),
-      h('span', { class: 'r4-ptxt' }, h('b', {}, text), h('small', {}, sub)));
+      h('span', { class: 'r4-ptxt' }, h('b', {}, kit.ez(text)), h('small', {}, sub)));   /* 1~2학년 판 = 쉬운 말(따 · 긴 따) */
     const counter = countTeller(laneBox);
     let bus = null, raf = 0;
     const stop = () => { cancelAnimationFrame(raf); killBus(engine, bus); bus = null; counter(0); kit.setPose(hog, kit.friend, 'idle'); };
     const cards = EXAMPLES.map(ex => {
-      const btn = h('button', { type: 'button', class: 'excard r4-ex', 'aria-label': `${ex.name}·${ex.inName} 들어 보기` },
+      const exName = kit.ez(ex.name);
+      const btn = h('button', { type: 'button', class: 'excard r4-ex', 'aria-label': `${exName}·${ex.inName} 들어 보기` },
         h('b', {}, ex.bars[0].map(sylOf).join(' ')),
         h('span', { class: 'r4-mini', html: ex.bars[0].map(k => noteSVG(k, { stick, size: 38 })).join('') }),
-        h('span', {}, `${ex.name}·${ex.inName}`));
+        h('span', {}, `${exName}·${ex.inName}`));
       onPress(btn, () => {
         stop();
         const nl = laneView(kit, ex.bars, { scroll: false });
@@ -306,9 +307,9 @@ export default {
             streak = 0; ui.practice(0);
             ui.tell('다시 들어 봐요', 'oops', 1500);
             const kind = sc.lane.notes[bad].kind, x = res[bad];
-            msg.textContent = x.press === 'miss' ? `${bad + 1}번째 음을 놓쳤어요 — 막대가 선에 닿을 때 눌러요`
+            msg.textContent = kit.ez(x.press === 'miss' ? `${bad + 1}번째 음을 놓쳤어요 — 막대가 선에 닿을 때 눌러요`
               : x.rel === 'short' ? '‘따아’(2분음표)를 일찍 뗐어요 — 막대가 끝날 때까지 꾹 누르고 있어요'
-                : kind === 'q' ? '‘따’(4분음표)는 한 박만 — 짧게 눌렀다 떼요' : '‘따아’는 두 박까지만 — 막대가 끝나면 떼요';
+                : kind === 'q' ? '‘따’(4분음표)는 한 박만 — 짧게 눌렀다 떼요' : '‘따아’는 두 박까지만 — 막대가 끝나면 떼요');
           }
           T.after(1500, attempt);
         },

@@ -165,8 +165,9 @@ export function judge(ui, right, { missed = false, eye = false } = {}) {
 // ── 확인 게임 시작 카드 — 무엇을 하는지 한 줄 + 판 수 · 아래 띠에 '시작' 하나(주황) ──
 export function startCard(ui, kit, { title, lines, onStart }) {
   const { h, onPress } = kit;
+  const ez = kit.ez || (t => t);                       // 1~2학년 판 쉬운 말(칸 화면이 줌)
   const card = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
-    h('h2', {}, title), ...lines.map(t => h('p', { class: 'sub' }, t))));
+    h('h2', {}, ez(title)), ...lines.map(t => h('p', { class: 'sub' }, ez(t)))));
   const btn = h('button', { type: 'button', class: 'go huge' }, '시작');
   onPress(btn, () => { if (!card.isConnected) return; card.remove(); ui.setBar(); onStart(); });
   ui.setBar(btn);

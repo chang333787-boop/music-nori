@@ -1,7 +1,7 @@
 // 리2 4분음표·4분쉼표 — 따 = 박 하나에 소리 하나 · 쉼 = 박은 흐르는데 소리는 쉰다(손바닥 펴기)
 //  보기: 예시 넷(악기 넷 · 쉼 자리가 다름) — 준비 박 넷 뒤 네 박을 소리와 그림으로
 //  연습: 고슴도치가 네 박을 치면 다음 네 박에 그대로 — 세 번 이어서 맞히면 지남
-//  확인 게임: 메기면 받기 8판(소개 → 발전 → 비틀기: 듣고만 → 마무리) · 음악은 끝까지 흐른다
+//  확인 게임: 따라 치기 8판(소개 → 발전 → 비틀기: 듣고만 → 마무리) · 음악은 끝까지 흐른다
 //  판정: 따 박 = engine/judge.js 판정 창 안에 두드림 · 쉼 박 = 박에서 0.35박 안에 두드림이 없음(_beat.js judgeEcho)
 //  11-07 평가 2차: 준비 박 숫자 · 맞음/틀림 말은 말풍선(ui.tell) · 판 번호는 ui.count · 연습 점은 ui.practice
 //   '지금' 카드 = 잉크 고리 + 작은 세모 · 지난 박 = 진한 점 · 남은 박 = 빈 동그라미
@@ -61,7 +61,7 @@ function beatRow(kit, { label, cls }) {
 // 판정 → 카드 표시(딱 = 금 · 좋아 = 초록 · 놓침 = 점선 · 쉼 지킴 = 초록 · 쉼에 침 = 회갈)
 const SHOW = { great: 'g', ok: 'k', miss: 'm', rest: 'rk', resthit: 'rh' };
 
-// 메기면 받기 한 판(또는 여러 판)을 도는 틀 — 연습과 확인 게임이 같이 쓴다
+// 따라 치기 한 판(또는 여러 판)을 도는 틀 — 연습과 확인 게임이 같이 쓴다
 //  rounds = [{ pat, hidden }] · 판마다 8박(고슴도치 4 + 나 4) · 준비 박 넷 뒤 쉼 없이 이어짐
 function echoRun(kit, ui, view, { rounds, bpm, onRound, onEnd }) {
   const { engine } = kit;
@@ -189,7 +189,7 @@ function echoRun(kit, ui, view, { rounds, bpm, onRound, onEnd }) {
   };
 }
 
-// 메기면 받기 화면(두 줄: 고슴도치 · 나)
+// 따라 치기 화면(두 줄: 고슴도치 · 나)
 function echoView(kit) {
   const { h } = kit;
   const hog = kit.friendImg(kit.friend, 'idle', { label: false });
@@ -260,8 +260,8 @@ export default {
     ui.stage.append(h('div', { class: 'r2 r2-show' },
       strip.row,
       h('div', { class: 'r2-legend' },
-        h('span', { html: noteSVG('q', { stick, size: 44 }) }), h('span', {}, '4분음표 = ‘따’(박 하나에 소리 하나)'),
-        h('span', { html: noteSVG('qr', { size: 44 }) }), h('span', {}, '4분쉼표 = ‘쉼’(손바닥을 펴요)')),
+        h('span', { html: noteSVG('q', { stick, size: 44 }) }), h('span', {}, stick ? '‘따’ = 박 하나에 소리 하나' : '4분음표 = ‘따’(박 하나에 소리 하나)'),   /* 1~2학년 판은 음표 이름 X */
+        h('span', { html: noteSVG('qr', { size: 44 }) }), h('span', {}, stick ? '‘쉼’ = 소리 없이 손바닥을 펴요' : '4분쉼표 = ‘쉼’(손바닥을 펴요)')),
       exampleGroup(kit, cards)));
     let k = 0;
     kit.setAuto(() => { if (k < cards.length) cards[k++].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); else kit.next(); });
@@ -311,7 +311,7 @@ export default {
     return () => { T.clear(); run && run.stop(); input.off(); };
   },
 
-  // ── 확인 게임: 메기면 받기 8판 ──
+  // ── 확인 게임: 따라 치기 8판 ──
   game(ui, kit) {
     const { h, engine } = kit;
     const T = kit.timers();
@@ -325,7 +325,7 @@ export default {
     const results = [], judged = [];
     const auto = autoScheduler(T);
     const sc = startCard(ui, kit, {
-      title: '메기면 받기',
+      title: '따라 치기',
       sub: ['고슴도치가 네 박을 치면, 다음 네 박에 그대로 쳐요', `‘쉼’ 박에는 치지 않아요·${PLAN.length}번`],
       onStart: () => {
         input = pressInput(ui, kit, { onDown: e => run && run.tap(e) });

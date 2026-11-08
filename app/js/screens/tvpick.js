@@ -3,25 +3,30 @@
 //   방 정보는 이 기기에 저장(12시간 안이면 다시 와도 같은 방) · '방 닫기'는 이 기기에서만 잊음
 import { h, onPress } from '../util.js';
 import { friendImg } from '../band.js';
-import { LANES, ORDER, cellById } from '../../../engine/cells.js';
+import { LANES, ORDER, cellById, cellName, STD_NOTE, PLAY_STD } from '../../../engine/cells.js';
 import { TV_STEPS } from '../../../engine/tvscript.js';
 import * as room from '../room.js';
+import { stdEl } from '../cellkit.js';
 
 export default function mount(root, ctx) {
   const lanes = ['sound', 'melody', 'rhythm', 'score'];
+  const band = ctx.device.band;                               // 1~2학년 판(band low)이면 칸 이름이 쉬운 말
   const ctl = h('div', { class: 'tvroomctl' });
   const big = h('div', { class: 'overlay rbigwrap', hidden: true });
   const wrap = h('div', { class: 'tvpick' },
     h('div', { class: 'tvhead' },
       h('div', { class: 'tvhead-t' },
         h('h1', {}, 'TV로 다같이 — 오늘 열 놀이를 골라요'),
-        h('p', {}, `한 놀이는 ${TV_STEPS.map(s => s.name).join(' → ')} 차례예요. 아이들은 몸으로 답하고, 선생님이 대신 눌러요. 단계마다 그대로 읽어도 되는 발문이 아래에 떠요.`)),
+        h('p', {}, `한 놀이는 ${TV_STEPS.map(s => s.name).join(' → ')} 차례예요. 아이들은 몸으로 답하고, 선생님이 대신 눌러요. 단계마다 그대로 읽어도 되는 발문이 아래에 떠요.`),
+        // 칸 ↔ 성취기준(선생님 화면만 · 성취기준 점검 11-08)
+        h('p', { class: 'tvstd-note' }, `놀이 아래 = 성취기준(${STD_NOTE}) · 곡 바꾸기 `, stdEl(PLAY_STD))),
       ctl),
     ...lanes.map(lane => h('div', { class: 'tvrow', style: { '--a-t': `var(--${LANES[lane].friend}-t)` } },
       h('div', { class: 'mlane' }, friendImg(LANES[lane].friend, 'face', { label: false }), h('b', {}, LANES[lane].name)),
       h('div', { class: 'tvcells' }, ...ORDER.filter(id => cellById(id).lane === lane).map((id, k) => {
         const c = cellById(id);
-        const b = h('button', { type: 'button', class: 'tvcell' }, h('small', {}, `${LANES[lane].name} ${k + 1}`), c.name);   /* 지도와 같은 번호(평가 3차) */
+        const b = h('button', { type: 'button', class: 'tvcell' }, h('small', {}, `${LANES[lane].name} ${k + 1}`), cellName(c, band),   /* 지도와 같은 번호(평가 3차) */
+          c.std ? stdEl(c.std, 'tvstd') : null);
         onPress(b, () => ctx.go('tvcell/' + id));
         return b;
       })))),

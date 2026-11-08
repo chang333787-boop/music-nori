@@ -1,5 +1,5 @@
 {
- "v": "886a503db9b5",
+ "v": "bf2f645a06e9",
  "files": [
   "app/css/app.css",
   "app/css/cells/_mel.css",
@@ -50,6 +50,7 @@
   "app/js/screens/join.js",
   "app/js/screens/map.js",
   "app/js/screens/play.js",
+  "app/js/screens/records.js",
   "app/js/screens/songs.js",
   "app/js/screens/speaker.js",
   "app/js/screens/tap.js",

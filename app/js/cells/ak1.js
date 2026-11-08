@@ -257,15 +257,15 @@ export default {
     S.track.append(cnum);
     const scene = h('div', { class: 'ak-scene' }, S.el);
     const start = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
-      h('h2', {}, '그림 악보 따라 연주'),
-      h('p', { class: 'sub' }, `악보 네 개 — 하나, 둘, 셋, 넷 세고 시작해요`),
+      h('h2', {}, kit.ez('그림 악보 따라 연주')),                       /* 1~2학년 판 = '막대 그림'(악보 낱말 X) */
+      h('p', { class: 'sub' }, kit.ez('악보 네 개 — 하나, 둘, 셋, 넷 세고 시작해요')),
       h('p', { class: 'sub' }, '키보드 ', ...R.keys.flatMap((k, j) => [j ? ' ' : null, h('span', { class: 'kbd' }, k)]), ' 도 돼요')));
     ui.stage.append(scene, start);
     S.set(lines[0].notes, lines[0].beats);
     // 아래 띠(노는 동안) — 악보 넷 중 몇째 + 키보드 키캡(두드리는 화면 약속)
     const sheetDots = lines.map(() => h('i'));
     const playBar = h('div', { class: 'ak-bar' },
-      h('span', { class: 'ak-prog' }, '악보', h('span', { class: 'ak-dots', 'aria-hidden': 'true' }, ...sheetDots)),
+      h('span', { class: 'ak-prog' }, kit.ez('악보'), h('span', { class: 'ak-dots', 'aria-hidden': 'true' }, ...sheetDots)),
       h('span', { class: 'ak-keys' }, '키보드 ', ...R.keys.flatMap((k, j) => [j ? ' ' : null, h('span', { class: 'kbd' }, k)]), ' 도 돼요'));
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
     onPress(startBtn, () => { start.remove(); ui.setBar(playBar); ui.count(1, totalBars); S.measure(); T.after(200, nextLine); });
@@ -372,7 +372,7 @@ export default {
       // 기준 둘 — 높이(맞는 단추를 제때 누름) · 박자(그중 '딱' 맞춘 것) — 둘 다 막대 수를 분모로
       T.after(700, () => {
         S.showHead(false); ui.count(null); ui.setBar();   // 결과 옆 친구는 칸 화면이 붙임
-        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`높이 ${s.total}개 중 ${s.kept}개,`, `박자 ${s.total}개 중 ${great}개를 맞혔어요`, `이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`높이 ${s.total}개 중 ${s.kept}개,`, kit.band === 'low' ? `‘딱’은 ${s.total}개 중 ${great}개였어요` : `박자 ${s.total}개 중 ${great}개를 맞혔어요`, `이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
       });
     }
 

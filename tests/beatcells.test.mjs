@@ -1,5 +1,5 @@
 // 박·리듬 칸(리2 · 리4 · 리5 · 리6) 판정 시험 — node만으로 돈다(화면 · 소리 없음)
-//  메기면 받기(따 · 쉼) · 길게 누르기(누름 · 뗌) · 센박에만 · 판 짜임(마디가 4박 · 상자 답이 꼭 맞음)
+//  따라 치기(따 · 쉼) · 길게 누르기(누름 · 뗌) · 센박에만 · 판 짜임(마디가 4박 · 상자 답이 꼭 맞음)
 import assert from 'node:assert/strict';
 import { judgeEcho, classifyTap, releaseGrade, judgeHolds, strongPattern, barsOk, layoutNotes, LEN, barPump, noteSVG } from '../app/js/cells/_beat.js';
 import { windows } from '../engine/judge.js';
@@ -16,7 +16,7 @@ const ok = (name, fn) => { try { fn(); n++; } catch (e) { console.error('✗ ' +
 const B = 600;                                             // 한 박 600ms(100bpm)
 const beatsAt = (k, t0 = 1000) => Array.from({ length: k }, (_, i) => t0 + i * B);
 
-// ── 메기면 받기 ──
+// ── 따라 치기 ──
 ok('따 박마다 두드리고 쉼 박은 비우면 맞음', () => {
   const pat = ['ta', 'ta', 'rest', 'ta'], bs = beatsAt(4);
   const j = judgeEcho(pat, bs, [bs[0], bs[1] + 20, bs[3] - 30]);

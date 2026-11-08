@@ -8,7 +8,7 @@ import { h, onPress, lsGet, lsSet } from '../util.js';
 import { friendImg, setPose, preload, IMG_DIR } from '../band.js';
 import { audioToPerf } from '../clock.js';
 import { windows, judgeTaps, BANDS, STAR_RULES } from '../../../engine/judge.js';
-import { saveStars } from '../cellkit.js';
+import { saveResult } from '../cellkit.js';
 import * as room from '../room.js';
 
 const TEMPI = { low: [100, 110, 120], mid: [84, 100, 116], high: [76, 96, 120] };
@@ -128,7 +128,7 @@ export default function mount(root, ctx) {
     if (hits.length >= 4) tip += (tip ? ' 누른 박은 ' : '누른 박은 ') + (mean < -35 ? '조금 빠른 편이에요 — 소리를 듣고 눌러요.' : mean > 35 ? '조금 늦은 편이에요 — 다음 박을 미리 느껴 봐요.' : '박과 거의 같은 때였어요.');
     if (!hits.length) tip = '톡!을 박마다 한 번씩 눌러요. 화면 아무 곳이나 눌러도 돼요.';
     if (r.stars > (best[step] || 0)) { best[step] = r.stars; lsSet('tap.best', best); }
-    saveStars('ri1', r.stars);                  // 마을 지도 '일정박' 칸 별
+    saveResult('ri1', { stars: r.stars, kept: r.kept, total: r.total, tip });   // 마을 지도 '일정박' 칸 별 + 결과 기록(선생님 칸 '이 기기 기록')
     if (room.kid.isTeacherCell('ri1')) room.kid.send('ri1', r.stars, r.kept, r.total);   // 방 번호 다같이 — 선생님 칸이면 TV로
     bar.mid(stepsUI());
     overlay.className = 'overlay result';

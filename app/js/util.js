@@ -53,3 +53,25 @@ export function josa(word, pair) {
   if (pair === '으로/로') return word + (jong === 0 || jong === 8 ? b : a);
   return word + (jong ? a : b);
 }
+
+// 글 복사 — 클립보드에 넣고 '복사했어요'. 막히면(권한 · 오래된 브라우저) 글 상자를 띄워 선생님이 직접 골라 복사
+export async function copyText(text, { title = '복사할 글' } = {}) {
+  try { await navigator.clipboard.writeText(text); toast('복사했어요'); return true; } catch { /* 아래 글 상자로 */ }
+  if (document.querySelector('.copymodal')) return false;
+  const ta = h('textarea', { class: 'copybox', readonly: true, spellcheck: 'false', 'aria-label': title });
+  ta.value = text;
+  const close = h('button', { type: 'button' }, '닫기');
+  const m = h('div', { class: 'rmodal copymodal', role: 'dialog', 'aria-label': title },
+    h('div', { class: 'panelcard rmodal-card copycard' },
+      h('h2', {}, '글 상자에서 복사해요'),
+      h('p', { class: 'sub' }, '자동 복사가 막혔어요 — 글이 모두 골라져 있어요. Ctrl+C로 복사해요'),
+      ta, close));
+  const done = () => { m.remove(); window.removeEventListener('keydown', esc); };
+  const esc = e => { if (e.key === 'Escape') done(); };
+  close.addEventListener('click', done);
+  m.addEventListener('click', e => { if (e.target === m) done(); });
+  window.addEventListener('keydown', esc);
+  document.body.append(m);
+  ta.focus(); ta.select();
+  return false;
+}

@@ -1,4 +1,4 @@
-/* 리2 4분음표·4분쉼표 — 박 카드 줄(고슴도치 · 나) · 메기면 받기
+/* 리2 4분음표·4분쉼표 — 박 카드 줄(고슴도치 · 나) · 따라 치기
    11-07 평가 2차: 준비 박 숫자 · 판정 말은 말풍선(ui.tell) · '지금' = 잉크 고리 + 작은 세모 · 지난 박 진한 점 · 남은 박 빈 동그라미 */
 .r2{position:relative;width:100%;min-height:0;display:grid;gap:12px}
 .r2-show{grid-template-rows:minmax(0,1fr) auto auto}

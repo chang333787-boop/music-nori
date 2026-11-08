@@ -5,10 +5,13 @@
 //  앞 칸을 건너뛰고 들어오면 "이 칸은 ○○를 알면 더 쉬워요" 한 번 + 바로 가기(잠그지 않음).
 //  방 번호 다같이(docs/room.md): #/cell/<칸>/<단계>로 시작 단계를 받음 · TV 모드에서 방이 열려 있으면 단계마다 알리고 모인 결과 띠를 보임
 //   · 방에 있는 아이 기기는 확인 게임 결과를 보내고 결과 아래 '다음 놀이' 대신 "선생님을 기다려요"
-import { h, onPress, josa } from '../util.js';
+//  1~2학년 판(device.band 'low' · 성취기준 점검 11-08): 칸 이름 = cellName · 지시 · 말풍선 · 답 단추 · 결과 카드 · 시작 카드 글은
+//   여기 한 곳에서 쉬운 말 바꾸기 표(engine/cells.js easyText)를 거친다. 칸이 무대에 직접 그리는 글은 kit.ez로.
+//  결과 기록(과정 평가 자료): 확인 게임이 끝날 때마다 cellkit.saveResult(날짜 · 별 · 맞힌 수/전체 · 틀린 갈래 한 줄 · 최근 10개)
+import { h, onPress, josa, copyText } from '../util.js';
 import { friendImg, setPose, preload, BAND } from '../band.js';
 import * as room from '../room.js';
-import { cellById, LANES, missingPre, nextCell } from '../../../engine/cells.js';
+import { cellById, LANES, missingPre, nextCell, cellName, easyText } from '../../../engine/cells.js';
 import * as K from '../cellkit.js';
 import { TV_STEPS, TV_SCRIPT } from '../../../engine/tvscript.js';
 
@@ -25,7 +28,9 @@ export default function mount(root, ctx) {
   const startAt = Math.max(0, PHASES.findIndex(p => p[0] === (ctx.args && ctx.args[1])));
   const inRoom = !tv && !!room.kid.get();          // 방에 있는 아이 기기
   const friend = LANES[cell.lane].friend;
-  bar.title(cell.name, friend);
+  const band = device.band || 'mid', low = band === 'low';
+  const E = low ? easyText : (t => t);              // 1~2학년 판 쉬운 말(그 밖에는 그대로)
+  bar.title(cellName(cell, band), friend);
   // 칸만의 모양(app/css/cells/<칸>.css — 칸마다 꼭 하나, 비어 있어도 됨)
   const css = h('link', { rel: 'stylesheet', href: `app/css/cells/${cell.id}.css` });
   document.head.append(css);
@@ -45,6 +50,8 @@ export default function mount(root, ctx) {
   const barEl = h('div', { class: 'tapbar cbar' }, practiceEl, barSlot);
   // TV 수업 안내 줄(선생님용 · 접을 수 있음) — 단계 · 시간 · 그대로 읽어도 되는 발문
   const guideStep = h('span', { class: 'tvg-step' }), guideText = h('span', { class: 'tvg-text' });
+  //  단계 칩 옆 = 이 칸의 성취기준(선생님만 · TV 모드에서만 보임)
+  const guideStd = cell.std ? K.stdEl(cell.std, 'tvg-std') : null;
   const guideToggle = h('button', { type: 'button', class: 'tvg-hide', 'aria-label': '안내 접기' }, '접기');
   // 모인 결과 띠(방이 열린 TV만) — 들어온 기기 · 끝낸 아이 + 끝낸 아이 칩(친구 얼굴 + 번호 + 별)
   const stripHead = h('span', { class: 'rs-head' }), stripChips = h('span', { class: 'rs-chips' });
@@ -52,13 +59,16 @@ export default function mount(root, ctx) {
   const strip = troom ? h('div', { class: 'rstrip', role: 'button', tabindex: '0', 'aria-label': '모인 결과 크게 보기' }, h('span', { class: 'rs-room' }, `방 ${troom.room}`), stripHead, stripChips) : null;
   const allEl = h('div', { class: 'overlay rsall', hidden: true });
   if (strip) onPress(strip, () => { allEl.hidden = !allEl.hidden; stripSig = ''; drawStrip(); });
-  const guide = h('div', { class: 'tvguide' + (troom ? ' hasroom' : ''), hidden: !tv }, guideStep, guideText, strip, guideToggle);
+  //  모인 결과 복사 — "번호 · 짝꿍 · 별 · 맞힌 수/전체" 줄(탭으로 나눔 · 표 프로그램에 붙여 넣기 좋게)
+  const copyBtn = troom ? h('button', { type: 'button', class: 'rs-copy', 'aria-label': '모인 결과 복사' }, '복사') : null;
+  if (copyBtn) onPress(copyBtn, () => copyText(stripCopyText(), { title: '모인 결과' }));
+  const guide = h('div', { class: 'tvguide' + (troom ? ' hasroom' : ''), hidden: !tv }, guideStep, guideStd, guideText, strip, copyBtn, guideToggle);
   onPress(guideToggle, () => { guide.classList.toggle('folded'); guideToggle.textContent = guide.classList.contains('folded') ? '안내' : '접기'; stripSig = ''; drawStrip(); });
   const setGuide = key => {
     if (!tv) return;
     const i = TV_STEPS.findIndex(s => s.key === key), st = TV_STEPS[i], sc = TV_SCRIPT[cell.id] || {};
     guideStep.textContent = `${i + 1} ${st.name} · ${st.min}분`;
-    guideText.textContent = sc[key] || '';
+    guideText.textContent = E(sc[key] || '');
   };
   if (troom) stage.append(allEl);
   const screenEl = h('div', { class: 'cellscreen' + (tv ? ' tvmode' : '') }, stage, guide, barEl);
@@ -70,14 +80,14 @@ export default function mount(root, ctx) {
     stage: body,
     bar: barSlot,
     // 지시 한 줄 — 단계마다(확인 게임 중에도) 같은 자리
-    say: t => { sayEl.textContent = t || ''; },
+    say: t => { sayEl.textContent = E(t || ''); },
     // 문제 번호 '3 / 12' — 맨 위 한 줄 왼쪽
     count: (i, n) => { if (i == null) { countEl.hidden = true; return; } countEl.hidden = false; countEl.textContent = `${i} / ${n}`; },
     // 말풍선 — 맞아 · 다시 들어 봐 · 박 세기(1 2 3 4). kind: good | oops | count | info · ms 뒤 사라짐(0 = 그대로)
     tell(t, kind = 'info', ms = 1200) {
       clearTimeout(tellTimer);
       if (!t) { tellEl.hidden = true; return; }
-      tellEl.hidden = false; tellEl.textContent = t; tellEl.dataset.k = kind;
+      tellEl.hidden = false; tellEl.textContent = E(t); tellEl.dataset.k = kind;
       if (tellEl.animate) tellEl.animate([{ transform: 'scale(.85)' }, { transform: 'none' }], { duration: 220, easing: 'ease-out' });   /* 강제 레이아웃 X(성능) */
       if (ms) tellTimer = setTimeout(() => { tellEl.hidden = true; }, ms);
     },
@@ -150,11 +160,20 @@ export default function mount(root, ctx) {
     if (!allEl.hidden) {
       const close = h('button', { type: 'button' }, '닫기');
       onPress(close, () => { allEl.hidden = true; });
+      const copy2 = h('button', { type: 'button' }, '복사');
+      onPress(copy2, () => copyText(stripCopyText(), { title: '모인 결과' }));
       allEl.replaceChildren(h('div', { class: 'panelcard rsall-card' },
-        h('div', { class: 'rsall-top' }, h('h2', {}, head), close),
+        h('div', { class: 'rsall-top' }, h('h2', {}, head), h('span', { class: 'rsall-btns' }, copy2, close)),
         done.length ? h('div', { class: 'rsall-grid' }, ...[...done].sort((a, b) => (a.no || 0) - (b.no || 0)).map(chip))
           : h('p', { class: 'rsall-none' }, showDone ? '아직 끝낸 아이가 없어요' : '확인 게임이 끝나면 여기에 모여요')));
     }
+  }
+  // 모인 결과를 글로 — 지금 판(이 칸 · since 뒤)에 끝낸 아이, 번호 차례
+  function stripCopyText() {
+    const done = resList.filter(r => r.c === cell.id && r.n > 0 && (r.at || 0) >= since).sort((a, b) => (a.no || 0) - (b.no || 0));
+    const d = new Date(), day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return [`${cell.label} ${cell.name}\t${day}\t방 ${troom.room}`, '번호\t짝꿍\t별\t맞힌 수/전체',
+      ...done.map(r => `${r.no ?? ''}\t${(BAND[r.a] || BAND[0]).name}\t${r.s ?? 0}\t${r.k ?? ''}/${r.n ?? ''}`)].join('\n');
   }
   const stripLoop = troom ? room.loop(async () => {
     const r = await room.teacher.res(troom);
@@ -166,9 +185,12 @@ export default function mount(root, ctx) {
 
   const kit = {
     engine, device, cell, friend,
-    band: device.band || 'mid',
+    band,
     h, onPress, friendImg, setPose,
     ...K,
+    ez: E,                                          // 칸이 무대에 직접 그리는 글 — 1~2학년 판이면 쉬운 말로
+    // 고르기 답 단추 — 글 라벨은 쉬운 말 표를 거침(그림 · 노드 라벨은 그대로)
+    answers: (items, onPick, o) => K.answers(items.map(it => (typeof it.label === 'string' ? { ...it, label: E(it.label) } : it)), onPick, o),
     next: () => runPhase(Math.min(PHASES.length - 1, phase + 1)),
     // 연습을 세 번 이어서 맞혀 지남 → 확인 게임 단추
     pass(msg = '세 번 이어서 맞혔어요') {
@@ -182,7 +204,7 @@ export default function mount(root, ctx) {
     finish(r) {
       if (gone) return;
       const stars = r.starOn.filter(Boolean).length;
-      if (!tv) K.saveStars(cell.id, stars);         // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음
+      if (!tv) K.saveResult(cell.id, { ...r, stars });   // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음 · 기록은 원래 말 그대로(선생님이 봄)
       resultShown = true;
       // 방에 있는 아이 기기 + 선생님 칸이면 결과를 TV로(맞힌 수 = 제목 'N번 중 M번' · 없으면 다시 보기 줄)
       const roomCell = inRoom && (room.kid.last ? room.kid.isTeacherCell(cell.id) : startAt > 0 || !!(ctx.args && ctx.args[1]));
@@ -194,7 +216,8 @@ export default function mount(root, ctx) {
       ui.tell(null); ui.say(''); ui.count(null); ui.practice(null);
       const pose = stars >= 3 ? 'happy' : stars >= 1 ? 'play' : 'idle';   /* 평가 3차: 점수와 상관없는 만세 X */
       overlay.classList.add('result');
-      overlay.replaceChildren(h('div', { class: 'resultwrap' }, K.resultCard(r), friendImg(friend, pose, { label: false, cls: 'resultpal' })));
+      const shown = low ? { ...r, title: E(r.title), facts: (r.facts || []).map(E), rules: (r.rules || []).map(E), tip: E(r.tip) } : r;
+      overlay.replaceChildren(h('div', { class: 'resultwrap' }, K.resultCard(shown), friendImg(friend, pose, { label: false, cls: 'resultpal' })));
       overlay.hidden = false;
       bar.mid(h('span', { class: 'steps labeled' }, ...PHASES.map(([, name]) => h('span', { class: 'st done' }, h('span', { class: 'd' }), name))));
       bar.right(null);
@@ -249,9 +272,9 @@ export default function mount(root, ctx) {
       const m = miss[0];
       body.replaceChildren(h('div', { class: 'panelcard startcard', style: { margin: 'auto' } },
         friendImg(LANES[m.lane].friend, 'idle', { label: false, cls: 'noteart' }),
-        h('h2', {}, `이 놀이는 ${josa(m.name, '을/를')} 알면 더 쉬워요`),
+        h('h2', {}, `이 놀이는 ${josa(cellName(m, band), '을/를')} 알면 더 쉬워요`),
         h('p', { class: 'sub' }, '먼저 해 봐도 되고, 그냥 해도 돼요')));
-      ui.setBar(subBtn(`${m.name} 먼저`, () => ctx.go(m.route || 'cell/' + m.id)), goBtn('그냥 할래요', () => runPhase(0)));
+      ui.setBar(subBtn(`${cellName(m, band)} 먼저`, () => ctx.go(m.route || 'cell/' + m.id)), goBtn('그냥 할래요', () => runPhase(0)));
       auto = () => runPhase(0);
       bar.mid(null);
       return;
