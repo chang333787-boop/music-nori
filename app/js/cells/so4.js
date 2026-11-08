@@ -7,6 +7,7 @@
 //  11-07 평가 3차: 위 = 하늘 · 아래 = 풀밭(물 띠 안에 다시 연못 X) · 게임은 나무 왼쪽 1/3 · 연못 오른쪽 1/3 · 참새는 가운데 길만 오르내림(가지와 겹치지 않게)
 //   참새 움직임은 transform(top · bottom X) · 듣는 동안 답 묶음 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기'
 import { exGroup, nowCard, pal, pose, voice } from './_snd.js';
+import { factTip } from '../cellkit.js';
 
 const REF = 72;                                       // 기준 = 높은 도(C5)
 const EXAMPLES = [
@@ -16,7 +17,7 @@ const EXAMPLES = [
   { inst: 'choir', name: '목소리', a: 74, b: 62 },
 ];
 // 확인 게임 판 — 소개(옥타브) → 발전(5도) → 비틀기(3도 · 악기 바꿈) → 마무리(섞음)
-const PLAN = [
+export const PLAN = [
   [12, 'xylo'], [-12, 'xylo'], [12, 'xylo'], [-12, 'xylo'],
   [7, 'xylo'], [-7, 'xylo'], [-7, 'xylo'], [7, 'xylo'],
   [4, 'flute'], [-3, 'piano'], [4, 'piano'],
@@ -48,6 +49,18 @@ function ladder(kit) {
   const shadow = p => { if (p == null) { gway.hidden = true; return; } gway.style.transform = at(p); gway.hidden = false; };
   rest();
   return { el, move, rest, shadow, bird };
+}
+
+// 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+export const CUTS = [4, 8, 11];                   // 단계 경계 — 소개 · 발전 · 비틀기 · 마무리(섞어도 '9번째부터' 말이 그대로 맞게)
+export const SHUF = { flip: ([d, inst]) => [-d, inst], answerOf: p => p[0] > 0 };   // 뒤집기 = 같은 간격을 반대로 · 답 = 높아지나
+export function tipOf(plan, results) {
+  const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
+  return factTip(results, [
+    { n: miss(p => Math.abs(p[0]) <= 5), text: '높이 차이가 작을 때(9번째부터) 헷갈렸어요. 두 소리를 따라 불러 보면 잘 들려요.' },
+    { n: miss(p => p[0] < 0), text: '낮아지는 소리를 더 많이 놓쳤어요.' },
+    { n: miss(p => p[0] > 0), text: '높아지는 소리를 더 많이 놓쳤어요.' },
+  ], '높이 차이가 작은 소리까지 모두 가려냈어요.');
 }
 
 export default {
@@ -131,7 +144,7 @@ export default {
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);      // 소리 길(다시 듣기 때 앞 소리를 끔)
     const results = [];
-    let i = -1, cur = null, open = false, gone = false, listen = 0;
+    let i = -1, cur = null, open = false, gone = false, listen = 0, plan = PLAN, sd = null;
     ui.say('높으면 나무, 낮으면 연못을 눌러요');
     const bird = h('div', { class: 'g-bird', 'data-at': 'mid' }, pal(kit, 'bird'));
     const tree = h('div', { class: 'g-zone g-tree' }, sceneImg(kit, 'prop_tree', 'g-tree-img'));
@@ -149,7 +162,9 @@ export default {
     const birdTo = (where, ps) => { bird.dataset.at = where; pose(kit, bird.firstChild, 'bird', ps); };
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
     const again = h('button', { type: 'button' }, '다시 듣기');
-    onPress(startBtn, () => { start.remove(); ui.setBar(again); next(); });
+    // 시작할 때 판 차례를 정함 — 단계(소개 0~3 · 발전 4~7 · 비틀기 8~10 · 마무리 11) 안에서만 섞고 반쯤 위아래를 뒤집음(N2)
+    const begin = () => { sd = kit.seed ? kit.seed() : 1; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF); };
+    onPress(startBtn, () => { begin(); start.remove(); ui.setBar(again); next(); });
     onPress(again, () => { if (open) hear(); });       // 고르기 전이면 언제든 한 번 더(놓침 시계도 다시)
     ui.setBar(startBtn);
     kit.setAuto(() => { if (start.isConnected) press(startBtn); else if (open) answer(cur.b > REF); });
@@ -159,24 +174,24 @@ export default {
       const my = ++listen;
       open = false; A.busy(true); birdTo('mid', 'idle'); V.hush();
       const s = kit.playSeq(engine, [{ p: REF, d: 0.42, gap: 0.2 }, { p: cur.b, d: 0.5 }], { inst: cur.inst, out: V.out });
-      T.after(kit.msUntil(s.ac, s.starts[1]), () => { if (my !== listen || gone) return; open = true; A.busy(false); });
-      T.after(kit.msUntil(s.ac, s.end) + 2600, () => { if (my === listen && open) answer(null); });   // 3초 넘게 고르지 않으면 놓침
+      T.after(kit.msUntil(s.ac, s.starts[1]), () => { if (my !== listen || gone) return; open = true; A.busy(false); A.timer((kit.msUntil(s.ac, s.end) + 2600) / 1000); });
+      T.after(kit.msUntil(s.ac, s.end) + 2600, () => { if (my === listen && open) answer(null); });   // 3초 넘게 고르지 않으면 시간 지남(보이는 시계 = 답 단추 아래 줄)
     }
     function next() {
       if (gone) return;
       i++;
-      if (i >= PLAN.length) return end();
-      const [iv, inst] = PLAN[i];
+      if (i >= plan.length) return end();
+      const [iv, inst] = plan[i];
       cur = { b: REF + iv, inst };
-      ui.count(i + 1, PLAN.length);
+      ui.count(i + 1, plan.length);
       A.clear();
       hear();
     }
     function answer(up) {
       if (!open) return;
-      open = false; listen++;
+      open = false; listen++; A.timer(0);
       const want = cur.b > REF, right = up === want;
-      results.push(right);
+      results.push(up == null ? null : right);          // 시간 지남은 틀림과 따로(N1)
       if (right) { kit.sfx.good(engine); birdTo(want ? 'top' : 'bot', 'happy'); A.mark(up ? 'up' : 'down', 'right'); ui.tell('맞아요', 'good'); }
       else {
         kit.sfx.oops(engine); birdTo(want ? 'top' : 'bot', 'oops');
@@ -189,16 +204,8 @@ export default {
     function end() {
       listen++;
       bird.hidden = true; ui.tell(null); ui.count(null); A.clear(); A.busy(false); ui.setBar();   // 결과 옆 친구는 칸 화면이 붙임
-      const s = kit.scoreChoices(results, 5);
-      const wrongSmall = PLAN.map((p, k) => !results[k] && Math.abs(p[0]) <= 5).filter(Boolean).length;
-      const wrongDown = PLAN.map((p, k) => !results[k] && p[0] < 0).filter(Boolean).length;
-      const wrong = results.filter(x => !x).length;
-      let tip = '';
-      if (!wrong) tip = '높이 차이가 작은 소리까지 모두 가려냈어요.';
-      else if (wrongSmall >= Math.ceil(wrong / 2)) tip = '높이 차이가 작을 때(9번째부터) 헷갈렸어요. 두 소리를 따라 불러 보면 잘 들려요.';
-      else if (wrongDown > wrong / 2) tip = '낮아지는 소리를 더 많이 놓쳤어요.';
-      else tip = '높아지는 소리를 더 많이 놓쳤어요.';
-      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+      const s = kit.scoreChoices(results, 5, { chance: plan.map(() => 1 / 2) }), tip = tipOf(plan, results);
+      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd });
     }
     // 나무 · 연못을 직접 눌러도 됨
     onPress(tree, () => answer(true)); onPress(pond, () => answer(false));

@@ -18,6 +18,7 @@ const ROUTES = {
   tv: { load: () => import('./screens/tvpick.js'), title: 'TV로 다같이', parent: 'teacher' },
   join: { load: () => import('./screens/join.js'), title: '방 들어가기' },
   tvcell: { load: () => import('./screens/cell.js'), title: '', parent: 'tv' },
+  tvtap: { load: () => import('./screens/tap.js'), title: '징검다리 박 놀이', friend: 'hog', parent: 'tv' },
   cell: { load: () => import('./screens/cell.js'), title: '', parent: 'map' },
   teacher: { load: () => import('./screens/teacher.js'), title: '선생님' },
   calib: { load: () => import('./screens/calib.js'), title: '지연 맞추기', parent: 'teacher' },

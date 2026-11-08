@@ -213,7 +213,7 @@ export default {
       });
     }
     function end() {
-      const s = kit.scoreChoices(results, 5);
+      const s = kit.scoreChoices(results, 5, { chance: PLAN.map(p => 1 / (1 + p.alt.length)) });   // 찍기 바닥 — 그림 수만큼
       const wrongAt = results.map((ok, k) => (ok ? -1 : k)).filter(k => k >= 0);
       const twist = wrongAt.filter(k => k >= 6 && k <= 8).length, mixed = wrongAt.filter(k => k >= 3 && k <= 5).length;
       let tip;

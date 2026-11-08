@@ -211,7 +211,7 @@ export default {
       });
     }
     function end() {
-      const s = kit.scoreChoices(results, 5);
+      const s = kit.scoreChoices(results, 5, { chance: PLAN.map(() => 1 / 3) });   // 찍기 바닥 — 라 · 솔 · 미 셋 중 하나
       const bad = PLAN.map((pl, k) => (results[k] ? null : { ...pl, pick: picks[k] })).filter(Boolean);
       const ls = bad.filter(b => (b.ps[b.q] === L && b.pick === S) || (b.ps[b.q] === S && b.pick === L)).length;
       const front = bad.filter(b => b.q === 0).length;

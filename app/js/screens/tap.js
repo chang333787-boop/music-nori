@@ -12,6 +12,9 @@ import { saveResult, getProg, starRow, freshLine } from '../cellkit.js';
 import { starSounds, stopFx, enabled as musicOn } from '../music.js';
 import { levelsOf, newParts, themeRun } from '../../../engine/theme.js';
 import { accompSound, endChord } from '../cells/_beat.js';
+import { TV_STEPS, TV_SCRIPT } from '../../../engine/tvscript.js';
+import { cellById } from '../../../engine/cells.js';
+import { stdEl } from '../cellkit.js';
 import * as room from '../room.js';
 
 const TEMPI = { low: [100, 110, 120], mid: [84, 100, 116], high: [76, 96, 120] };
@@ -30,6 +33,7 @@ const WORLD_W = stoneWX(BEATS - 1) + 90 + BANK_R;
 
 export default function mount(root, ctx) {
   const { engine, device, bar } = ctx;
+  const tv = ctx.mode === 'tvtap';                   // TV로 다같이(#/tvtap) — 반 전체 한 판 · 이 기기 아이 기록 X · 뒤로 = TV 놀이 고르기
   const band = BANDS[device.band] ? device.band : 'mid';
   const best = lsGet('tap.best', {});
   let step = Math.min(4, Math.max(1, Number(lsGet('tap.step', 1)) || 1));
@@ -51,7 +55,10 @@ export default function mount(root, ctx) {
   const overlay = h('div', { class: 'overlay clear' });
   const river = h('div', { class: 'river', role: 'application', 'aria-label': '징검다리 — 박에 맞춰 두드리기' }, canvas, hogBox, pauseBtn, overlay);
   const tapbar = h('div', { class: 'tapbar' });
-  root.append(h('div', { class: 'tapgame' }, river, tapbar));
+  // TV 안내 줄(칸 화면 TV 모드와 같은 모양) — 반 전체 게임 단계 발문 + 성취기준(선생님만)
+  const tvG = TV_STEPS.find(x => x.key === 'game'), tvGi = TV_STEPS.indexOf(tvG);
+  const tvGuide = tv ? h('div', { class: 'tvguide' }, h('span', { class: 'tvg-step' }, `${tvGi + 1} ${tvG.name} · ${tvG.min}분`), stdEl(cellById('ri1').std, 'tvg-std'), h('span', { class: 'tvg-text' }, TV_SCRIPT.ri1.game)) : null;
+  root.append(h('div', { class: 'tapgame' + (tv ? ' tvmode' : '') }, river, tvGuide, tapbar));
 
   const stepsUI = () => h('span', { class: 'steps', 'aria-label': `${step}단계` },
     ...[1, 2, 3, 4].map(s => h('span', { class: 'd' + (best[s] >= 1 ? ' done' : '') + (s === step ? ' now' : '') })),
@@ -128,13 +135,15 @@ export default function mount(root, ctx) {
     const mean = hits.length ? hits.reduce((a, b) => a + b, 0) / hits.length : 0;
     let tip = '';
     if (misses.length) tip = `${misses.slice(0, 4).map(n => n + '번째').join(' · ')}${misses.length > 4 ? ` 외 ${misses.length - 4}개` : ''} 박을 놓쳤어요.`;
-    if (hits.length >= 4) tip += (tip ? ' 누른 박은 ' : '누른 박은 ') + (mean < -35 ? '조금 빠른 편이에요 — 소리를 듣고 눌러요.' : mean > 35 ? '조금 늦은 편이에요 — 다음 박을 미리 느껴 봐요.' : '박과 거의 같은 때였어요.');
+    if (hits.length >= 4) tip += (tip ? ' 누른 박은 ' : '누른 박은 ') + (mean < -35 ? '조금 빠른 편이에요 — 다음 박을 미리 느끼며 같이 눌러요.' : mean > 35 ? '조금 늦은 편이에요 — 다음 박을 미리 느껴 봐요.' : '박과 거의 같은 때였어요.');
     if (!hits.length) tip = '톡!을 박마다 한 번씩 눌러요. 화면 아무 곳이나 눌러도 돼요.';
-    const best0 = best[step] || 0, lv0 = levelsOf(getProg());
-    if (r.stars > (best[step] || 0)) { best[step] = r.stars; lsSet('tap.best', best); }
-    saveResult('ri1', { stars: r.stars, kept: r.kept, total: r.total, tip });   // 마을 지도 '일정박' 칸 별 + 결과 기록(선생님 칸 '이 기기 기록')
-    const delays = starSounds(r.stars, r.starOn), fresh = musicOn() ? newParts(lv0, levelsOf(getProg())) : [];   // 별 하나씩 소리 · 새 별(이 단계 최고보다) · 처음 화면 음악에 새 줄
-    if (room.kid.isTeacherCell('ri1')) room.kid.send('ri1', r.stars, r.kept, r.total);   // 방 번호 다같이 — 선생님 칸이면 TV로
+    const best0 = tv ? 3 : best[step] || 0, lv0 = levelsOf(getProg());
+    if (!tv) {                                       // TV 반 전체 판은 이 기기 아이 기록 · 별 · 단계 최고에 넣지 않음(N1 · 11-08 토론)
+      if (r.stars > (best[step] || 0)) { best[step] = r.stars; lsSet('tap.best', best); }
+      saveResult('ri1', { stars: r.stars, kept: r.kept, total: r.total, tip });   // 마을 지도 '일정박' 칸 별 + 결과 기록(선생님 칸 '이 기기 기록')
+      if (room.kid.isTeacherCell('ri1')) room.kid.send('ri1', r.stars, r.kept, r.total);   // 방 번호 다같이 — 선생님 칸이면 TV로
+    }
+    const delays = starSounds(r.stars, r.starOn), fresh = !tv && musicOn() ? newParts(lv0, levelsOf(getProg())) : [];   // 별 하나씩 소리 · 새 별(이 단계 최고보다) · 처음 화면 음악에 새 줄
     bar.mid(stepsUI());
     overlay.className = 'overlay result';
     overlay.replaceChildren(h('div', { class: 'panelcard resultcard', role: 'dialog', 'aria-label': '결과' },

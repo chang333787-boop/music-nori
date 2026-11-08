@@ -60,3 +60,11 @@ export default {
 
 ## 장면 그림(코덱스 · `app/img/scene/`)
 `prop_tree` 나무(오른쪽 가지) · `prop_pond` 연못 · `prop_hill` 메아리 언덕 · `prop_train_engine` · `prop_train_long`(빈 창 6) · `prop_train_short`(빈 창 2) · `prop_squirrel` 다람쥐 손님 · `prop_box_open` · `prop_box_closed` 택배 상자 · `prop_bank_left` · `prop_bank_right`(깃발) · `bg_hills_strip`(가로로 이어 붙는 먼 언덕). 코드 도형 대신 이것을 쓴다(img 태그 · object-fit:contain).
+
+## 결과가 사실만 말하게 · 찍어서 별 받기 막기(11-08 토론 N1 · N2)
+- **results 칸 셋**: `true` 맞음 · `false` 틀림 · `null` 고르기 전에 시간이 지남. 점수에서는 null도 틀림이지만 `scoreChoices`가 `late`로 따로 세고, 다시 보기 줄에서는 작은 점선 동그라미(`.l`), 기록(hist)에는 `l`로 남는다.
+- **보이는 고르기 시계**: 시간이 있는 고르기 칸은 답이 열릴 때 `A.timer(초)` — 답 단추 묶음 아래 줄이 줄어든다(깜빡임 · 소리 · 숫자 X). 고르면 `A.timer(0)`. 다시 듣기는 시계를 다시 채운다(횟수 제한 X).
+- **결과 한 줄(tip)**: 칸 파일이 `export function tipOf(plan, results, …)`로 떼어 내고 `kit.factTip(results, 갈래들, 완벽 글)`을 쓴다. 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만, 그 밖엔 "7 · 10번째 판을 틀렸어요" · 시간 지남은 따로 한 줄.
+- **찍기 바닥**: 고르기 칸은 `kit.scoreChoices(results, 5, { chance: 판마다 찍어 맞힐 확률 })` — 별 ① = 찍어서는 10%도 안 나오는 수 이상(`minKeepP`), 별 ② = ①을 받은 뒤 이어서 n번. 문항 꼴을 아는 찍기(번갈아 누르기)가 더 잘 맞는 칸은 확률을 넉넉히(가1 `GUESS`). 박 칸은 chance 없이 예전 규칙.
+- **단계 안 섞기 · 씨앗**: `kit.stageShuffle(PLAN, CUTS, kit.rng(kit.seed()), SHUF)` — 단계 경계는 그대로, 단계 안에서만 섞고 반쯤 뒤집음(같은 답 세 번 연속 X · 처음 네 판 ABAB X · 답 수 같게). 씨앗은 `kit.seed()`(시험 `?seed=N` > 방 아이 기기 = 방 · 칸 · 알림 시각 > 방이 열린 TV > 혼자). `kit.finish({ …, sd })`로 기록에 남겨 같은 판을 다시 만든다. 지금 소4 · 가1 — 나머지 다섯 칸은 다음 차례(문항 표로 통일).
+- 시험: `tests/cells.test.mjs`(찍기 · 번갈아 · 같은 답 봇 · 씨앗 1000개) · `tests/truth.browser.cjs`(시계 · 시간 지남 · TV 징검다리 기록 X · 소3 답 열림 시각 · 씨앗).

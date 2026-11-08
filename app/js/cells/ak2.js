@@ -292,7 +292,7 @@ export default {
       T.after(1700, next);
     }
     function end() {
-      const s = kit.scoreChoices(results, 5);
+      const s = kit.scoreChoices(results, 5, { chance: PLAN.map(p => (p.twist ? 1 / 4 : 1 / 2)) });   // 찍기 바닥 — 앞 여덟 판 둘 중 하나 · 비틀기 넷 중 하나
       const wrongAt = results.map((ok, k) => (ok ? -1 : k)).filter(k => k >= 0);
       const num = wrongAt.filter(k => PLAN[k].twist).length, sp = wrongAt.filter(k => !PLAN[k].twist && !isLine(PLAN[k].pos)).length;
       let tip;

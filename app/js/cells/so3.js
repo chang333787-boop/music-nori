@@ -10,6 +10,7 @@
 //  11-07 평가 3차: 다람쥐는 땅 위 승강장에서 기다림(하늘에 뜨지 않게) · 듣는 동안 답 묶음 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기'
 //   게임도 연습처럼 소리를 들어야 고를 수 있음(짧은 소리는 끝까지 · 긴 소리는 0.65초) · 막대는 transform으로 자람(_snd.js growBar)
 import { voice, exGroup, nowCard, pal, pose, growBar, slide, pop } from './_snd.js';
+import { factTip } from '../cellkit.js';
 
 const MAXD = 1.5;                                     // 줄 끝까지 = 1.5초
 const LONG = 0.6;                                     // 이보다 길면 '긴 소리'
@@ -20,7 +21,7 @@ const EXAMPLES = [
   { inst: 'violin', name: '바이올린', p: 69, a: 1.2, b: 0.3 },
 ];
 // 확인 게임 판 [길이(초), 악기, 높이] — 긴 소리 여섯 · 짧은 소리 여섯(칸마다 자리 여섯)
-const PLAN = [
+export const PLAN = [
   // 소개 — 아주 긴 소리 ↔ 아주 짧은 소리(플루트 · 같은 솔)
   [1.2, 'flute', 67], [0.25, 'flute', 67], [0.25, 'flute', 67], [1.2, 'flute', 67],
   // 발전 — 차이를 줄임(0.8초 ↔ 0.35초) · 리코더
@@ -31,6 +32,17 @@ const PLAN = [
   [1.0, 'recorder', 60],
 ];
 const isLong = d => d >= LONG;
+// 답 단추는 짧은 소리든 긴 소리든 소리 시작 0.65초 뒤에 똑같이 열림 — 화면만 보고 길이를 알 수 없게(N2 · 소리 끈 봇이 찾은 틈)
+// 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+export function tipOf(plan, results) {
+  const miss = f => plan.filter((p, k) => results[k] === false && f(p, k)).length;
+  return factTip(results, [
+    { n: miss((p, k) => k >= 8), text: '악기와 높이가 바뀐 소리(9번째부터)에서 헷갈렸어요. 높이 말고 소리가 이어지는 동안만 들어 봐요.' },
+    { n: miss((p, k) => k >= 4 && k < 8), text: '길이 차이가 줄었을 때(5~8번째) 헷갈렸어요. 소리가 나는 동안 팔을 쭉 펴 보면 잘 느껴져요.' },
+    { n: miss(p => isLong(p[0])), text: '긴 소리를 짧은 칸에 더 많이 넣었어요. 소리가 끝날 때까지 기다렸다가 골라요.' },
+    { n: miss(p => !isLong(p[0])), text: '짧은 소리를 긴 칸에 더 많이 넣었어요. 톡 하고 바로 끝나면 짧은 소리예요.' },
+  ], '악기와 높이가 바뀌어도 길이만 듣고 골랐어요.');
+}
 const pct = d => Math.min(100, (d / MAXD) * 100);
 const SCENE = 'app/img/scene/';
 
@@ -149,7 +161,7 @@ export default {
       A.clear(); ui.say(ASK); setP('idle'); A.busy(true);
       const s = play(false);
       // 긴 소리는 다 듣기 전에도 길다는 게 들리니 0.65초가 지나면 고를 수 있게(짧은 소리는 끝난 뒤)
-      T.after(kit.msUntil(s.ac, s.starts[0] + Math.min(cur.d, LONG + 0.05)), () => { busy = false; A.busy(false); });
+      T.after(kit.msUntil(s.ac, s.starts[0] + (LONG + 0.05)), () => { busy = false; A.busy(false); });
     }
     function answer(long) {
       if (busy || !cur) return;
@@ -173,7 +185,7 @@ export default {
         T.after(1300, () => { const s = play(true); T.after(kit.msUntil(s.ac, s.end) + 900, ask); });
       }
     }
-    onPress(again, () => { if (!busy && cur) { A.busy(true); const s = play(false); T.after(kit.msUntil(s.ac, s.starts[0] + Math.min(cur.d, LONG + 0.05)), () => { busy = false; A.busy(false); }); } });
+    onPress(again, () => { if (!busy && cur) { A.busy(true); const s = play(false); T.after(kit.msUntil(s.ac, s.starts[0] + (LONG + 0.05)), () => { busy = false; A.busy(false); }); } });
     ui.stage.append(h('div', { class: 'ln-follow' }, bunny, ln.el, A.el));
     T.after(450, ask);
     kit.setAuto(() => { if (!busy && cur) answer(isLong(cur.d)); });
@@ -232,8 +244,8 @@ export default {
       const my = ++listen;
       open = false; A.busy(true); V.hush();            // 앞 소리가 아직 울려도 겹치지 않게
       const s = V.play([{ p: cur.p, d: cur.d }], { inst: cur.inst });
-      T.after(kit.msUntil(s.ac, s.starts[0] + Math.min(cur.d, LONG + 0.05)), () => { if (my !== listen || gone) return; open = true; A.busy(false); });
-      T.after(kit.msUntil(s.ac, s.end) + 3000, () => { if (my === listen && open) answer(null); });   // 3초 넘게 고르지 않으면 놓침
+      T.after(kit.msUntil(s.ac, s.starts[0] + (LONG + 0.05)), () => { if (my !== listen || gone) return; open = true; A.busy(false); A.timer((kit.msUntil(s.ac, s.end) + 3000) / 1000); });
+      T.after(kit.msUntil(s.ac, s.end) + 3000, () => { if (my === listen && open) answer(null); });   // 3초 넘게 고르지 않으면 시간 지남(보이는 시계 = 답 단추 아래 줄)
     }
     function next() {
       if (gone) return;
@@ -253,9 +265,9 @@ export default {
     }
     function answer(long) {
       if (!open) return;
-      open = false; listen++;
+      open = false; listen++; A.timer(0);
       const want = isLong(cur.d), right = long === want;
-      results.push(right); picks.push(long);
+      results.push(long == null ? null : right); picks.push(long);   // 시간 지남은 틀림과 따로(N1)
       // 소리 길이를 막대로(긴 칸과 같은 자) + 이름
       lane.classList.add('on');
       laneBar.style.width = `${Math.round(cur.d * pps)}px`;
@@ -287,18 +299,7 @@ export default {
       train.classList.add('leave');                   // 다람쥐를 다 태우고 떠남 → 결과
       T.after(1500, () => {
         bunny.hidden = true; ui.count(null);          // 결과 옆 친구는 칸 화면이 붙임
-        const s = kit.scoreChoices(results, 5);
-        const wrong = results.filter(x => !x).length;
-        const missL = PLAN.filter((p, k) => !results[k] && isLong(p[0])).length;
-        const missS = wrong - missL;
-        const twist = [8, 9, 10, 11].filter(k => !results[k]).length;
-        const dev = [4, 5, 6, 7].filter(k => !results[k]).length;
-        let tip;
-        if (!wrong) tip = '악기와 높이가 바뀌어도 길이만 듣고 골랐어요.';
-        else if (twist >= Math.ceil(wrong / 2)) tip = '악기와 높이가 바뀐 소리(9번째부터)에서 헷갈렸어요. 높이 말고 소리가 이어지는 동안만 들어 봐요.';
-        else if (dev >= Math.ceil(wrong / 2)) tip = '길이 차이가 줄었을 때(5~8번째) 헷갈렸어요. 소리가 나는 동안 팔을 쭉 펴 보면 잘 느껴져요.';
-        else if (missL > missS) tip = '긴 소리를 짧은 칸에 더 많이 넣었어요. 소리가 끝날 때까지 기다렸다가 골라요.';
-        else tip = '짧은 소리를 긴 칸에 더 많이 넣었어요. 톡 하고 바로 끝나면 짧은 소리예요.';
+        const s = kit.scoreChoices(results, 5, { chance: PLAN.map(() => 1 / 2) }), tip = tipOf(PLAN, results);
         kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
       });
     }

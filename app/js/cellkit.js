@@ -9,7 +9,7 @@ import { friendImg } from './band.js';
 import { STEP_TEXT } from '../../engine/theme.js';
 
 // ── 진행 · 결과 기록(기기에만 · 이름 없음) ──
-//  { [칸]: { stars(최고 별), at(마지막), hist: [{ at, s(별), k(맞힌 수), n(전체), tip(틀린 갈래 한 줄) }](최근 10개) } }
+//  { [칸]: { stars(최고 별), at(마지막), hist: [{ at, s(별), k(맞힌 수), n(전체), l(늦게 · 없으면 예전 기록), tip(틀린 갈래 한 줄) }](최근 10개) } }
 //  hist = 과정 중심 평가 자료(선생님 칸 '이 기기 기록 보기' · #/records). 예전 모양 { stars, at }도 그대로 읽힌다(hist 없음)
 export const HIST_MAX = 10;
 export const getProg = () => lsGet('prog', {});
@@ -20,8 +20,11 @@ export function saveResult(id, r) {
   const s = r.stars ?? (r.starOn || []).filter(Boolean).length;
   const rep = Array.isArray(r.replay) && r.replay.length ? r.replay : null;
   const k = rep ? rep.filter(Boolean).length : r.kept ?? null, n = rep ? rep.length : r.total ?? null;
+  const l = rep ? rep.filter(x => x === null).length : r.late ?? null;   // 늦게 = 고르기 전에 시간이 지난 판(틀림과 따로 · N1)
   const at = Date.now();
-  const hist = [...(Array.isArray(old.hist) ? old.hist : []), { at, s, k, n, tip: r.tip || '' }].slice(-HIST_MAX);
+  const row = { at, s, k, n, l, tip: r.tip || '' };
+  if (r.sd != null) row.sd = r.sd;                    // 판 씨앗(N2 · 같은 판을 다시 만들 수 있게)
+  const hist = [...(Array.isArray(old.hist) ? old.hist : []), row].slice(-HIST_MAX);
   p[id] = { ...old, stars: Math.max(old.stars || 0, s), at, hist };
   lsSet('prog', p);
   return p[id].stars;
@@ -34,12 +37,70 @@ export const stdEl = (std, cls = 'stdl') => h('span', { class: cls, title: '◎ 
 export const STAR_SVG = on => `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3l5 11 12 1.4-9 8.2 2.6 11.9L20 29.6 9.4 35.5 12 23.6 3 15.4 15 14z" fill="${on ? '#E0A100' : '#FFFFFF'}" stroke="#3B2A1E" stroke-width="3" stroke-linejoin="round"/></svg>`;
 
 // 고르기 게임 점수 — results = [true/false…] · 별 기준 ① 절반 넘게 ② need번 이어서 ③ 모두
-export function scoreChoices(results, need = 5) {
+//  results 칸 = true(맞음) · false(틀림) · null(고르기 전에 시간이 지남 — 점수에선 틀림, late로 따로 셈 · N1)
+//  chance = 판마다 찍어서 맞힐 확률(고르기 칸 · N2) — 주면 별 ①은 '찍기로는 10%도 안 나오는 수' 이상(minKeep) · 별 ②는 ①을 받은 뒤에만
+//   (이어서 맞힘만으로 별을 받던 길을 막음). 안 주면 예전 규칙 그대로(박 칸)
+export function scoreChoices(results, need = 5, { chance = null } = {}) {
   let run = 0, best = 0, kept = 0;
   for (const r of results) { if (r) { run++; kept++; best = Math.max(best, run); } else run = 0; }
-  const total = results.length, n = Math.min(need, total);
+  const total = results.length, n = Math.min(need, total), late = results.filter(r => r === null).length;
+  if (chance) {
+    const floor = minKeepP(chance.length === total ? chance : Array(total).fill(chance[0] ?? 0.5));
+    const starOn = [kept >= floor, kept >= floor && best >= n, total > 0 && kept === total];
+    return { total, kept, late, floor, streak: best, starOn, stars: starOn.filter(Boolean).length, rules: [`${total}번 중 ${floor}번은 맞혔어요`, `${n}번 이어서 맞혔어요`, '모두 맞혔어요'] };
+  }
   const starOn = [kept * 2 > total, best >= n, total > 0 && kept === total];
-  return { total, kept, streak: best, starOn, stars: starOn.filter(Boolean).length, rules: ['절반 넘게 맞혔어요', `${n}번 이어서 맞혔어요`, '모두 맞혔어요'] };
+  return { total, kept, late, streak: best, starOn, stars: starOn.filter(Boolean).length, rules: ['절반 넘게 맞혔어요', `${n}번 이어서 맞혔어요`, '모두 맞혔어요'] };
+}
+// 찍기 바닥(N2) — 판마다 찍어 맞힐 확률 ps일 때, 찍어서 k개 이상 맞힐 확률이 alpha(10%)보다 작아지는 가장 작은 k
+//  (판마다 확률이 달라도 되게 포아송 이항 분포를 직접 셈) · minKeep(12, 2) = 9 · minKeep(12, 3) = 7
+export function minKeepP(ps, alpha = 0.10) {
+  let dist = [1];
+  for (const p of ps) { const nx = Array(dist.length + 1).fill(0); dist.forEach((v, k) => { nx[k] += v * (1 - p); nx[k + 1] += v * p; }); dist = nx; }
+  let tail = 0;
+  for (let k = dist.length - 1; k >= 0; k--) { tail += dist[k]; if (tail >= alpha) return Math.min(ps.length, k + 1); }
+  return 0;
+}
+export const minKeep = (total, choices, alpha = 0.10) => minKeepP(Array(total).fill(1 / choices), alpha);
+// 씨앗(N2) — 글 조각을 이어 32비트 FNV-1a(같은 방 · 같은 칸 · 같은 판 시각이면 TV와 아이 기기가 같은 판)
+export function seedOf(...parts) {
+  let x = 0x811c9dc5;
+  for (const ch of parts.join('|')) { x ^= ch.codePointAt(0); x = Math.imul(x, 0x01000193) >>> 0; }
+  return x >>> 0;
+}
+// 단계 안 섞기(N2) — 단계 경계(cuts)는 그대로 두고 단계 안에서만 차례를 섞고, 판마다 반쯤 답을 뒤집음(flip).
+//  조건: 같은 답 maxRun+1번 연속 X · 처음 네 판이 ABAB로 번갈아 X · balance면 답 수가 같게. 못 채우면 다시 뽑고 tries 넘으면 원판
+//  → 번갈아 누르기 · 늘 같은 답으로 별을 받지 못하게(11-08 토론: 소4는 번갈아 누르면 12번 중 10번이었음)
+export function stageShuffle(plan, cuts, r, { flip = null, answerOf = null, maxRun = 2, noAlt4 = true, balance = true, tries = 300 } = {}) {
+  const bounds = [0, ...cuts, plan.length];
+  const good = arr => {
+    if (!answerOf) return true;
+    const a = arr.map(answerOf);
+    for (let i = maxRun; i < a.length; i++) if (a.slice(i - maxRun, i + 1).every(x => x === a[i])) return false;
+    if (noAlt4 && a.length >= 4 && a[0] === a[2] && a[1] === a[3] && a[0] !== a[1]) return false;
+    if (balance) { const c = {}; for (const x of a) c[x] = (c[x] || 0) + 1; const v = Object.values(c); if (v.length > 1 && Math.max(...v) - Math.min(...v) > a.length % 2) return false; }
+    return true;
+  };
+  for (let t = 0; t < tries; t++) {
+    const out = [];
+    for (let k = 0; k + 1 < bounds.length; k++) out.push(...shuffle(plan.slice(bounds[k], bounds[k + 1]), r).map(p => (flip && r() < 0.5 ? flip(p) : p)));
+    if (good(out)) return out;
+  }
+  return plan.slice();
+}
+// 결과 한 줄(tip) — 사실만(N1 · 11-08 토론): 틀린 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만.
+//  그 밖에는 몇째 판을 틀렸는지만 · 시간이 지난 판은 따로 한 줄. branches = [{ n: 그 갈래 틀린 수, text }](앞에서부터 우선)
+export function factTip(results, branches, perfect) {
+  const late = results.filter(r => r === null).length;
+  const wrongAt = results.map((r, k) => (r === false ? k + 1 : 0)).filter(Boolean), dir = wrongAt.length;
+  if (!dir && !late) return perfect;
+  const out = [];
+  if (dir) {
+    const b = dir >= 3 ? branches.find(x => x.n > dir * 2 / 3) : null;
+    out.push(b ? b.text : `${wrongAt.slice(0, 4).join(' · ')}번째 판을 틀렸어요${dir > 4 ? `(그 밖에 ${dir - 4}판 더)` : ''}.`);
+  }
+  if (late) out.push(`고르기 전에 시간이 지난 판이 ${late}번 있었어요.`);
+  return out.join(' ');
 }
 
 // 결과 카드 — r = { title, replay:[true/false], group(다시 보기 묶음 크기 · 기본 4 · 배열이면 묶음마다 길이), facts:[…], starOn, rules, tip }
@@ -48,7 +109,7 @@ export function resultCard(r) {
   const cuts = new Set();
   if (Array.isArray(g)) { let t = 0; for (const n of g) { t += n; cuts.add(t); } } else for (let t = g; t < (r.replay || []).length; t += g) cuts.add(t);
   const replay = r.replay ? h('div', { class: 'replay', 'aria-label': '다시 보기' },
-    ...r.replay.map((ok, i) => [i && cuts.has(i) ? h('span', { class: 'gap' }) : null, h('i', { class: ok ? 'g' : 'm' })]).flat()) : null;
+    ...r.replay.map((ok, i) => [i && cuts.has(i) ? h('span', { class: 'gap' }) : null, h('i', { class: ok === null ? 'l' : ok ? 'g' : 'm', title: ok === null ? '시간이 지남' : null })]).flat()) : null;
   return h('div', { class: 'panelcard resultcard', role: 'dialog', 'aria-label': '결과' },
     h('h2', {}, r.title),
     replay,
@@ -138,5 +199,13 @@ export function answers(items, onPick, { cls = '' } = {}) {
     reveal(k) { const b = btns.get(k); if (b) b.classList.add('right'); },
     // 듣는 동안 — 단추는 70%로 흐리게(누를 수 없음) · 묶음 위 '잘 들어요'(평가 3차: 회색 단추로 꺼 두지 않음)
     busy(on = true) { el.classList.toggle('busy', on); },
+    // 고르기 시계 — 답 단추 묶음 아래 줄어드는 줄(깜빡임 · 소리 · 숫자 X · N1). sec초 동안 줄어듦 · 0이면 숨김. 다시 듣기면 다시 부름
+    timer(sec) {
+      let t = el.querySelector('.anstimer');
+      if (!sec) { if (t) t.hidden = true; return; }
+      if (!t) { t = h('i', { class: 'anstimer', 'aria-hidden': 'true' }); el.append(t); }
+      t.hidden = false; t.classList.remove('run'); void t.offsetWidth;
+      t.style.animationDuration = sec.toFixed(2) + 's'; t.classList.add('run');
+    },
   };
 }

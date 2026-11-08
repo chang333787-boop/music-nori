@@ -10,6 +10,7 @@
 //  11-07 평가 3차: 연습은 높이 · 길이 단추 둘만(쓰지 않는 크기 단추 X) · 게임의 크기 단추는 비틀기 판 전까지 보이지 않음(locked)
 //   넷째 카드 '높이만 바뀌어요' / 아랫줄 '크기는 그대로' · 듣는 동안 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기' · 소리 그림 막대는 transform으로 자람
 import { voice, exGroup, nowCard, pal, pose, growBar, slide } from './_snd.js';
+import { factTip } from '../cellkit.js';
 
 const BASE = { p: 67, d: 0.6, v: 0.55 };
 const SOFT = 0.16, LOUD = 0.8;                       // 크기 짝 — 압축기에 눌리지 않게 크게도 0.8까지만
@@ -27,7 +28,7 @@ const EXAMPLES = [
   { title: '높이만 바뀌어요', sub: '크기는 그대로', ...mk('pitch', { p: 79 }, { p: 65 }) },
 ];
 // 확인 게임 판 — 높이 다섯 · 길이 넷 · 크기 셋
-const PLAN = [
+export const PLAN = [
   // 소개 — 높이 ↔ 길이 · 차이 크게(옥타브 · 0.3 ↔ 1.1초)
   mk('pitch', { p: 60 }, { p: 72 }), mk('len', { d: 0.3 }, { d: 1.1 }), mk('pitch', { p: 76 }, { p: 64 }), mk('len', { d: 1.1 }, { d: 0.3 }),
   // 발전 — 차이를 줄이고 리코더로
@@ -39,6 +40,18 @@ const PLAN = [
   mk('vol', { p: 64, v: SOFT }, { p: 64, v: LOUD }, 'recorder'),
 ];
 const VOL_AT = PLAN.findIndex(x => x.k === 'vol');
+// 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+export function tipOf(plan, results, picks) {
+  const count = (want, got) => plan.filter((x, k) => results[k] === false && x.k === want && picks[k] === got).length;
+  const volAsPitch = count('vol', 'pitch'), pitchAsVol = count('pitch', 'vol'), mixPL = count('pitch', 'len') + count('len', 'pitch');
+  const afterVol = plan.filter((x, k) => results[k] === false && k >= VOL_AT).length;
+  return factTip(results, [
+    { n: volAsPitch, text: `크기만 바뀐 소리를 ‘높이’로 고른 적이 ${volAsPitch}번 있었어요. 크게 내도 높아지지는 않아요.` },
+    { n: pitchAsVol, text: `높이만 바뀐 소리를 ‘크기’로 고른 적이 ${pitchAsVol}번 있었어요. 낮아져도 작아지지는 않아요.` },
+    { n: mixPL, text: `높이와 길이를 바꿔 고른 적이 ${mixPL}번 있었어요. 소리 그림에서 위아래는 높이, 가로는 길이예요.` },
+    { n: afterVol, text: `크기 단추가 나온 뒤(${VOL_AT + 1}번째부터) 헷갈렸어요. 소리 그림의 굵기를 떠올려 봐요.` },
+  ], '높이·길이·크기 가운데 바뀐 하나를 모두 찾았어요. 크게 바뀐 소리를 높이로 헷갈리지 않았어요.');
+}
 
 // 무엇이 바뀌었는지 한 줄(두 번째 소리 기준)
 function say(x) {
@@ -225,8 +238,8 @@ export default {
       P.reset(); P.ask();
       const s = playPair(V, cur);
       T.after(kit.msUntil(s.ac, s.starts[0]), () => { if (my === listen) P.blink(0, T); });
-      T.after(kit.msUntil(s.ac, s.starts[1]), () => { if (my !== listen || gone) return; P.blink(1, T); open = true; A.busy(false); });
-      T.after(kit.msUntil(s.ac, s.end) + 3500, () => { if (my === listen && open) answer(null); });   // 3.5초 넘게 고르지 않으면 놓침
+      T.after(kit.msUntil(s.ac, s.starts[1]), () => { if (my !== listen || gone) return; P.blink(1, T); open = true; A.busy(false); A.timer((kit.msUntil(s.ac, s.end) + 3500) / 1000); });
+      T.after(kit.msUntil(s.ac, s.end) + 3500, () => { if (my === listen && open) answer(null); });   // 3.5초 넘게 고르지 않으면 시간 지남(보이는 시계 = 답 단추 아래 줄)
     }
     function next() {
       if (gone) return;
@@ -249,9 +262,9 @@ export default {
     function answer(k) {
       if (!open) return;
       if (k === 'vol' && !volOpen) return;
-      open = false; listen++;
+      open = false; listen++; A.timer(0);
       const right = k === cur.k;
-      results.push(right); picks.push(k);
+      results.push(k == null ? null : right); picks.push(k);   // 시간 지남은 틀림과 따로(N1)
       P.grow(0, cur.a, 0.3); P.grow(1, cur.b, 0.3); P.mark(cur);
       if (right) { kit.sfx.good(engine); setP('happy'); A.mark(k, 'right'); ui.tell('맞아요', 'good'); T.after(1150, next); }
       else {
@@ -271,17 +284,7 @@ export default {
     }
     function end() {
       open = false; listen++; ui.tell(null); A.clear(); A.busy(false); ui.setBar(); setP('happy');
-      const s = kit.scoreChoices(results, 5);
-      const count = (want, got) => PLAN.filter((x, k) => x.k === want && picks[k] === got).length;
-      const volAsPitch = count('vol', 'pitch'), pitchAsVol = count('pitch', 'vol'), mixPL = count('pitch', 'len') + count('len', 'pitch');
-      const skipped = picks.filter(p => p == null).length, wrong = results.filter(x => !x).length;
-      let tip;
-      if (!wrong) tip = '높이·길이·크기 가운데 바뀐 하나를 모두 찾았어요. 크게 바뀐 소리를 높이로 헷갈리지 않았어요.';
-      else if (volAsPitch && volAsPitch >= pitchAsVol && volAsPitch >= mixPL) tip = `크기만 바뀐 소리를 ‘높이’로 고른 적이 ${volAsPitch}번 있었어요. 크게 내도 높아지지는 않아요.`;
-      else if (pitchAsVol && pitchAsVol >= mixPL) tip = `높이만 바뀐 소리를 ‘크기’로 고른 적이 ${pitchAsVol}번 있었어요. 낮아져도 작아지지는 않아요.`;
-      else if (mixPL) tip = `높이와 길이를 바꿔 고른 적이 ${mixPL}번 있었어요. 소리 그림에서 위아래는 높이, 가로는 길이예요.`;
-      else if (skipped) tip = `고르지 않고 지나간 판이 ${skipped}번 있었어요. 두 번째 소리가 끝나면 바로 골라 봐요.`;
-      else tip = '크기 단추가 나온 뒤(7번째부터) 헷갈렸어요. 소리 그림의 굵기를 떠올려 봐요.';
+      const s = kit.scoreChoices(results, 5, { chance: PLAN.map((x, k) => (k < VOL_AT ? 1 / 2 : 1 / 3)) }), tip = tipOf(PLAN, results, picks);   // 찍기 바닥 — 크기 단추가 나오면 셋 중 하나
       T.after(600, () => { bunny.style.visibility = 'hidden'; ui.count(null); kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip }); });
     }
     const onKey = e => { if (e.repeat) return; const k = { 1: 'pitch', 2: 'len', 3: 'vol' }[e.key]; if (k) answer(k); };

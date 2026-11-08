@@ -13,12 +13,17 @@ const EXAMPLES = [
   { inst: 'choir', name: '목소리', ps: [S, M] },
   { inst: 'xylo', name: '실로폰', ps: [M, S] },
 ];
-const PLAN = [
+export const PLAN = [
   [[S, M], 'xylo'], [[M, S], 'xylo'], [[S, M], 'xylo'], [[M, S], 'xylo'],
   [[S, S], 'xylo'], [[M, S], 'xylo'], [[M, M], 'xylo'], [[S, M], 'xylo'],
   [[S, S, M], 'recorder'], [[M, S, M], 'recorder'], [[S, M, S], 'piano'],
   [[M, M, S], 'xylo'],
 ];
+export const CUTS = [4, 8, 11];                   // 단계 경계(섞어도 '9번째부터 세 음' 말이 그대로 맞게)
+// 찍기 바닥 확률 — 그냥 찍기(두 음 1/4 · 세 음 1/8)가 아니라 '솔미 · 미솔 번갈아 누르기'처럼 문항 꼴을 아는 찍기까지 막게 넉넉히(두 음 1/2 · 세 음 1/4)
+//  11-08 시험: 그냥 찍기 확률로 바닥을 정하면 번갈아 누르기 봇이 씨앗 31%에서 별을 받았음
+export const GUESS = plan => plan.map(p => (p[0].length === 2 ? 1 / 2 : 1 / 4));
+export const SHUF = { flip: ([ps, inst]) => [ps.map(p => (p === S ? M : S)), inst], answerOf: p => p[0][0] };   // 뒤집기 = 솔↔미 · 답 = 첫 음
 // 두 번째 소리를 처음 소리에 견줘 말하기(까닭)
 const why = (a, b) => (a === b ? `처음과 같은 높이, ${josa(nameOf(b), '이에요/예요')}`
   : `${nameOf(a)}보다 ${b > a ? '높은' : '낮은'} 소리, ${josa(nameOf(b), '이에요/예요')}`);
@@ -116,7 +121,7 @@ export default {
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [];
-    let i = -1, cur = null, open = false, gone = false;
+    let i = -1, cur = null, open = false, gone = false, plan = PLAN, sd = null;
     ui.say('참새가 부른 대로 메아리처럼 따라 눌러요');
     const bird = h('div', { class: 'e1-bird' }, kit.friendImg('bird', 'idle', { label: false }));
     const pose = ps => kit.setPose(bird.firstChild, 'bird', ps);
@@ -131,7 +136,8 @@ export default {
     const sc = startCard(ui, kit, {
       title: '메아리 언덕',
       lines: ['참새가 부른 차례대로 솔, 미를 눌러 메아리를 돌려줘요', '12번'],
-      onStart: () => { ui.setBar(again); toneSet(); },
+      // 시작할 때 판 차례를 정함 — 단계(두 음 0~3 · 4~7 · 세 음 8~10 · 마무리 11) 안에서만 섞고 반쯤 솔↔미를 뒤집음(N2 · 번갈아 누르기로 못 맞히게)
+      onStart: () => { sd = kit.seed ? kit.seed() : 1; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF); ui.setBar(again); toneSet(); },
     });
     ui.stage.append(sc.card);
 
@@ -155,10 +161,10 @@ export default {
     function next() {
       if (gone) return;
       i++;
-      if (i >= PLAN.length) return end();
-      const [ps, inst] = PLAN[i];
+      if (i >= plan.length) return end();
+      const [ps, inst] = plan[i];
       cur = { ps, inst, k: 0, tok: 0, done: false };
-      ui.count(i + 1, PLAN.length);
+      ui.count(i + 1, plan.length);
       path.replaceChildren(...ps.map(slot));
       A.clear();
       hear(cur);
@@ -205,8 +211,8 @@ export default {
       });
     }
     function end() {
-      const s = kit.scoreChoices(results, 5);
-      const bad = PLAN.map((p, k) => (results[k] ? null : p[0])).filter(Boolean);
+      const s = kit.scoreChoices(results, 5, { chance: GUESS(plan) });
+      const bad = plan.map((p, k) => (results[k] ? null : p[0])).filter(Boolean);
       const same = bad.filter(ps => ps.length === 2 && ps[0] === ps[1]).length;
       const three = bad.filter(ps => ps.length === 3).length;
       let tip;
@@ -215,7 +221,7 @@ export default {
       else if (three >= bad.length / 2) tip = '세 음 메아리(9번째부터)에서 헷갈렸어요. 따라 부르며 손을 올리고 내리면 차례가 잘 남아요.';
       else tip = '솔-미, 미-솔 메아리에서 헷갈렸어요. 내려가면 솔 → 미, 올라가면 미 → 솔이에요.';
       bird.hidden = true; A.el.hidden = true; path.hidden = true; axis.hidden = true; ui.count(null);   /* 결과 뒤에는 언덕만(친구 그림은 칸 화면이 붙임) */
-      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd });
     }
     kit.setAuto(() => { if (sc.waiting()) press(sc.btn); else if (open && cur) tap(cur.ps[cur.k]); });
     const onKey = e => { if (e.key === 'ArrowUp') tap(S); else if (e.key === 'ArrowDown') tap(M); };

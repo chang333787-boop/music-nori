@@ -426,7 +426,7 @@ export default {
       const twistWrong = wrongs.filter(p => p.twist).length;
       let tip;
       if (s.kept === s.total) tip = '빠르기가 바뀌어도 묶음을 가려냈고, 센박에만 톡 했어요.';
-      else if (twistWrong && twistWrong === wrongs.length) tip = '빠르기가 바뀐 판(7·8번째)에서 헷갈렸어요. 빠르기가 아니라 큰 소리(쿵)가 몇 박마다 오는지 세어 봐요.';
+      else if (twistWrong && twistWrong === wrongs.length) tip = '빠르기가 바뀐 판(7·8번째)에서 헷갈렸어요. 빠르기가 아니라 쿵(센박)이 몇 박마다 오는지 세어 봐요.';
       else if (wrongs.length > meters.length - barOk) tip = `고르기에서 ${wrongs.length}번 헷갈렸어요. ‘쿵’에서 하나, 둘, (셋)을 세어 봐요.`;
       else if (j.restHits) tip = `여린박(작은 점)에 친 적이 ${j.restHits}번 있었어요. 큰 점에서만 톡!`;
       else tip = kit.band === 'low' ? `쿵을 놓친 묶음이 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!` : `센박을 놓친 마디가 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!`;

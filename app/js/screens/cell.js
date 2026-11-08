@@ -8,7 +8,7 @@
 //  1~2학년 판(device.band 'low' · 성취기준 점검 11-08): 칸 이름 = cellName · 지시 · 말풍선 · 답 단추 · 결과 카드 · 시작 카드 글은
 //   여기 한 곳에서 쉬운 말 바꾸기 표(engine/cells.js easyText)를 거친다. 칸이 무대에 직접 그리는 글은 kit.ez로.
 //  결과 기록(과정 평가 자료): 확인 게임이 끝날 때마다 cellkit.saveResult(날짜 · 별 · 맞힌 수/전체 · 틀린 갈래 한 줄 · 최근 10개)
-import { h, onPress, josa, copyText } from '../util.js';
+import { h, onPress, josa, copyText, lsGet } from '../util.js';
 import { friendImg, setPose, preload, BAND } from '../band.js';
 import * as room from '../room.js';
 import { cellById, LANES, missingPre, nextCell, cellName, easyText } from '../../../engine/cells.js';
@@ -27,7 +27,7 @@ export default function mount(root, ctx) {
   const tv = ctx.mode === 'tvcell';                 // TV 하나로 반 전체 — 아이들은 몸으로 답하고 선생님이 대신 누름
   if (!cell) { ctx.go(tv ? 'tv' : 'map'); return null; }
   const troom = tv ? room.teacher.get() : null;     // 선생님 방(열려 있으면 단계마다 아이 기기에 알림)
-  if (cell.route) { if (troom) room.teacher.pub(cell.id, 'game'); ctx.go(cell.route); return null; }
+  if (cell.route) { if (troom) room.teacher.pub(cell.id, 'game'); ctx.go(tv ? 'tv' + cell.route : cell.route); return null; }   // TV면 TV판(#/tvtap — 아이 기록 X)
   const startAt = Math.max(0, PHASES.findIndex(p => p[0] === (ctx.args && ctx.args[1])));
   const inRoom = !tv && !!room.kid.get();          // 방에 있는 아이 기기
   const friend = LANES[cell.lane].friend;
@@ -78,7 +78,7 @@ export default function mount(root, ctx) {
   root.append(screenEl);
 
   let mod = null, phase = -1, cleanup = null, auto = null, gone = false, tellTimer = 0;
-  let since = 0, resList = [], resultShown = false, sentP = null, stripSig = '';       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
+  let since = 0, gameAt = 0, resList = [], resultShown = false, sentP = null, stripSig = '';   // gameAt = 확인 게임 알림의 서버 시각(판 씨앗 · N2)       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
   const ui = {
     stage: body,
     bar: barSlot,
@@ -120,7 +120,7 @@ export default function mount(root, ctx) {
     const again = resultShown && i === 2;           // 결과 뒤 '한 번 더' → 새 판(앞 판 결과는 띠에서 뺌)
     resultShown = false;
     phase = i; auto = null; K.sfx.reset(); music.stopFx();   // 이어 맞힘 사다리는 단계마다 처음부터 · 결과 팡파르는 멈춤
-    if (troom) room.teacher.pub(cell.id, PHASES[i][0]).then(r => { if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
+    if (troom) room.teacher.pub(cell.id, PHASES[i][0]).then(r => { if (r.at && i === 2) gameAt = r.at; if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
     overlay.hidden = true; overlay.replaceChildren(); overlay.classList.remove('result');
     body.replaceChildren(); ui.say(''); ui.count(null); ui.tell(null); ui.practice(i === 1 && !tv ? 0 : null);
     setGuide(PHASES[i][0]);
@@ -258,6 +258,16 @@ export default function mount(root, ctx) {
       window.__cellResult = { id: cell.id, stars, ...r };
     },
     setAuto: fn => { auto = fn; },
+    // 판 씨앗(N2) — 시험 덮어쓰기(?seed=N · 저장 'seed') > 방 아이 기기(방 · 칸 · 선생님 알림 시각) > 방이 열린 TV(같은 값) > 혼자(그때그때)
+    //  같은 방 같은 판이면 TV와 아이 기기가 같은 차례 — DB 규칙은 그대로(pub.at은 이미 있음)
+    seed() {
+      const q = /[?&]seed=(\d+)/.exec(location.search), ls = lsGet('seed', null);
+      if (q || ls != null) return K.seedOf('seed', q ? q[1] : ls, cell.id);
+      const kr = inRoom && room.kid.get();
+      if (kr && room.kid.last && room.kid.last.cell === cell.id && room.kid.last.at) return K.seedOf(kr.room, cell.id, room.kid.last.at);
+      if (troom && gameAt) return K.seedOf(troom.room, cell.id, gameAt);
+      return K.seedOf(cell.id, Date.now(), Math.random());
+    },
   };
   // 자동 시험용 — 지금 화면에서 맞는 행동 하나(칸 모듈이 정함). 화면에는 보이지 않는다
   window.__cellAuto = () => (auto ? auto() : false);
