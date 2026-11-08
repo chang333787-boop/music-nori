@@ -106,6 +106,21 @@ const server = http.createServer((req, res) => {
     }
     if (sds.ga11 && (sds.ga11.length !== 2 || sds.ga11[0] !== sds.ga11[1])) bad('같은 씨앗인데 sd가 다름 ' + JSON.stringify(sds.ga11)); else ok('같은 씨앗 = 같은 판(sd 같음)');
     if (sds.so41 && sds.so42 && sds.so41[0] === sds.so42[0]) bad('다른 씨앗인데 sd가 같음');
+    // 6. 보기 — '연습해 볼래요'는 예시 두 번 뒤 주황(X10) · 흰 단추일 때도 누르면 연습으로
+    await page.goto(base + '#/cell/so4');
+    await page.waitForTimeout(800);
+    const b0 = await page.evaluate(() => { const b = [...document.querySelectorAll('.cbar button')].find(x => x.textContent.includes('연습해')); return b && b.className; });
+    const cards = page.locator('.excard');
+    await cards.nth(0).click(); await page.waitForTimeout(300);
+    const b1 = await page.evaluate(() => { const b = [...document.querySelectorAll('.cbar button')].find(x => x.textContent.includes('연습해')); return b && b.className; });
+    await cards.nth(1).click(); await page.waitForTimeout(300);
+    const b2 = await page.evaluate(() => { const b = [...document.querySelectorAll('.cbar button')].find(x => x.textContent.includes('연습해')); return b && b.className; });
+    if (!/soon/.test(b0) || /\bgo\b/.test(b0) || /\bgo\b/.test(b1) || !/\bgo\b/.test(b2)) bad('보기 주 단추: ' + JSON.stringify([b0, b1, b2])); else ok('보기 — 예시 두 번 들은 뒤 \'연습해 볼래요\'가 주황');
+    await page.goto(base + '#/cell/so3');
+    await page.waitForTimeout(700);
+    await page.locator('.cbar button', { hasText: '연습해' }).click();   // 진짜 누름(onPress = pointerdown)
+    await page.waitForTimeout(400);
+    if ((await page.evaluate(() => window.__cellPhase())) !== 'follow') bad('흰 단추일 때 눌러도 연습으로 가야 함'); else ok('흰 단추일 때도 누르면 연습(잠금 X)');
     if (errs.length) bad('콘솔 오류: ' + errs.join(' | ')); else ok('콘솔 오류 0');
   } catch (e) { bad(String(e && e.stack || e)); }
   await browser.close(); server.close();

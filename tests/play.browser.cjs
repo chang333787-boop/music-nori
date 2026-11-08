@@ -1,6 +1,6 @@
 // 놀이터 자동 시험(브라우저 하나) — 부탁 카드 8장을 처음부터 끝까지(window.__playAuto = 지금 카드를 푸는 맞는 행동 하나)
 //  확인: 8장 다 끝남 · 콘솔 오류 0 · 1366×768 스크롤 0
-//  부탁 점 = 단추(잠금 X · 11-08): 저장소를 비운 채 8번째 점을 누르면 그 카드가 바로 열림 · 진행(play.card)은 끝낸 가장 큰 번호만 — 앞 부탁을 골라도 줄지 않음
+//  부탁 점 = 단추(잠금 X · 11-08): 저장소를 비운 채 8번째 점을 누르면 그 카드가 바로 열림 · 진행(play.done)은 끝낸 부탁 목록 — 끝낸 것만 채움
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 let pw;
 try { pw = require('playwright'); } catch { pw = require('/Users/dobuk/Projects/school-metaverse/node_modules/playwright'); }
@@ -58,7 +58,7 @@ const server = http.createServer((req, res) => {
     };
     const look = () => page.evaluate(() => {
       const m = document.getElementById('main');
-      return { s: window.__playState(), ls: localStorage.getItem('mn.play.card'),
+      return { s: window.__playState(), ls: localStorage.getItem('mn.play.done'),
         dots: [...document.querySelectorAll('.pc-dots button')].map(b => { const r = b.getBoundingClientRect(); return { label: b.getAttribute('aria-label'), w: r.width, h: r.height, cls: b.className, cur: b.getAttribute('aria-current') }; }),
         scroll: Math.max(document.documentElement.scrollHeight - innerHeight, m.scrollHeight - m.clientHeight, document.documentElement.scrollWidth - innerWidth) };
     });
@@ -77,20 +77,26 @@ const server = http.createServer((req, res) => {
     if (v.scroll > 1) { fail++; console.log('✗ 부탁 점 — 부탁 8을 연 화면에 스크롤 ' + v.scroll); }
     if (!(await solve())) { fail++; console.log('✗ 부탁 점 — 바로 연 부탁 8을 못 끝냄 ' + JSON.stringify((await look()).s)); }
     v = await look();
-    if (Number(v.ls) !== 8 || v.s.done !== 8) { fail++; console.log('✗ 부탁 점 — 부탁 8을 끝냈으면 진행 = 8: ' + JSON.stringify({ ls: v.ls, s: v.s })); }
+    if (v.ls !== '[7]' || v.s.done !== 1 || !/on/.test(v.dots[7].cls) || v.dots.slice(0, 7).some(d => /\bon\b/.test(d.cls))) { fail++; console.log('✗ 부탁 점 — 부탁 8만 끝냈으면 8번 점만 채움: ' + JSON.stringify({ ls: v.ls, s: v.s, dots: v.dots.map(d => d.cls) })); }
     await page.click('.pc-dots button[aria-label="부탁 1"]');
     await page.waitForTimeout(300);
     v = await look();
-    if (v.s.card !== 1 || v.s.key !== 'pitch' || Number(v.ls) !== 8) { fail++; console.log('✗ 부탁 점 — 부탁 1을 골랐더니 진행이 줄었거나 안 열림: ' + JSON.stringify({ ls: v.ls, s: v.s })); }
+    if (v.s.card !== 1 || v.s.key !== 'pitch' || v.ls !== '[7]') { fail++; console.log('✗ 부탁 점 — 부탁 1을 골랐더니 진행이 바뀌었거나 안 열림: ' + JSON.stringify({ ls: v.ls, s: v.s })); }
     if (!(await solve())) { fail++; console.log('✗ 부탁 점 — 다시 연 부탁 1을 못 끝냄'); }
     v = await look();
-    if (Number(v.ls) !== 8) { fail++; console.log('✗ 부탁 점 — 부탁 1을 끝냈더니 진행이 8에서 줄어듦: ' + v.ls); }
+    if (v.ls !== '[0,7]') { fail++; console.log('✗ 부탁 점 — 부탁 1을 끝냈으면 진행 = [0,7]: ' + v.ls); }
     await page.reload();
     await page.waitForTimeout(900);
     v = await look();
-    if (Number(v.ls) !== 8) { fail++; console.log('✗ 부탁 점 — 새로 열었더니 진행이 8이 아님: ' + v.ls); }
+    if (v.ls !== '[0,7]' || v.s.card !== 2) { fail++; console.log('✗ 부탁 점 — 새로 열었더니 진행이 [0,7]이 아니거나 안 끝낸 첫 부탁(2)에서 시작 안 함: ' + JSON.stringify({ ls: v.ls, s: v.s })); }
+    // 예전 저장(play.card = 3)은 [0,1,2]로 옮겨 읽음
+    await page.evaluate(() => { localStorage.removeItem('mn.play.done'); localStorage.setItem('mn.play.card', '3'); });
+    await page.reload();
+    await page.waitForTimeout(900);
+    v = await look();
+    if (v.s.card !== 4 || v.s.done !== 3) { fail++; console.log('✗ 부탁 점 — 예전 진행(3) 옮겨 읽기: ' + JSON.stringify(v.s)); }
     if (errs.length && fail === failBefore) { fail++; console.log('✗ 부탁 점 콘솔 오류: ' + errs.slice(0, 3).join(' | ')); }
-    if (fail === failBefore) console.log('✓ 부탁 점 — 단추 여덟(44px · \'부탁 n\') · 빈 저장소에서 8번째 점 → 부탁 8 · 끝내면 진행 8 · 부탁 1을 골라 끝내도 진행 8 그대로 · 스크롤 0');
+    if (fail === failBefore) console.log('✓ 부탁 점 — 단추 여덟(44px · \'부탁 n\') · 빈 저장소에서 8번째 점 → 부탁 8 · 끝내면 8번 점만 채움 · 부탁 1까지 끝내면 [1 · 8] · 새로 열면 안 끝낸 첫 부탁 · 예전 진행 옮김 · 스크롤 0');
   } finally { await browser.close(); server.close(); }
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); server.close(); process.exit(1); });

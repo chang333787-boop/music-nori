@@ -78,7 +78,7 @@ export default function mount(root, ctx) {
   root.append(screenEl);
 
   let mod = null, phase = -1, cleanup = null, auto = null, gone = false, tellTimer = 0;
-  let since = 0, gameAt = 0, resList = [], resultShown = false, sentP = null, stripSig = '';   // gameAt = 확인 게임 알림의 서버 시각(판 씨앗 · N2)       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
+  let showTap = null, since = 0, gameAt = 0, resList = [], resultShown = false, sentP = null, stripSig = '';   // gameAt = 확인 게임 알림의 서버 시각(판 씨앗 · N2)       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
   const ui = {
     stage: body,
     bar: barSlot,
@@ -119,6 +119,7 @@ export default function mount(root, ctx) {
     if (cleanup) { try { cleanup(); } catch (e) { console.error(e); } cleanup = null; }
     const again = resultShown && i === 2;           // 결과 뒤 '한 번 더' → 새 판(앞 판 결과는 띠에서 뺌)
     resultShown = false;
+    if (showTap) { body.removeEventListener('pointerdown', showTap, true); showTap = null; }
     phase = i; auto = null; K.sfx.reset(); music.stopFx();   // 이어 맞힘 사다리는 단계마다 처음부터 · 결과 팡파르는 멈춤
     if (troom) room.teacher.pub(cell.id, PHASES[i][0]).then(r => { if (r.at && i === 2) gameAt = r.at; if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
     overlay.hidden = true; overlay.replaceChildren(); overlay.classList.remove('result');
@@ -128,7 +129,18 @@ export default function mount(root, ctx) {
     bar.right(rightBtns(i));
     const key = PHASES[i][0];
     // 기본 아래 띠 — 칸 모듈이 ui.setBar로 바꿀 수 있다(연습 · 게임은 '다시 듣기'나 큰 '톡'을 칸이 넣음)
-    if (key === 'show') ui.setBar(goBtn('연습해 볼래요', () => runPhase(1)));
+    if (key === 'show') {
+      // 보기 — '연습해 볼래요'는 처음엔 흰 단추, 예시 카드를 두 번 들으면 주황(지금 누를 것)으로(X10 · 9살 눈: 첫 10초에 보기를 건너뜀)
+      //  잠금 X — 흰 단추일 때도 누르면 바로 연습. TV는 선생님이 시범하므로 처음부터 주황
+      const b = goBtn('연습해 볼래요', () => runPhase(1));
+      if (!tv) {
+        b.classList.remove('go'); b.classList.add('soon');
+        let n = 0;
+        showTap = e => { if (e.target.closest && e.target.closest('.excard') && ++n >= 2) { b.classList.add('go'); b.classList.remove('soon'); body.removeEventListener('pointerdown', showTap, true); showTap = null; } };
+        body.addEventListener('pointerdown', showTap, true);
+      }
+      ui.setBar(b);
+    }
     else ui.setBar();
     cleanup = mod[key](ui, kit) || null;
     drawStrip();

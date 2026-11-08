@@ -29,7 +29,7 @@ export default function mount(root, ctx) {
     const row = ledgerOf(def.id) || {};
     staffSong = toStaffSong(cur);
     // 좁게(두 마디씩) 그려 화면 폭으로 늘림 — 줄 간격 · 계이름이 약 두 배(평가 3차: 앱에서 가장 작은 글씨였음)
-    const staff = renderStaff(staffSong, { width: 700, barsPerLine: 2, chords: false });
+    const staff = renderStaff(staffSong, { width: 700, barsPerLine: 2, chords: false, barNumbers: false });   // 마디 번호(13px)는 아이 화면에서 뺌(X1 · 18px 규칙)
     staff.el.removeAttribute('width'); staff.el.removeAttribute('height');
     staffEls = staff.noteEls;
     const playBtn = h('button', { type: 'button', class: 'go' }, '듣기');
