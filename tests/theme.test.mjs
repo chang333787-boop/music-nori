@@ -28,7 +28,7 @@ assert.equal(chordAt(7), 'C'); assert.equal(chordAt(6, 0), 'F'); assert.equal(ch
 
 // 계단 — 줄 다섯 · 첫 판 13칸 = 13계단
 assert.deepEqual(PARTS.map(p => p.key), ['bear', 'bunny', 'bird', 'hog', 'turtle']);
-assert.equal(PARTS.reduce((s, p) => s + (p.lane ? p.max : 0), 0), FIRST.length, '계단 수 = 첫 판 칸 수');
+assert.equal(PARTS.reduce((s, p) => s + (p.lane ? p.max - (p.base || 0) : 0), 0), FIRST.length, '계단 수 = 첫 판 칸 수');
 for (const p of PARTS) if (p.lane) assert.equal(STEP_TEXT[p.key].length, p.max + 1, p.key + ' 계단 글');
 const L0 = levelsOf({});
 assert.deepEqual(L0, { bear: 1, bunny: 0, bird: 0, hog: 0, turtle: 0 });
@@ -39,14 +39,17 @@ assert.deepEqual(newParts({ bunny: 1 }, { bear: 1, bunny: 2, bird: 1, hog: 0, tu
 assert.equal(partOfCell('ri4').key, 'hog'); assert.equal(partOfCell('ak2').key, 'turtle'); assert.equal(partOfCell('so5').key, 'bunny');
 // 계단이 오를수록 사건이 늘기만(줄어드는 계단 없음) · 곰은 처음부터
 const count = lv => { let n = 0; for (let i = 0; i < BARS; i++) n += themeBar(i, lv).length; return n; };
-let prev = count(L0), lv = { ...L0 };
+const sig = lv => JSON.stringify(Array.from({ length: BARS }, (_, i) => themeBar(i, lv)));
+let prev = count(L0), prevSig = sig(L0), lv = { ...L0 };
 assert.ok(prev > 0, '계단 0에도 곰 반주');
-for (const p of PARTS) if (p.lane) for (let k = 1; k <= p.max; k++) {
+for (const p of PARTS) if (p.lane) for (let k = (p.base || 0) + 1; k <= p.max; k++) {
   lv = { ...lv, [p.key]: k };
-  const n = count(lv);
-  assert.ok(n > prev, `${p.key} ${k}계단에서 사건이 늘어야 함 (${prev} → ${n})`);
-  prev = n;
+  const n = count(lv), sg = sig(lv);
+  assert.ok(n > prev || (n === prev && sg !== prevSig), `${p.key} ${k}계단에서 들리는 것이 바뀌어야 함 (${prev} → ${n})`);
+  prev = n; prevSig = sg;
 }
+// 곰 2계단(셈1) = 셈여림 — B 앞은 점점 세게 · 뒤는 점점 여리게(가장 센 마디가 B 가운데)
+{ const peak = (b, l) => Math.max(...themeBar(b, l).map(e => e.vel)); const L2 = { ...L0, bear: 2 }; assert.ok(peak(11, L2) > peak(8, L2) && peak(11, L2) > peak(15, L2), '곰 셈여림 곡선'); }
 // 모든 사건이 마디 안 · 줄 이름이 친구
 for (let i = 0; i < BARS; i++) for (const e of themeBar(i, ALL)) {
   assert.ok(e.b >= 0 && e.b < 4, `${i + 1}마디 사건 박 ${e.b}`);

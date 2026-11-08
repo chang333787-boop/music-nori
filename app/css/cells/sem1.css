@@ -1,0 +1,29 @@
+/* 셈1 여리게·세게 — 소리 그림(세로 = 높이 · 가로 = 길이 · 굵기 = 세기 — 고르기 전에는 굵기를 숨김) · 잠든 곰 */
+.sm{position:relative;width:100%;min-height:0;display:grid;gap:22px;align-items:center}
+.sm-show{grid-template-rows:auto auto;align-content:center}
+.sm-play{grid-template-columns:minmax(0,1fr) auto;gap:24px}
+.sm-top,.sm-left{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:16px;align-items:center}
+.sm-strip{display:flex;gap:14px;min-width:0}
+.sm-seg{flex:1 1 0;min-width:0;display:grid;grid-template-rows:auto 96px auto;gap:6px;background:var(--surface);border:3px solid var(--ink);border-radius:18px;padding:10px 14px}
+.sm-seg.join{border-right-style:dashed}
+.sm-seg.now{box-shadow:0 0 0 4px var(--paper),0 0 0 7px var(--ink)}
+.sm-name{font-family:var(--head);font-size:22px;font-weight:400}
+.sm-bars{display:flex;align-items:center;gap:4px;min-width:0}
+.sm-note{display:block;min-width:6px;height:12px;border-radius:6px;background:#9C8F80;transform:translateY(calc((0.5 - var(--y)) * 56px));transition:height 260ms ease-out,background 260ms}
+.sm-note.on{background:var(--ink)}
+.sm-seg.p .sm-note{height:5px;background:#6A4C93}
+.sm-seg.f .sm-note{height:24px;background:#6A4C93}
+.sm-mark{font-family:var(--head);font-size:22px;min-height:26px;color:#6A4C93}
+.sm-bear{display:flex;flex-direction:column;align-items:center;gap:4px}
+.sm-bear .pal{width:140px;height:auto}
+.sm-zz{font-family:var(--head);font-size:20px;color:var(--ink-2)}
+.sm-bear.awake .sm-zz{visibility:hidden}
+.sm-exgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.sm-ex{min-height:104px}
+/* 보기 카드 묶음(소리 칸 공용 모양 — so3.css와 같게) */
+.snd-exwrap{display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0}
+.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:18px;line-height:1.2;color:#3B2A1E}
+.snd-spk{position:absolute;top:10px;right:12px;width:30px;height:30px;pointer-events:none}
+.snd-spk.in{position:static;width:26px;height:26px}
+.snd-spk svg{display:block;width:100%;height:100%}
+.snd-exwrap .excard{position:relative;padding-right:48px}

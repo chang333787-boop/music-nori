@@ -36,10 +36,10 @@ export const COMP = { C: [60, 64, 67], Am: [57, 60, 64], F: [57, 60, 65], G: [55
 export const tonesOf = name => (chordByName(name) || chordByName('C')).pcs;
 export const isChordTone = (p, name) => tonesOf(name).includes(pc(p));
 
-// ── 친구 다섯 = 다섯 줄 · 첫 판 14칸 = 14계단(11-08 장1 장단보 → 고슴도치 여섯째 계단 '장구') ──
+// ── 친구 다섯 = 다섯 줄 · 첫 판 15칸 = 15계단(11-08 장1 장단보 → 고슴도치 '장구' · 셈1 → 곰 '셈여림') ──
 //  곰 = 반주(처음부터) · 토끼 = 반짝 소리(소리 갈래) · 참새 = 가락(가락 갈래) · 고슴도치 = 북(박·리듬 갈래) · 거북 = 베이스(악보 갈래)
 export const PARTS = [
-  { key: 'bear', lane: null, name: '반주', max: 1 },
+  { key: 'bear', lane: 'any', name: '반주', base: 1, max: 2 },   // 곰 = 처음부터 반주(1) · 셈1을 지나면 커졌다 작아졌다(2)
   { key: 'bunny', lane: 'sound', name: '반짝 소리', max: 3 },
   { key: 'bird', lane: 'melody', name: '가락', max: 3 },
   { key: 'hog', lane: 'rhythm', name: '북', max: 6 },
@@ -47,21 +47,22 @@ export const PARTS = [
 ];
 // 진행(prog) → 줄마다 계단 { bear:1, bunny:0~3, … } — 그 갈래 첫 판 칸 중 별 하나 이상 받은 칸 수
 export function levelsOf(prog = {}) {
-  const lv = { bear: 1, bunny: 0, bird: 0, hog: 0, turtle: 0 };
+  const lv = {};
   for (const part of PARTS) {
-    if (!part.lane) continue;
-    const ids = FIRST.filter(id => cellById(id).lane === part.lane);
-    lv[part.key] = Math.min(part.max, ids.filter(id => prog[id] && prog[id].stars >= 1).length);
+    const base = part.base || 0;
+    const ids = part.lane ? FIRST.filter(id => cellById(id).lane === part.lane) : [];
+    lv[part.key] = base + Math.min(part.max - base, ids.filter(id => prog[id] && prog[id].stars >= 1).length);
   }
   return lv;
 }
-export const stepsOf = lv => PARTS.reduce((s, p) => s + (p.lane ? lv[p.key] || 0 : 0), 0);   // 0 ~ 13
+export const stepsOf = lv => PARTS.reduce((s, p) => s + Math.max(0, (lv[p.key] || 0) - (p.base || 0)), 0);   // 0 ~ 첫 판 칸 수
 // 새로 생긴 줄(지난번 들은 계단 → 지금) [{ key, from, to }]
-export const newParts = (heard = {}, now = {}) => PARTS.filter(p => p.lane && (now[p.key] || 0) > (heard[p.key] || 0)).map(p => ({ key: p.key, from: heard[p.key] || 0, to: now[p.key] }));
+export const newParts = (heard = {}, now = {}) => PARTS.filter(p => p.lane && (now[p.key] || 0) > (heard[p.key] ?? (p.base || 0))).map(p => ({ key: p.key, from: heard[p.key] ?? (p.base || 0), to: now[p.key] }));
 // 칸 하나가 몇째 줄 · 몇째 계단을 여는지(결과 화면 한 줄) — 그 칸의 갈래 줄
 export const partOfCell = id => { const c = cellById(id); return c ? PARTS.find(p => p.lane === c.lane) || null : null; };
 // 그 갈래 줄의 계단마다 무엇이 더해지는지(결과 · 처음 화면 한 줄)
 export const STEP_TEXT = {
+  bear: ['', '', '셈여림'],
   bunny: ['', '트라이앵글', '글로켄슈필', '첼레스타'],
   bird: ['', '가락 앞부분', '가락 뒷부분', '가락 화음'],
   hog: ['', '큰북', '작은북', '하이햇', '마디 끝 채움', '심벌', '장구'],
@@ -103,8 +104,11 @@ export function themeBar(i, lv) {
   if (bn >= 1 && bar % 4 === 0) ev.push(D('bunny', 'triangle', 0, 0.55));
   if (bn >= 2 && phraseEnd) { const c = COMP[chordAt(bar, 3)]; c.forEach((p, k) => ev.push(N('bunny', 'glock', p + 12, 3 + k / 3, 0.4, 0.35))); }
   if (bn >= 3) for (const b of [1.5, 3.5]) { const c = COMP[chordAt(bar, b)]; ev.push(N('bunny', 'celesta', c[2] + 12, b, 0.35, 0.22)); }
+  // 곰 2계단(셈1 여리게·세게) — 셈여림: A는 조금 여리게(mp) · B 앞 네 마디 점점 세게 · 뒤 네 마디 점점 여리게
+  if ((lv.bear || 1) >= 2) { const g = DYN[bar]; for (const e of ev) e.vel = Math.min(1, +(e.vel * g).toFixed(3)); }
   return ev;
 }
+export const DYN = [0.8, 0.8, 0.8, 0.85, 0.8, 0.8, 0.85, 0.9, 0.72, 0.86, 1.0, 1.15, 1.1, 0.96, 0.82, 0.7];
 // 가락 아래 화음 음(셋째 · 넷째 아래 중 화음 음) — 없으면 null
 export function harmonyBelow(p, name) {
   for (let k = 3; k <= 5; k++) if (isChordTone(p - k, name)) return p - k;

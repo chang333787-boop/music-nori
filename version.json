@@ -1,5 +1,5 @@
 {
- "v": "032c6297ecf6",
+ "v": "c3870f56651f",
  "files": [
   "app/css/app.css",
   "app/css/cells/_mel.css",
@@ -13,6 +13,7 @@
   "app/css/cells/ri4.css",
   "app/css/cells/ri5.css",
   "app/css/cells/ri6.css",
+  "app/css/cells/sem1.css",
   "app/css/cells/so3.css",
   "app/css/cells/so4.css",
   "app/css/cells/so5.css",
@@ -35,6 +36,7 @@
   "app/js/cells/ri4.js",
   "app/js/cells/ri5.js",
   "app/js/cells/ri6.js",
+  "app/js/cells/sem1.js",
   "app/js/cells/so3.js",
   "app/js/cells/so4.js",
   "app/js/cells/so5.js",

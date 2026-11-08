@@ -4,7 +4,7 @@ import { friendImg } from '../band.js';
 import { CELLS, LANES, ORDER, cellById, nextCell, cellName } from '../../../engine/cells.js';
 import { getProg, STAR_SVG } from '../cellkit.js';
 
-const ROWS = ['sound', 'melody', 'rhythm', 'score'];
+const ROWS = ['sound', 'melody', 'rhythm', 'score', 'any'];   // any = 곰 갈래(셈여림·빠르기) — 11-08 셈1부터 열림
 
 export default function mount(root, ctx) {
   const prog = getProg();
@@ -28,12 +28,8 @@ export default function mount(root, ctx) {
           h('span', { class: 'mstars', html: [0, 1, 2].map(i => STAR_SVG(i < st)).join('') }));
         onPress(btn, () => ctx.go(c.route || 'cell/' + id));
         return btn;
-      })));
+      }), lane === 'any' ? h('span', { class: 'mlater' }, '빠르기는 다음에 열려요') : null));
   });
-  // 곰(셈여림·빠르기) 갈래 — 다음 판에서 열림(무대에 있는 친구가 지도에서 사라지지 않게)
-  rows.push(h('div', { class: 'mrow later', style: { '--a': 'var(--bear)', '--a-t': 'var(--bear-t)' } },
-    h('div', { class: 'mlane' }, friendImg('bear', 'face', { label: false }), h('b', {}, '셈여림·빠르기')),
-    h('div', { class: 'mpath' }, h('span', { class: 'mlater' }, '다음에 열려요'))));
   root.append(h('div', { class: 'map' }, ...rows));
   void CELLS;
 }

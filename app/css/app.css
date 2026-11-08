@@ -226,7 +226,7 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 
 /* ── 마을 지도 — 갈래 넷 ── */
-.map{display:grid;grid-template-rows:repeat(4,minmax(0,1fr)) 64px;gap:12px;height:100%}
+.map{display:grid;grid-template-rows:repeat(5,minmax(0,1fr));gap:10px;height:100%}   /* 11-08 곰 줄(셈여림·빠르기)이 열려 다섯 줄 */
 .mrow.later{opacity:.6;padding:2px 18px}
 .mrow.later .mlane img,.mrow.later .mlane svg{width:44px;height:44px}
 .mrow.later .mlane b{font-size:19px;white-space:nowrap}

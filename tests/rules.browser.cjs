@@ -66,7 +66,7 @@ function audit() {
     };
     for (const name of ['', 'map', 'tap', 'songs', 'play']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(900); await check('#/' + (name || '(처음)')); }
     // 칸마다 보기 · 연습 · 확인 게임 첫 판 · 결과
-    for (const id of ['so3', 'so4', 'so5', 'ga1', 'ga2', 'ga3', 'ri2', 'ri4', 'ri5', 'ri6', 'jd1', 'ak1', 'ak2']) {
+    for (const id of ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3', 'ri2', 'ri4', 'ri5', 'ri6', 'jd1', 'ak1', 'ak2']) {
       await page.evaluate(i => { window.__cellResult = null; location.hash = '#/cell/' + i; }, id);
       await page.waitForTimeout(800);
       await check(`${id} 보기`);

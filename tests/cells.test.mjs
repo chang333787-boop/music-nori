@@ -20,8 +20,8 @@ const visit = (id, path = []) => {
 };
 for (const c of CELLS) visit(c.id);
 // 첫 판
-assert.equal(FIRST.length, 14);
-assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 14칸');
+assert.equal(FIRST.length, 15);
+assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 15칸');
 for (const id of FIRST) assert.ok(cellById(id).game, id + ' 확인 게임 설명');
 // 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다
 for (const [i, id] of ORDER.entries()) for (const p of cellById(id).pre) if (FIRST.includes(p)) assert.ok(ORDER.indexOf(p) < i, `${id}보다 ${p}가 먼저`);
