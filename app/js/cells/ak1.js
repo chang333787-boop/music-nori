@@ -11,7 +11,7 @@
 //  11-07 평가 3차: 번호 = 막대 수 "3 / 23"(결과 단위와 같게) · 결과 "높이 23개 중 12개, 박자 23개 중 3개를 맞혔어요"
 //   넷 세기는 오른쪽 위 상자 X → 악보 가운데 큰 숫자(세는 동안만) · 게임 아래 띠 = 악보 넷 중 몇째 + 키보드 · 박 소리는 0.3초 앞만 예약
 import { voice, exGroup, nowCard, pal, pose, shake } from './_snd.js';
-import { windows } from '../../../engine/judge.js';
+import { windows, tapStats } from '../../../engine/judge.js';
 import { audioToPerf } from '../clock.js';
 import { SONGS } from '../../../engine/songs/index.js';
 import { parseMel } from '../../../engine/song.js';
@@ -301,12 +301,12 @@ export default {
       if (mode !== 'play' || !run) return;
       const ac = run.ac, now = ac.currentTime;
       const adj = (ms ?? performance.now()) - run.lat;
-      let best = null, bestAbs = Infinity;
+      let best = null, bestAbs = Infinity, bestD = 0;
       for (const nt of run.notes) {
         if (nt.st) continue;
         const d = adj - audioToPerf(ac, nt.t);
         if (d < -run.win.early || d > run.win.late) continue;
-        if (Math.abs(d) < bestAbs) { best = nt; bestAbs = Math.abs(d); }
+        if (Math.abs(d) < bestAbs) { best = nt; bestAbs = Math.abs(d); bestD = d; }
       }
       if (!best) {
         // 막대가 없는 때 — 소리만 짧게(손맛) · 긴 막대가 아직 울리는 동안이면 '서두름'
@@ -315,6 +315,7 @@ export default {
         if (hold) rushed++;
         return;
       }
+      best.off = bestD;                                // 누른 때 어긋남(기기 지연 뺀 뒤 · 높이가 틀려도 때는 잼 · X4 기록)
       const len = best.d * run.beat * 0.92;
       V.note(INST, R.p[r], now + 0.01, len, 0.6);     // 누르면 막대 길이만큼 소리
       const bar = run.bars[best.k];
@@ -357,7 +358,7 @@ export default {
         }
         if (now > run.end + 0.35) {
           mode = 'between';
-          run.notes.forEach((nt, k) => all.push({ st: nt.st, long: nt.d >= 2, afterLong: k > 0 && run.notes[k - 1].d >= 2 }));
+          run.notes.forEach((nt, k) => all.push({ st: nt.st, long: nt.d >= 2, afterLong: k > 0 && run.notes[k - 1].d >= 2, off: nt.off, bpm: run.L.bpm }));
           S.pose('happy');
           T.after(900, nextLine);
         }
@@ -377,10 +378,14 @@ export default {
       else if (wrongRow >= missed) tip = `위아래를 바꿔 누른 막대가 ${wrongRow}개 있었어요. 막대가 위에 있으면 높은 소리예요.`;
       else if (rushed || missAfterLong * 2 >= missed) tip = `긴 막대 다음에서 놓친 적이 ${missAfterLong}번 있었어요. 긴 막대는 거북이 막대 끝까지 갈 때까지 기다려요.`;
       else tip = `놓친 막대가 ${missed}개 있었어요. 거북이 막대 앞 끝에 닿을 때 눌러요.`;
+      // 두드림 어긋남(X4 · 기기 기록만) — 판정 창 안에 누른 막대(높이가 틀린 것도 때는 잼) · 판정 창은 늘 넉넉하게(low)
+      //  악보마다 빠르기가 달라 bpm = 막대마다 빠르기의 가운데 값
+      const bpms = all.map(x => x.bpm).sort((a, z) => a - z);
+      const t = tapStats(all.filter(x => x.st !== 'miss').map(x => x.off), missed, { lat: device.latencyMs || 0, band: 'low', bpm: bpms[bpms.length >> 1] || 0 });
       // 기준 둘 — 높이(맞는 단추를 제때 누름) · 박자(그중 '딱' 맞춘 것) — 둘 다 막대 수를 분모로
       T.after(700, () => {
         S.showHead(false); ui.count(null); ui.setBar();   // 결과 옆 친구는 칸 화면이 붙임
-        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`높이 ${s.total}개 중 ${s.kept}개,`, kit.band === 'low' ? `‘딱’은 ${s.total}개 중 ${great}개였어요` : `박자 ${s.total}개 중 ${great}개를 맞혔어요`, `이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`높이 ${s.total}개 중 ${s.kept}개,`, kit.band === 'low' ? `‘딱’은 ${s.total}개 중 ${great}개였어요` : `박자 ${s.total}개 중 ${great}개를 맞혔어요`, `이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, t });
       });
     }
 

@@ -236,7 +236,7 @@ export default function mount(root, ctx) {
       if (gone) return;
       const stars = r.starOn.filter(Boolean).length;
       const before = K.getProg(), best0 = (before[cell.id] && before[cell.id].stars) || 0, lv0 = levelsOf(before);
-      if (!tv) K.saveResult(cell.id, { ...r, stars });   // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음 · 기록은 원래 말 그대로(선생님이 봄)
+      if (!tv) K.saveResult(cell.id, { ...r, stars, mode: r.mode || (inRoom ? 'room' : 'solo') });   // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음 · 기록은 원래 말 그대로(선생님이 봄) · r 꼬리표 = 혼자/방/TV 소리(X4)
       // 결과 소리 — 별 하나씩(도 미 솔) · 셋이면 팡파르 · 이번에 처음 받은 별엔 '새 별' · 처음 화면 음악에 새 줄이 생겼으면 한 줄(docs/sound.md §5)
       const delays = starSounds(stars, r.starOn);
       const fresh = tv || !music.enabled() ? [] : newParts(lv0, levelsOf(K.getProg()));   // 배경 음악을 안 트는 기기(끔 · 방)면 X

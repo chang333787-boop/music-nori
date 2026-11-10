@@ -65,6 +65,36 @@ function audit() {
       if (keep.length) bad(`${name}: ${keep.join(' | ')}`); else ok(`${name} 규칙 지킴`);
     };
     for (const name of ['', 'map', 'tap', 'songs', 'play']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(900); await check('#/' + (name || '(처음)')); }
+    // 이 기기 기록(선생님 화면 · 글자 크기 X) — 접힌 '자세히'를 열면 '두드림' 열(X4) · 예전 줄(t 없음)도 오류 없이 · 스크롤 0
+    {
+      const perr = [];
+      const onErr = e => perr.push(String(e));
+      page.on('pageerror', onErr);
+      await page.evaluate(() => {
+        localStorage.setItem('mn.prog', JSON.stringify({
+          so3: { stars: 2 },
+          ri2: { stars: 2, at: 3, hist: [{ at: 1, s: 1, k: 5, n: 8, tip: '예전 줄' }, { at: 2, s: 2, k: 6, n: 8, l: 0, tip: 'x', r: 'solo', t: { o: 12, sp: 40, m: 1, lat: 35, band: 'mid', bpm: 100 } }, { at: 3, s: 0, k: 0, n: 8, l: 0, tip: 'y', r: 'room', t: { o: null, sp: null, m: 12, lat: 0, band: 'low', bpm: 92 } }] },
+          ri1: { stars: 1, at: 4, hist: [{ at: 4, s: 1, k: 13, n: 24, l: null, tip: 'z', r: 'solo', t: { o: -8, sp: 22, m: 11, lat: 0, band: 'mid', bpm: 84 } }] },
+        }));
+        location.hash = '#/records';
+      });
+      await page.waitForTimeout(700);
+      const hid = await page.evaluate(() => getComputedStyle(document.querySelector('.rec-table td.rec-tap')).display);
+      await page.click('.rec-more summary');
+      await page.waitForTimeout(200);
+      const rec = await page.evaluate(() => ({
+        shown: getComputedStyle(document.querySelector('.rec-table th.rec-tap')).display !== 'none',
+        head: document.querySelector('.rec-table th.rec-tap').textContent,
+        cells: [...document.querySelectorAll('.rec-table td.rec-tap')].map(e => e.textContent).filter(x => x !== '—'),
+        scroll: Math.max(document.documentElement.scrollHeight - innerHeight, document.documentElement.scrollWidth - innerWidth, (m => m.scrollHeight - m.clientHeight)(document.getElementById('main'))),
+      }));
+      const want = ['-8ms · 퍼짐 22 · 놓침 11', '맞힌 두드림 없음 · 놓침 12', '+12ms · 퍼짐 40 · 놓침 1'];
+      if (hid !== 'none' || !rec.shown || rec.head !== '두드림' || rec.cells.join('|') !== want.join('|') || rec.scroll > 1 || perr.length) bad('기록 화면 두드림 열: ' + JSON.stringify({ hid, ...rec, perr }));
+      else ok(`기록 화면 — 자세히를 열면 '두드림' 열(${rec.cells.join(' · ')}) · 스크롤 0`);
+      await check('#/records 자세히', { noFont: true });
+      page.off('pageerror', onErr);
+      await page.evaluate(() => localStorage.setItem('mn.prog', JSON.stringify({ so3: { stars: 2 } })));
+    }
     // 칸마다 보기 · 연습 · 확인 게임 첫 판 · 결과
     for (const id of ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3', 'ri2', 'ri4', 'ri5', 'ri6', 'jd1', 'ak1', 'ak2']) {
       await page.evaluate(i => { window.__cellResult = null; location.hash = '#/cell/' + i; }, id);

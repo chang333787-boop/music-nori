@@ -8,7 +8,7 @@
 //  1~2학년(band low)은 머리 없는 막대 음표로 그린다.
 //  11-07 평가 3차: 준비 박 숫자는 판 가운데 큰 숫자(세는 동안만 · 오른쪽 위 상자 X) · 반주는 네 박씩 0.3초 앞에만 예약(동시 소리 166 → 75) · ‘따’ ‘쉼’ 둥근 따옴표
 import { bpmOf, judgeEcho, classifyTap, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, startCard, noteSVG, palmSVG, exampleGroup, countTeller, barPump, accompSound, endChord } from './_beat.js';
-import { windows } from '../../../engine/judge.js';
+import { windows, tapStats } from '../../../engine/judge.js';
 
 const ORD = ['첫째', '둘째', '셋째', '넷째'];
 const EXAMPLES = [
@@ -362,11 +362,14 @@ export default {
       else if (afterRest * 2 >= misses) tip = `‘쉼’ 바로 다음 ‘따’를 ${afterRest}번 놓쳤어요. 쉬는 동안에도 박은 계속 흘러요.`;
       else if (hiddenWrong) tip = `그림 없이 듣기만 한 판(6·7번째)에서 ${hiddenWrong}번 헷갈렸어요.`;
       else tip = `‘따’를 놓친 박이 ${misses}개 있었어요. 고슴도치 소리를 잘 듣고 그대로 쳐요.`;
+      // 두드림 어긋남(X4 · 기기 기록만) — '따' 박에 붙은 두드림 · 놓침 = 안 친 '따'(쉼에 친 것은 따로 · tip)
+      const offs = judged.flatMap(j => (j ? j.beats.filter(b => b.got === 'great' || b.got === 'ok').map(b => b.off) : []));
+      const t = tapStats(offs, misses, { lat: kit.device.latencyMs, band: kit.band, bpm: bpmOf('echo', kit.band) });
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: res,
         facts: [`이어서 맞힌 최고 기록 ${s.streak}번`, `‘쉼’ 박 ${restAll}개 중 ${restKept}개를 지켰어요`],
-        starOn: s.starOn, rules: s.rules, tip,
+        starOn: s.starOn, rules: s.rules, tip, t,
       });
     }
     return () => { T.clear(); run && run.stop(); input && input.off(); };

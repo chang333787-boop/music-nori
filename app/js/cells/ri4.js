@@ -9,7 +9,7 @@
 //  11-07 평가 3차: 하늘 띠 90px · 준비 박 점 X(숫자는 길 왼쪽 빈 곳 · 세는 동안만) · ‘따’ ‘따아’ 모두 왼쪽 정렬 · 막대 채움 · 풍선은 transform · 반주는 한 마디씩 예약
 import { bpmOf, releaseGrade, HOLD_WIN, layoutNotes, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, fireUp, startCard, noteSVG, SYL, LEN, exampleGroup, countTeller, barPump, accompSound, endChord } from './_beat.js';
 import { chordAt, holdPitch } from '../../../engine/theme.js';
-import { windows } from '../../../engine/judge.js';
+import { windows, tapStats } from '../../../engine/judge.js';
 
 const PX = 170, COUNT = 4, PITCH = 67;                      // 박 하나 = 170px · 솔(G4) 한 음
 const BAL = ['#BFDDEF', '#F2B6C6', '#CFE5C3', '#F3D98B', '#D9CDEB'];
@@ -129,12 +129,12 @@ function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
     if (gone) return;
     const ms = e && e.timeStamp ? e.timeStamp : performance.now();
     // 판정 창 안에서 가장 가까운, 아직 안 누른 음
-    let best = -1, bestAbs = Infinity;
+    let best = -1, bestAbs = Infinity, bestD = 0;
     notes.forEach((n, i) => {
       if (n.press) return;
       const d = ms - lat - atMs(n);
       if (d < -w.early || d > w.late) return;
-      if (Math.abs(d) < bestAbs) { best = i; bestAbs = Math.abs(d); }
+      if (Math.abs(d) < bestAbs) { best = i; bestAbs = Math.abs(d); bestD = d; }
     });
     // 내 음 = 그 음표 자리 반주 화음에 맞는 미 · 솔 · 라(솔에 가까운 것) — 길게 부는 음이 가락이 됨(docs/sound.md §4)
     const at = best >= 0 ? notes[best].beat : Math.max(0, Math.floor((ac.currentTime - t0) / beat + 0.5));
@@ -142,7 +142,7 @@ function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
     if (best < 0) return;
     const n = notes[best];
     n.press = bestAbs <= w.great ? 'great' : 'ok';
-    n.down = ms;
+    n.down = ms; n.off = bestD;                                // 누른 때 어긋남(기기 지연 뺀 뒤 · X4 기록)
     n.bal = view.balloon(n.len);
     holding = best;
     kit.setPose(view.hog, kit.friend, 'play');
@@ -159,7 +159,7 @@ function holdRun(kit, ui, view, lane, { bars, bpm, onNote, onCount, onEnd }) {
     const n = notes[i];
     if (n.res) return;
     const rel = releaseGrade(n.len, atMs(n), upMs - lat, beatMs, band);
-    n.res = { press: n.press, rel, ok: rel === 'ok' };
+    n.res = { press: n.press, rel, ok: rel === 'ok', off: n.off };
     if (holding === i) holding = null;
     lane.now(i, false);
     if (rel === 'ok') {
@@ -363,11 +363,13 @@ export default {
       else if (longQ >= Math.max(longH, miss)) tip = `4분음표를 길게 누른 적이 ${longQ}번 있었어요. ‘따’는 한 박만 — 짧게 눌렀다 떼요.`;
       else if (longH >= miss) tip = `2분음표를 두 박보다 오래 누른 적이 ${longH}번 있었어요. 막대가 끝나면 떼요.`;
       else tip = `누르는 때를 놓친 음이 ${miss}개 있었어요. 막대가 선에 닿을 때 눌러요.`;
+      // 두드림 어긋남(X4 · 기기 기록만) — 누르기 시작의 어긋남(떼기 판정과 따로) · 놓침 = 창 안에 못 누른 음
+      const t = tapStats(res.filter(x => x.press !== 'miss').map(x => x.off), miss, { lat: kit.device.latencyMs, band: kit.band, bpm: bpmOf('hold', kit.band) });
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: ok, group: PLAN.map(b => b.filter(k => !k.endsWith('r')).length),   /* 다시 보기는 마디마다 끊음 */
         facts: [`이어서 맞힌 최고 기록 ${s.streak}번`, `2분음표 ${hAll}개 중 ${hOk}개를 두 박 동안 눌렀어요`],
-        starOn: s.starOn, rules: s.rules, tip,
+        starOn: s.starOn, rules: s.rules, tip, t,
       });
     }
     return () => { T.clear(); run && run.stop(); input && input.off(); };
