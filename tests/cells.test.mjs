@@ -222,6 +222,8 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     for (let a = 0; a < vals.length; a++) for (let b = a + 1; b < vals.length; b++) bots.push([`번갈아 ${vals[a]}/${vals[b]}`, k => (k % 2 ? vals[b] : vals[a])], [`번갈아 ${vals[b]}/${vals[a]}`, k => (k % 2 ? vals[a] : vals[b])]);
     const rr = K.rng(99);
     bots.push(['찍기', (k, p, o) => o[Math.floor(rr() * o.length)]]);
+    // 가2 화면 틈 봇(11-10) — 화면에 안 보이는 음을 고름(하나면 그것 · 둘이면 그중 하나 · 다 보이면 아무거나)
+    if (id === 'ga2') bots.push(['안 보이는 음', (k, p, o) => { const shown = p.ps.filter((_, j) => j !== p.q), miss = o.filter(v => !shown.includes(v)), from = miss.length ? miss : o; return from[Math.floor(rr() * from.length)]; }]);
     const got = new Map(bots.map(([n]) => [n, 0]));
     let same = 0, alt = 0, origin = 0;
     for (let sd = 1; sd <= 1000; sd++) {

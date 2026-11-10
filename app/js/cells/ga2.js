@@ -5,7 +5,7 @@
 //  연습: 솔(지시 줄에 이름) 다음 소리가 라 · 솔 · 미 중 무엇인지 — 라는 솔보다 '살짝' 위
 //  확인 게임 '물음표 소리'(나무 = 코덱스 장면 그림 prop_tree · 오른쪽 가지에 참새): 솔 · 미 · 라 가락에서 ? 자리 소리를 오른쪽 답(라 · 솔 · 미)으로 12판
 //   칸은 처음부터 넷(첫 번째 ~ 네 번째) — 세 음 판에서는 네 번째 칸이 비어 있음(판마다 자리가 밀리지 않게)
-//   소개(세 음 · ?가 끝) → 발전(?가 맨 앞 · 솔 옆 · 답이 솔 · 미인 판 섞음) → 비틀기(네 음 · 리코더 · 피아노) → 마무리(네 음 · ?가 맨 앞)
+//   소개(세 음) → 발전(?가 맨 앞 · 솔 옆 · 답이 솔 · 미인 판 섞음) → 비틀기(네 음 · 리코더 · 피아노 · ?가 맨 앞 한 판) — 답 음이 화면에 한 번 더 보이는 판을 섞어 '안 보이는 음 고르기'로는 못 맞힘(11-10)
 //  11-07 평가 2차: 예전 '라는 몇 번째?'(칸을 누름)는 누를 곳이 안 보이고 칸이 3 → 4개로 늘며 자리가 밀렸음 → 답 단추 셋 고정으로 바꿈
 //  11-07 평가 3차: 듣는 동안 A.busy('잘 들어요') · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 노래 그림 동전 26px(라라 겹침)
 import { SOL, MI, LA, FA, nameOf, colorOf, posOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge, dot } from './_mel.js';
@@ -19,19 +19,19 @@ const EXAMPLES = [
 ];
 // 확인 게임 문항 표(X2 · 단계 꼬리표) — 줄 하나 = { stage, ps(가락), q(물음표 자리 · 0부터), inst, right(= ps[q]) }
 const row = (stage, ps, q, inst = 'xylo') => ({ stage, ps, q, inst, right: ps[q] });
+// 화면 틈 막기(11-10): 세 음이 모두 다른 판만 있으면 '화면에 안 보이는 음'만 골라도 9~10판을 맞힘 → 소개 · 발전 여덟 판 중 다섯은 답 음이 화면에 한 번 더 보이고(안 보이는 음 = 틀림), 셋만 세 음이 다름 · 네 음 판은 셋이 다 보임
+//  답 수 라 5 · 솔 4 · 미 3 · 물음표 맨 앞 둘(5 · 12번째) · 네 음 넷(9번째부터) — 마무리 한 판은 비틀기로 합침(한 판뿐인 단계는 늘 같은 답이 됨)
 export const PLAN = [
-  row('intro', [M, S, L], 2), row('intro', [S, L, S], 1), row('intro', [L, S, M], 2), row('intro', [M, L, S], 1),
-  row('grow', [L, M, S], 0), row('grow', [S, S, L], 1), row('grow', [S, L, M], 1), row('grow', [L, S, M], 1),
-  row('twist', [S, M, S, L], 3, 'recorder'), row('twist', [M, S, L, S], 1, 'piano'), row('twist', [S, L, S, M], 3, 'recorder'),
-  row('end', [L, S, M, S], 0),
+  row('intro', [L, S, L], 2), row('intro', [L, S, S], 1), row('intro', [S, L, M], 2), row('intro', [M, L, L], 1),
+  row('grow', [L, M, L], 0), row('grow', [L, S, M], 1), row('grow', [M, L, S], 1), row('grow', [M, S, S], 1),
+  row('twist', [S, L, M, L], 3, 'recorder'), row('twist', [M, S, L, S], 1, 'piano'), row('twist', [M, L, S, M], 3, 'recorder'), row('twist', [M, S, M, L], 0),
 ];
-export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 8, 11] — 섞어도 '9번째부터 네 음' 말이 그대로 맞게
-// 단계 안 섞기(N2) — 차례만(뒤집기 X: 라 ↔ 미를 바꾸면 '라는 솔 바로 위'를 듣는 문항이 미를 듣는 쉬운 문항이 됨) · 답 수는 라 7 · 솔 3 · 미 2라 같게 맞추지 않음
+export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 8] — 섞어도 '9번째부터 네 음' 말이 그대로 맞게
+// 단계 안 섞기(N2) — 차례만(뒤집기 X: 라 ↔ 미를 바꾸면 '라는 솔 바로 위'를 듣는 문항이 미를 듣는 쉬운 문항이 됨)
 export const SHUF = { answerOf: p => p.right, balance: false };
-// 찍기 바닥 확률 — 셋 중 하나(1/3)가 아니라 '단계마다 가장 흔한 답'을 누르는 찍기까지 막게(가1 GUESS와 같은 생각)
-//  라가 12판 중 7판의 답이라, 1/3로 바닥(7)을 정하면 '늘 라' 봇이 별 ①을 받음 → 단계마다 가장 흔한 답의 몫(소개 3/4 · 발전 1/2 · 비틀기 1/3 · 마무리 1)
-const SHARE = (() => { const by = {}; for (const p of PLAN) (by[p.stage] = by[p.stage] || []).push(p.right); const o = {}; for (const [st, a] of Object.entries(by)) o[st] = Math.max(...a.map(x => a.filter(y => y === x).length)) / a.length; return o; })();
-export const GUESS = plan => plan.map(p => Math.max(1 / 3, SHARE[p.stage]));
+// 찍기 바닥 확률 — 셋 중 하나(1/3)와 '늘 가장 흔한 답(라 5/12)' 중 큰 것 → 별 ① = 8/12 안팎
+const TOP = Math.max(...[L, S, M].map(v => PLAN.filter(p => p.right === v).length)) / PLAN.length;
+export const GUESS = plan => plan.map(() => Math.max(1 / 3, TOP));
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
 export function tipOf(plan, results, picks) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p, picks[k])).length;
@@ -213,7 +213,7 @@ export default {
     const sc = startCard(ui, kit, {
       title: '물음표 소리',
       lines: ['참새 노래를 듣고 ? 자리에서 난 소리를 라, 솔, 미 중에서 골라요', '12번'],
-      // 시작할 때 판 차례를 정함 — 단계(세 음 0~3 · 4~7 · 네 음 8~10 · 마무리 11) 안에서만 섞음(N2 · 씨앗은 기록에)
+      // 시작할 때 판 차례를 정함 — 단계(세 음 0~3 · 4~7 · 네 음 8~11) 안에서만 섞음(N2 · 씨앗은 기록에)
       onStart: () => { sd = kit.seed ? kit.seed() : 1; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF); ui.setBar(again); toneSet(); },
     });
     ui.stage.append(sc.card);
