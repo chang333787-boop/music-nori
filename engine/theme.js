@@ -42,7 +42,7 @@ export const PARTS = [
   { key: 'bear', lane: 'any', name: '반주', base: 1, max: 2 },   // 곰 = 처음부터 반주(1) · 셈1을 지나면 커졌다 작아졌다(2)
   { key: 'bunny', lane: 'sound', name: '반짝 소리', max: 3 },
   { key: 'bird', lane: 'melody', name: '가락', max: 3 },
-  { key: 'hog', lane: 'rhythm', name: '북', max: 6 },
+  { key: 'hog', lane: 'rhythm', name: '북', max: 7 },
   { key: 'turtle', lane: 'score', name: '낮은 소리', max: 2 },
 ];
 // 진행(prog) → 줄마다 계단 { bear:1, bunny:0~3, … } — 그 갈래 첫 판 칸 중 별 하나 이상 받은 칸 수
@@ -65,7 +65,7 @@ export const STEP_TEXT = {
   bear: ['', '', '셈여림'],
   bunny: ['', '트라이앵글', '글로켄슈필', '첼레스타'],
   bird: ['', '가락 앞부분', '가락 뒷부분', '가락 화음'],
-  hog: ['', '큰북', '작은북', '하이햇', '마디 끝 채움', '심벌', '장구'],
+  hog: ['', '큰북', '작은북', '하이햇', '마디 끝 채움', '심벌', '장구', '작은북 띠띠'],
   turtle: ['', '낮은 소리', '걷는 낮은 소리'],
 };
 
@@ -93,6 +93,7 @@ export function themeBar(i, lv) {
   if (hg >= 3) for (let k = 0; k < 8; k++) ev.push(D('hog', 'hat', k / 2, k % 2 ? 0.22 : 0.32));
   if (hg >= 5 && secStart) ev.push(D('hog', 'cymbal', 0, 0.4));
   if (hg >= 6 && bar % 2 === 1) ev.push(D('hog', 'kung', 0, 0.38), D('hog', 'deok', 1.5, 0.3));   // 장구(장1 장단보) — 두 마디마다 쿵 · 덕
+  if (hg >= 7) { ev.push(D('hog', 'snare', 1.5, 0.26)); if (!phraseEnd) ev.push(D('hog', 'snare', 3.5, 0.26)); }   // 작은북 띠띠(리3 8분음표 둘) — 둘째 · 넷째 박을 8분음표 둘로(마디 끝 채움 마디는 넷째 박 그대로 · 세기 낮게)
   // 참새 — 가락(플루트): 1 A만 · 2 모두 · 3 + B에 아래 화음 음
   const bd = lv.bird;
   if (bd >= 2 || (bd >= 1 && !inB)) for (const n of MEL[bar]) {

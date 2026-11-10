@@ -252,6 +252,13 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .mnode.fresh .mdot{animation:freshdot 600ms ease-out 250ms both}
 @keyframes freshdot{0%{box-shadow:0 0 0 0 var(--great)}50%{box-shadow:0 0 0 8px var(--great)}100%{box-shadow:0 0 0 0 transparent}}
 .mnode.next{box-shadow:0 4px 0 var(--ink),0 0 0 4px var(--paper),0 0 0 8px var(--go)}
+/* 칸이 여섯 넘는 줄(박·리듬 일곱 칸 · 11-10 리3) — 칸 너비를 고르게 · 번호 작게 · 이름은 두 줄까지(1366 폭에 넘치지 않게) */
+.mrow.dense .mpath{gap:10px}
+.mrow.dense .mnode{flex:1 1 0;column-gap:8px;padding:6px 8px 6px 6px}
+.mrow.dense .mnode:not(:last-child)::after{right:-13px;width:10px}
+.mrow.dense .mnode .mdot{width:38px;height:38px;font-size:21px}
+.mrow.dense .mnode .mname{font-size:19px;line-height:1.15;white-space:normal;overflow-wrap:anywhere}
+.mrow.dense .mnode .mstars svg{width:19px;height:19px}
 .mnode .mtag{position:absolute;left:12px;top:-20px;font-family:var(--head);font-size:18px;line-height:1;color:#fff;background:var(--go);border:2px solid var(--ink);border-radius:999px;padding:4px 12px}
 
 /* ── TV로 다같이 ── */

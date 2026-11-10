@@ -170,4 +170,69 @@ ok('블록 판 음표(꽉 찬 그림): 온음표 머리가 30px 넘게', () => {
   assert.ok(Number(svg.match(/width="(\d+)"/)[1]) <= 44, '블록 판 음표 자리(44px) 안');
 });
 
+// ── 리3 8분음표 둘 — 반 박 자리 판정(소리 자리 · 소리 없는 자리) · 빠르기마다 판정 창 ──
+{
+  globalThis.localStorage ??= { getItem: () => null, setItem: () => {} };   // cellkit(factTip)이 기기 저장을 읽음
+  const R3 = await import('../app/js/cells/ri3.js');
+  const H = 340, at = (k, t0 = 1000) => Array.from({ length: k }, (_, i) => t0 + i * H);   // 반 박 340ms(88 BPM)
+  const S = at(8);
+  const judge = (pat, taps, o = {}) => R3.judgeBar(pat, S, taps, { halfMs: H, ...o });
+  ok('리3: 반 박 자리 — 마디마다 여덟 · 소리 자리 수 = 소리 수', () => {
+    for (const p of R3.PLAN) {
+      const sl = R3.slotsOf(p.pat);
+      assert.equal(R3.beatsOf(p.pat), 4, p.pat.join(' ')); assert.equal(sl.length, 8);
+      assert.equal(sl.filter(x => x.kind === 'hit').length, R3.soundsOf(p.pat).length);
+      assert.ok(p.pat.includes('ee'), '판마다 ‘띠띠’가 있음');
+      assert.ok(p.pat.some(k => k !== 'ee'), '판마다 ‘띠띠’ 아닌 것도 있음(반 박마다 치는 길 X)');
+    }
+  });
+  ok('리3: ‘띠띠’는 두 번 다 쳐야 맞음 · 하나만 치면 놓침', () => {
+    const pat = ['q', 'ee', 'q', 'qr'];
+    const j = judge(pat, [S[0], S[2], S[3] + 30, S[4]]);
+    assert.equal(j.ok, true); assert.deepEqual(j.toks, ['great', 'great', 'great', 'rest']);
+    const half = judge(pat, [S[0], S[2], S[4]]);
+    assert.equal(half.ok, false); assert.equal(half.misses, 1); assert.equal(half.toks[1], 'miss');
+  });
+  ok('리3: ‘따’ 뒤 반 박에 치면 덤 · ‘쉼’에 치면 덤(쉼) · 길게 이어지는 동안 치면 덤(이어짐)', () => {
+    const a = judge(['q', 'ee', 'q', 'ee'], [S[0], S[1], S[2], S[3], S[4], S[6], S[7]]);
+    assert.equal(a.ok, false); assert.equal(a.extras.off, 1); assert.equal(a.toks[0], 'extra');
+    const b = judge(['qr', 'ee', 'q', 'ee'], [S[0] + 20, S[2], S[3], S[4], S[6], S[7]]);
+    assert.equal(b.extras.rest, 1); assert.equal(b.toks[0], 'extra');
+    const c = judge(['ee', 'ee', 'h'], [S[0], S[1], S[2], S[3], S[4], S[6]]);
+    assert.equal(c.extras.hold, 1); assert.equal(c.ok, false);
+    assert.equal(judge(['ee', 'ee', 'h'], [S[0], S[1], S[2], S[3], S[4]]).ok, true, '‘따아’는 한 번만');
+  });
+  ok('리3: 자리와 자리 사이 두드림은 셈하지 않음 · 기기 지연을 빼고 판정', () => {
+    const w = R3.judgeBar(['q', 'q', 'q', 'q'], S, [], { halfMs: H }).win;
+    const j = judge(['q', 'q', 'q', 'q'], [S[0], S[1] + H * 0.4, S[2], S[4], S[6]]);   // 둘째 반 박에서 0.4 반 박 = 사이
+    assert.equal(j.ok, true);
+    assert.ok(H * 0.35 < H / 2 && w.late < H / 2, '소리 없는 자리 · 판정 창이 반 박의 절반 안');
+    assert.equal(judge(['ee', 'ee', 'ee', 'ee'], S.map(t => t + 80), { latency: 80 }).toks.every(t => t === 'great'), true);
+  });
+  ok('리3: 빠르기마다 이웃 소리의 판정 창이 겹치지 않음 · 바탕 빠르기는 3~6학년 창이 줄지 않음', () => {
+    for (const band of ['low', 'mid', 'high']) for (const fast of [false, true]) {
+      const half = 30000 / R3.bpmFor(band, fast), w = windows(band, half);
+      assert.ok(w.early + w.late < half, `${band} ${fast ? '빠름' : '바탕'} 창 ${w.early}+${w.late} < 반 박 ${half.toFixed(0)}`);
+      assert.ok(Math.min(w.early, w.late) >= 95, `${band} 창이 너무 좁음 ${w.early}`);
+      if (!fast && band !== 'low') assert.deepEqual([w.early, w.late], [{ mid: 115, high: 100 }[band], { mid: 115, high: 100 }[band]], band + ' 창 그대로');
+    }
+    assert.ok(R3.bpmFor('low', true) <= 100 && R3.bpmFor('low') >= 80, '1~2학년 8분음표 판 80~100 BPM(기획 evidence §③-4)');
+  });
+  ok('리3: 결과 한 줄 — 갈래는 틀린 판의 2/3를 넘고 셋 이상일 때만', () => {
+    const P = R3.PLAN, all = P.map(() => true);
+    assert.match(R3.tipOf(P, all, []), /모두 그대로/);
+    // 첫 ‘띠띠’의 둘째 소리만 놓친 판정
+    const halfOf = pat => {
+      const slots = R3.slotsOf(pat).map(s => ({ ...s, got: s.kind === 'hit' ? 'great' : null }));
+      slots.find(s => pat[s.tok] === 'ee' && s.s === 1).got = 'miss';
+      return { slots, extras: { off: 0, rest: 0, hold: 0 } };
+    };
+    const res = all.slice(), jd = [];
+    [1, 4, 7].forEach(k => { res[k] = false; jd[k] = halfOf(P[k].pat); });
+    assert.match(R3.tipOf(P, res, jd), /‘띠띠’를 한 번만 친 판이 3번/);
+    const one = all.slice(); one[2] = false;
+    assert.equal(R3.tipOf(P, one, [, , halfOf(P[2].pat)]), '3번째 판을 틀렸어요.');
+  });
+}
+
 console.log(`✓ 박·리듬 칸 시험 통과 — ${n}개`);
