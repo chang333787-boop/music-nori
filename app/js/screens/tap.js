@@ -7,7 +7,7 @@
 import { h, onPress, lsGet, lsSet } from '../util.js';
 import { friendImg, setPose, preload, IMG_DIR } from '../band.js';
 import { audioToPerf } from '../clock.js';
-import { windows, judgeTaps, BANDS, STAR_RULES } from '../../../engine/judge.js';
+import { windows, judgeTaps, tapStats, BANDS, STAR_RULES } from '../../../engine/judge.js';
 import { saveResult, getProg, starRow, freshLine } from '../cellkit.js';
 import { starSounds, stopFx, enabled as musicOn } from '../music.js';
 import { levelsOf, newParts, themeRun } from '../../../engine/theme.js';
@@ -140,7 +140,7 @@ export default function mount(root, ctx) {
     const best0 = tv ? 3 : best[step] || 0, lv0 = levelsOf(getProg());
     if (!tv) {                                       // TV 반 전체 판은 이 기기 아이 기록 · 별 · 단계 최고에 넣지 않음(N1 · 11-08 토론)
       if (r.stars > (best[step] || 0)) { best[step] = r.stars; lsSet('tap.best', best); }
-      saveResult('ri1', { stars: r.stars, kept: r.kept, total: r.total, tip });   // 마을 지도 '일정박' 칸 별 + 결과 기록(선생님 칸 '이 기기 기록')
+      saveResult('ri1', { stars: r.stars, kept: r.kept, total: r.total, tip, t: r.t, mode: room.kid.get() ? 'room' : 'solo' });   // 마을 지도 '일정박' 칸 별 + 결과 기록(선생님 칸 '이 기기 기록')
       if (room.kid.isTeacherCell('ri1')) room.kid.send('ri1', r.stars, r.kept, r.total);   // 방 번호 다같이 — 선생님 칸이면 TV로
     }
     const delays = starSounds(r.stars, r.starOn), fresh = !tv && musicOn() ? newParts(lv0, levelsOf(getProg())) : [];   // 별 하나씩 소리 · 새 별(이 단계 최고보다) · 처음 화면 음악에 새 줄
@@ -231,6 +231,8 @@ export default function mount(root, ctx) {
     const ac = run.ac, st = run.state.slice();
     const expected = Array.from({ length: BEATS }, (_, i) => audioToPerf(ac, run.t0 + (COUNT + i) * run.beat));
     const r = judgeTaps(expected, run.taps, { band, latency: run.lat, skip: WARM, minIOI: run.beat * 1000 });
+    // 두드림 어긋남(X4) — 채점 박에서 판정 창 안에 든 두드림만 · 화면에는 쓰지 않음(기기 기록 → 선생님 '이 기기 기록' 자세히)
+    r.t = tapStats(r.offs.filter((o, i) => o != null && i >= WARM), r.beats.filter(b => b === 'miss').length, { lat: run.lat, band, bpm: run.bpm });
     mode = 'arrive';
     pauseBtn.hidden = true;
     tapbar.replaceChildren();

@@ -303,6 +303,10 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .rec-kn{white-space:nowrap;width:96px;font-family:var(--head);font-size:22px}
 .rec-late{white-space:nowrap;width:70px;font-family:var(--head);font-size:22px;color:var(--ink-2)}
 .rec-tip{max-width:0;width:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 자세히(접힘) — 열면 '두드림' 열(X4 · 박 칸 기록) */
+.rec-btns{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.rec-table .rec-tap{display:none}
+.rec-table.more .rec-tap{display:table-cell;white-space:nowrap;width:250px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
 .rec-none{color:var(--ink-2)}
 
 /* 글 복사가 막혔을 때 — 글 상자(util.copyText) */

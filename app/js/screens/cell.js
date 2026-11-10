@@ -60,13 +60,14 @@ export default function mount(root, ctx) {
   //  단계 칩 옆 = 이 칸의 성취기준(선생님만 · TV 모드에서만 보임)
   const guideStd = cell.std ? K.stdEl(cell.std, 'tvg-std') : null;
   const guideToggle = h('button', { type: 'button', class: 'tvg-hide', 'aria-label': '안내 접기' }, '접기');
-  // 모인 결과 띠(방이 열린 TV만) — 들어온 기기 · 끝낸 아이 + 끝낸 아이 칩(친구 얼굴 + 번호 + 별)
-  const stripHead = h('span', { class: 'rs-head' }), stripChips = h('span', { class: 'rs-chips' });
-  //  띠를 누르면 무대 위에 모두 크게(반 전체 30명은 띠에 다 안 들어감 — 띠는 막 끝낸 아이부터)
-  const strip = troom ? h('div', { class: 'rstrip', role: 'button', tabindex: '0', 'aria-label': '모인 결과 크게 보기' }, h('span', { class: 'rs-room' }, `방 ${troom.room}`), stripHead, stripChips) : null;
+  // 모인 결과 띠(방이 열린 TV만) — 보기 · 연습 = 들어온 기기 수 · 확인 게임 · 결과 = '끝낸 아이 n / m' 반 막대 하나 + '아직 k명'(수만)
+  //  TV에는 아이 번호 · 아이별 별을 보이지 않음(11-08 토론 X6 · 9살 공격 채택: 반 전체 앞에 누가 못 끝냈는지 · 별이 몇 개인지 드러남)
+  const stripHead = h('span', { class: 'rs-head' }), stripDone = h('span', { class: 'rs-done' });
+  //  띠를 누르면 무대 위에 크게(같은 규칙 + 별 분포 — 1~3명인 칸은 '조금')
+  const strip = troom ? h('div', { class: 'rstrip', role: 'button', tabindex: '0', 'aria-label': '모인 결과 크게 보기' }, h('span', { class: 'rs-room' }, `방 ${troom.room}`), stripHead, stripDone) : null;
   const allEl = h('div', { class: 'overlay rsall', hidden: true });
   if (strip) onPress(strip, () => { allEl.hidden = !allEl.hidden; stripSig = ''; drawStrip(); });
-  //  모인 결과 복사 — "번호 · 짝꿍 · 별 · 맞힌 수/전체" 줄(탭으로 나눔 · 표 프로그램에 붙여 넣기 좋게)
+  //  모인 결과 복사 — "번호 · 짝꿍 · 별 · 맞힌 수/전체" 줄(탭으로 나눔 · 표 프로그램에 붙여 넣기 좋게 · 선생님 클립보드로 — TV 화면에는 번호 X)
   const copyBtn = troom ? h('button', { type: 'button', class: 'rs-copy', 'aria-label': '모인 결과 복사' }, '복사') : null;
   if (copyBtn) onPress(copyBtn, () => copyText(stripCopyText(), { title: '모인 결과' }));
   const guide = h('div', { class: 'tvguide' + (troom ? ' hasroom' : ''), hidden: !tv }, guideStep, guideStd, guideText, strip, copyBtn, guideToggle);
@@ -161,41 +162,39 @@ export default function mount(root, ctx) {
     drawStrip();
   }
 
-  // 모인 결과 띠 그리기 — 보기 · 연습 단계는 들어온 기기 수만, 확인 게임 · 결과 단계는 끝낸 아이 칩까지
+  // 모인 결과 띠 그리기 — 보기 · 연습 단계는 들어온 기기 수만, 확인 게임 · 결과 단계는 '끝낸 아이 n / m' 반 막대(번호 · 아이별 별 X · X6)
+  //  m = 들어온 기기(방 res 칸 수) · n = 이 칸 · 이번 판 시작 뒤 결과를 보낸 기기(TVS 판 중간 답 글자는 n = 0이라 안 셈)
+  const FEW = 3;                                    // 별 분포에서 이 수 이하인 칸은 '조금'(1~3명 — 누군지 짐작하지 않게)
+  const classBar = (n, m) => h('span', { class: 'rs-bar', role: 'img', 'aria-label': `끝낸 아이 ${n} / ${m}` }, h('i', { style: { width: `${m ? Math.round(100 * Math.min(n, m) / m) : 0}%` } }));
   function drawStrip() {
     if (!strip) return;
     const showDone = phase === 2 || resultShown;
     const done = resList.filter(r => r.c === cell.id && r.n > 0 && (r.at || 0) >= since);
-    const sig = [showDone, allEl.hidden, resList.length, done.map(r => `${r.dev}:${r.s}:${r.at}`).join(',')].join('|');
+    const m = resList.length, n = done.length, left = Math.max(0, m - n);
+    const dist = [3, 2, 1, 0].map(s => done.filter(r => (r.s || 0) === s).length);
+    const sig = [showDone, allEl.hidden, m, n, dist.join(',')].join('|');
     if (sig === stripSig) return;                   // 바뀐 것이 없으면 다시 그리지 않음(그림 깜빡임 X)
     stripSig = sig;
-    const head = showDone ? `들어온 기기 ${resList.length}대 · 끝낸 아이 ${done.length}명` : `들어온 기기 ${resList.length}대`;
+    const head = showDone ? `끝낸 아이 ${n} / ${m}` : `들어온 기기 ${m}대`;
     stripHead.textContent = head;
-    const chip = r => h('span', { class: 'rs-chip', 'data-no': r.no, 'data-s': r.s },
-      friendImg((BAND[r.a] || BAND[0]).key, 'face', { label: false }),
-      h('b', {}, String(r.no)),
-      h('span', { class: 'rs-stars', 'aria-label': `별 ${r.s}`, html: [0, 1, 2].map(j => K.STAR_SVG(j < r.s)).join('') }));
-    // 띠 = 막 끝낸 아이부터(자기 번호가 뜨는 걸 보게) · 넘치는 칩은 숨기고 '+n'(스크롤 X)
-    stripChips.replaceChildren(...(showDone ? [...done].sort((a, b) => (b.at || 0) - (a.at || 0)) : []).map(chip));
-    requestAnimationFrame(() => {
-      if (gone || !stripChips.isConnected) return;
-      const kids = [...stripChips.children], max = stripChips.clientWidth;
-      const total = kids.reduce((w, c) => w + c.offsetWidth + 8, -8);
-      if (total <= max + 1) return;
-      let w = 0, hiddenN = 0;
-      for (const c of kids) { w += c.offsetWidth + 8; if (w > max - 130) { c.hidden = true; hiddenN++; } }
-      if (hiddenN) stripChips.append(h('span', { class: 'rs-more' }, `+${hiddenN} 모두 보기`));
-    });
-    // 크게 보기 — 번호 차례로 모두
+    stripDone.replaceChildren(...(showDone ? [classBar(n, m), left ? h('span', { class: 'rs-left' }, `아직 ${left}명`) : null] : []).filter(Boolean));   /* replaceChildren(null)은 'null' 글이 됨 */
+    // 크게 보기 — 같은 규칙 + 별 분포(별 셋 · 둘 · 하나 · 0 칸마다 몇 명 · 1~3명은 '조금'으로 막대도 같은 짧은 토막)
     if (!allEl.hidden) {
       const close = h('button', { type: 'button' }, '닫기');
       onPress(close, () => { allEl.hidden = true; });
       const copy2 = h('button', { type: 'button' }, '복사');
       onPress(copy2, () => copyText(stripCopyText(), { title: '모인 결과' }));
+      const dist2 = h('div', { class: 'rsall-dist', role: 'list', 'aria-label': '별 분포' }, ...dist.map((c, j) => {
+        const st = 3 - j, few = c > 0 && c <= FEW;
+        return h('div', { class: 'rsd-row', role: 'listitem' },
+          h('span', { class: 'rsd-stars', 'aria-label': `별 ${st}개`, html: [0, 1, 2].map(k => K.STAR_SVG(k < st)).join('') }),
+          h('span', { class: 'rsd-bar' }, c ? h('i', { class: few ? 'few' : null, style: few ? null : { width: `${Math.round(100 * c / n)}%` } }) : null),
+          h('b', {}, few ? '조금' : `${c}명`));
+      }));
       allEl.replaceChildren(h('div', { class: 'panelcard rsall-card' },
         h('div', { class: 'rsall-top' }, h('h2', {}, head), h('span', { class: 'rsall-btns' }, copy2, close)),
-        done.length ? h('div', { class: 'rsall-grid' }, ...[...done].sort((a, b) => (a.no || 0) - (b.no || 0)).map(chip))
-          : h('p', { class: 'rsall-none' }, showDone ? '아직 끝낸 아이가 없어요' : '확인 게임이 끝나면 여기에 모여요')));
+        showDone ? h('div', { class: 'rsall-done' }, classBar(n, m), h('span', { class: 'rs-left' }, left ? `아직 ${left}명` : '')) : null,
+        showDone && n ? dist2 : h('p', { class: 'rsall-none' }, showDone ? '아직 끝낸 아이가 없어요' : '확인 게임이 끝나면 여기에 모여요')));
     }
   }
   // 모인 결과를 글로 — 지금 판(이 칸 · since 뒤)에 끝낸 아이, 번호 차례
@@ -236,7 +235,7 @@ export default function mount(root, ctx) {
       if (gone) return;
       const stars = r.starOn.filter(Boolean).length;
       const before = K.getProg(), best0 = (before[cell.id] && before[cell.id].stars) || 0, lv0 = levelsOf(before);
-      if (!tv) K.saveResult(cell.id, { ...r, stars });   // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음 · 기록은 원래 말 그대로(선생님이 봄)
+      if (!tv) K.saveResult(cell.id, { ...r, stars, mode: r.mode || (inRoom ? 'room' : 'solo') });   // TV 반 전체 결과는 이 기기 아이 기록에 넣지 않음 · 기록은 원래 말 그대로(선생님이 봄) · r 꼬리표 = 혼자/방/TV 소리(X4)
       // 결과 소리 — 별 하나씩(도 미 솔) · 셋이면 팡파르 · 이번에 처음 받은 별엔 '새 별' · 처음 화면 음악에 새 줄이 생겼으면 한 줄(docs/sound.md §5)
       const delays = starSounds(stars, r.starOn);
       const fresh = tv || !music.enabled() ? [] : newParts(lv0, levelsOf(K.getProg()));   // 배경 음악을 안 트는 기기(끔 · 방)면 X
@@ -269,9 +268,10 @@ export default function mount(root, ctx) {
       }
       const again = subBtn('한 번 더', () => runPhase(2), 'again');
       if (roomCell) {                               // 방: 다음 놀이는 선생님이 고름
-        const sub = h('small', {}, '');
-        ui.setBar(again, h('span', { class: 'rwait' }, friendImg((BAND[room.kid.get().a] || BAND[0]).key, 'face', { label: false }), h('span', { class: 'rwait-t' }, '선생님을 기다려요', sub)));
-        if (sentP) sentP.then(ok => { if (ok && sub.isConnected) sub.textContent = '별을 TV로 보냈어요'; });
+        ui.setBar(again, h('span', { class: 'rwait' }, friendImg((BAND[room.kid.get().a] || BAND[0]).key, 'face', { label: false }), h('span', { class: 'rwait-t' }, '선생님을 기다려요')));
+        // 결과를 보냈으면 결과 카드에 한 줄(X6 — TV에는 번호 · 별이 안 뜨니 '내 것도 갔나'를 내 기기에서)
+        const card = overlay.querySelector('.resultcard');
+        if (sentP) sentP.then(ok => { if (ok && card && card.isConnected && !card.querySelector('.rsent')) card.append(h('p', { class: 'rsent' }, 'TV에 갔어요')); });
         auto = null;
         window.__cellResult = { id: cell.id, stars, ...r };
         return;

@@ -9,7 +9,7 @@
 //  11-07 평가 3차: 반주는 한 마디씩 0.3초 앞에만 예약(예전 4마디 덩어리 → 동시 소리 노드 523개) · 듣는 동안 답 단추는 busy(70% · '잘 들어요')
 //   고슴도치는 박 판 안 왼쪽 · 예시 카드는 박자표 그림 하나만(‘2/4’ 글자 X) · 마디 그림 끝은 끝세로줄 · 준비 박 숫자는 판 가운데 · 고르는 동안 아래 띠 '다시 듣기'
 import { judgeEcho, classifyTap, strongPattern, newBus, killBus, heardNow, perfOf, autoScheduler, pressInput, fireDown, startCard, meterSVG, exampleGroup, countTeller, barPump } from './_beat.js';
-import { windows } from '../../../engine/judge.js';
+import { windows, tapStats } from '../../../engine/judge.js';
 import { accents } from '../../../engine/theory.js';
 import { songById } from '../../../engine/songs/index.js';
 import { makeSong, sounding } from '../../../engine/song.js';
@@ -430,11 +430,13 @@ export default {
       else if (wrongs.length > meters.length - barOk) tip = `고르기에서 ${wrongs.length}번 헷갈렸어요. ‘쿵’에서 하나, 둘, (셋)을 세어 봐요.`;
       else if (j.restHits) tip = `여린박(작은 점)에 친 적이 ${j.restHits}번 있었어요. 큰 점에서만 톡!`;
       else tip = kit.band === 'low' ? `쿵을 놓친 묶음이 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!` : `센박을 놓친 마디가 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!`;
+      // 두드림 어긋남(X4 · 기기 기록만) — 마무리 '센박에만 톡'에서 센박에 붙은 두드림 · 놓침 = 안 친 센박
+      const t = tapStats(j.beats.filter(b => b.got === 'great' || b.got === 'ok').map(b => b.off), j.misses, { lat: kit.device.latencyMs, band: kit.band, bpm: FINAL.bpm });
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: all, group: [results.length, meters.length],
         facts: [`① 묶음 고르기 ${results.length}번 중 ${pickOk}번을 맞혔어요`, kit.band === 'low' ? `② 쿵에만 톡 ${meters.length}묶음 중 ${barOk}묶음을 맞혔어요` : `② 센박 마디 ${meters.length}개 중 ${barOk}개를 맞혔어요`],
-        starOn: s.starOn, rules: s.rules, tip,
+        starOn: s.starOn, rules: s.rules, tip, t,
       });
     }
     const auto = autoScheduler(T);

@@ -9,7 +9,8 @@ import { friendImg } from './band.js';
 import { STEP_TEXT } from '../../engine/theme.js';
 
 // ── 진행 · 결과 기록(기기에만 · 이름 없음) ──
-//  { [칸]: { stars(최고 별), at(마지막), hist: [{ at, s(별), k(맞힌 수), n(전체), l(늦게 · 없으면 예전 기록), tip(틀린 갈래 한 줄) }](최근 10개) } }
+//  { [칸]: { stars(최고 별), at(마지막), hist: [{ at, s(별), k(맞힌 수), n(전체), l(늦게 · 없으면 예전 기록), tip(틀린 갈래 한 줄),
+//    sd(판 씨앗), r(어디서 — 'solo' 방 밖 · 'room' 방에 든 기기 · 'tvs' 소리는 TV · 답만 이 기기), t(두드림 어긋남 — 박 칸만 · judge.js tapStats) }](최근 10개) } }
 //  hist = 과정 중심 평가 자료(선생님 칸 '이 기기 기록 보기' · #/records). 예전 모양 { stars, at }도 그대로 읽힌다(hist 없음)
 export const HIST_MAX = 10;
 export const getProg = () => lsGet('prog', {});
@@ -24,7 +25,8 @@ export function saveResult(id, r) {
   const at = Date.now();
   const row = { at, s, k, n, l, tip: r.tip || '' };
   if (r.sd != null) row.sd = r.sd;                    // 판 씨앗(N2 · 같은 판을 다시 만들 수 있게)
-  if (r.mode) row.r = r.mode;                         // 'tvs' = 소리는 TV 하나 · 답은 각자로 한 판(혼자 한 판과 가름)
+  if (r.mode) row.r = r.mode;                         // 'tvs' = 소리는 TV 하나 · 답은 각자로 한 판 · 'room' 방에 든 기기 · 'solo' 방 밖(X4 · 이어폰 기록과 TV 소리 기록을 가름)
+  if (r.t) row.t = r.t;                               // 두드림 어긋남 { o, sp, m, lat, band, bpm }(박 칸 · X4 · 3월 판정 창을 다시 맞출 자료)
   const hist = [...(Array.isArray(old.hist) ? old.hist : []), row].slice(-HIST_MAX);
   p[id] = { ...old, stars: Math.max(old.stars || 0, s), at, hist };
   if (!lsSet('prog', p) && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('save-fail'));   // 저장이 막힌 기기(개인 창 · 꽉 참) — 톱니에 주황 점(X3)

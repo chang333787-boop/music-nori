@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as T from '../engine/theory.js';
 import { parseMel, makeSong, sounding, toEvents, beatTimes, toStaffSong } from '../engine/song.js';
 import { fillBar, fractionText, countFills } from '../engine/measure.js';
-import { windows, judgeTaps, score, estimateLatency, BANDS } from '../engine/judge.js';
+import { windows, judgeTaps, score, estimateLatency, BANDS, tapStats } from '../engine/judge.js';
 
 let n = 0;
 const ok = (name, fn) => { fn(); n++; };
@@ -149,6 +149,20 @@ ok('지연 재기', () => {
   assert.equal(estimateLatency(clicks, clicks.slice(0, 3)).ok, false);
   const c = estimateLatency(clicks, clicks.map((x, i) => x + [0, 100, -90, 110, -100, 95, -80, 105][i]));
   assert.equal(c.ok, false);
+});
+
+// ── 두드림 어긋남 요약(X4 · 기록 t) ──
+ok('두드림 어긋남 요약', () => {
+  // 가운데 값 · 사분위 범위(선형 보간) · 반올림 정수 · 앞당김은 음수
+  assert.deepEqual(tapStats([-20, -10, 0, 10, 40], 2, { lat: 34.6, band: 'mid', bpm: 100.4 }), { o: 0, sp: 20, m: 2, lat: 35, band: 'mid', bpm: 100 });
+  assert.deepEqual(tapStats([-31.4, -12.2, -8.8, -5], 0, { lat: 0, band: 'low', bpm: 84 }), { o: -10, sp: 9, m: 0, lat: 0, band: 'low', bpm: 84 });
+  // 맞힌 두드림이 없으면 o · sp = null(놓친 수만)
+  assert.deepEqual(tapStats([], 24, { band: 'high', bpm: 96 }), { o: null, sp: null, m: 24, lat: 0, band: 'high', bpm: 96 });
+  assert.equal(Object.is(tapStats([-0.3]).o, -0), false);
+  // judgeTaps 어긋남(기기 지연을 뺀 값)을 그대로 받음
+  const exp = beats(10, 600, 1000), r = judgeTaps(exp, exp.map(t => t + 50 + 12), { latency: 50, skip: 2 });
+  const t = tapStats(r.offs.filter((o, i) => o != null && i >= 2), r.beats.filter(b => b === 'miss').length, { lat: 50, bpm: 100 });
+  assert.equal(t.o, 12); assert.equal(t.sp, 0); assert.equal(t.m, 0);
 });
 
 console.log(`✓ 엔진 시험 ${n}개 통과`);

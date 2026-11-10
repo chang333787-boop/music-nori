@@ -59,6 +59,17 @@ export function score(beats) {
   return { kept, great, total, streak: best, rate: kept / (total || 1), starOn, stars: starOn.filter(Boolean).length };
 }
 
+// 두드림 어긋남 한 판 요약(11-08 토론 X4) — 기기 기록 hist의 t. 3월 판정 창을 다시 맞출 자료(아이 화면 · 서버 X)
+//  offs = 판정 창 안에 들어 박(음)에 붙은 두드림의 어긋남(ms · 기기 지연을 뺀 뒤 · 앞당김은 음수) · miss = 놓친 박 수
+//  → { o: 가운데 값, sp: 사분위 범위(Q3 − Q1 = 가운데 절반이 퍼진 폭 · 선형 보간), m, lat: 그때 뺀 기기 지연, band: 판정 창 이름, bpm }
+//  맞힌 두드림이 없으면 o · sp = null. 숫자는 모두 반올림 정수(기록 크기를 늘리지 않게)
+export function tapStats(offs, miss = 0, { lat = 0, band = 'mid', bpm = 0 } = {}) {
+  const s = (offs || []).filter(Number.isFinite).sort((a, z) => a - z);
+  const q = p => { const x = (s.length - 1) * p, i = Math.floor(x), j = Math.min(i + 1, s.length - 1); return s[i] + (s[j] - s[i]) * (x - i); };
+  const r = v => Math.round(v) + 0;                // + 0 = -0을 0으로
+  return { o: s.length ? r(q(0.5)) : null, sp: s.length ? r(q(0.75) - q(0.25)) : null, m: r(miss || 0), lat: r(lat || 0), band, bpm: r(bpm || 0) };
+}
+
 // 지연 재기 — '딸깍 소리에 맞춰 8번 두드리기'. clicks·taps = 같은 시계(ms)
 //  두드림마다 가장 가까운 딸깍과의 차이 → 가운데 값. 가운데에서 120ms 넘게 벗어난 두드림은 버리고 다시 계산.
 //  6개 미만이 남거나(여덟 번 중 둘까지만 버림) 흔들림(가운데 절대 편차)이 40ms를 넘으면 ok:false(다시 재기)
