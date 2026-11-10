@@ -55,8 +55,9 @@ export function josa(word, pair) {
 }
 
 // 글 복사 — 클립보드에 넣고 '복사했어요'. 막히면(권한 · 오래된 브라우저) 글 상자를 띄워 선생님이 직접 골라 복사
-export async function copyText(text, { title = '복사할 글' } = {}) {
+export async function copyText(text, { title = '복사할 글', box = true } = {}) {
   try { await navigator.clipboard.writeText(text); toast('복사했어요'); return true; } catch { /* 아래 글 상자로 */ }
+  if (!box) { toast('자동 복사가 막혔어요 — 선생님 기기의 기록 화면에서 복사해요'); return false; }   // TV처럼 화면이 비치는 곳은 글 상자를 띄우지 않음(번호 · 별이 비침 · 11-10)
   if (document.querySelector('.copymodal')) return false;
   const ta = h('textarea', { class: 'copybox', readonly: true, spellcheck: 'false', 'aria-label': title });
   ta.value = text;

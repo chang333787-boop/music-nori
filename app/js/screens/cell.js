@@ -69,7 +69,7 @@ export default function mount(root, ctx) {
   if (strip) onPress(strip, () => { allEl.hidden = !allEl.hidden; stripSig = ''; drawStrip(); });
   //  모인 결과 복사 — "번호 · 짝꿍 · 별 · 맞힌 수/전체" 줄(탭으로 나눔 · 표 프로그램에 붙여 넣기 좋게 · 선생님 클립보드로 — TV 화면에는 번호 X)
   const copyBtn = troom ? h('button', { type: 'button', class: 'rs-copy', 'aria-label': '모인 결과 복사' }, '복사') : null;
-  if (copyBtn) onPress(copyBtn, () => copyText(stripCopyText(), { title: '모인 결과' }));
+  if (copyBtn) onPress(copyBtn, () => copyText(stripCopyText(), { title: '모인 결과', box: false }));
   const guide = h('div', { class: 'tvguide' + (troom ? ' hasroom' : ''), hidden: !tv }, guideStep, guideStd, guideText, strip, copyBtn, guideToggle);
   onPress(guideToggle, () => { guide.classList.toggle('folded'); guideToggle.textContent = guide.classList.contains('folded') ? '안내' : '접기'; stripSig = ''; drawStrip(); });
   const setGuide = key => {
@@ -183,7 +183,7 @@ export default function mount(root, ctx) {
       const close = h('button', { type: 'button' }, '닫기');
       onPress(close, () => { allEl.hidden = true; });
       const copy2 = h('button', { type: 'button' }, '복사');
-      onPress(copy2, () => copyText(stripCopyText(), { title: '모인 결과' }));
+      onPress(copy2, () => copyText(stripCopyText(), { title: '모인 결과', box: false }));
       const dist2 = h('div', { class: 'rsall-dist', role: 'list', 'aria-label': '별 분포' }, ...dist.map((c, j) => {
         const st = 3 - j, few = c > 0 && c <= FEW;
         return h('div', { class: 'rsd-row', role: 'listitem' },
