@@ -95,14 +95,12 @@
 .rstrip.off{border-style:dashed}
 .rs-room{flex:none;font-family:var(--head);font-size:22px;background:var(--ink);color:var(--paper);border-radius:10px;padding:2px 12px}
 .rs-head{flex:none;font-family:var(--head);font-size:20px;white-space:nowrap}
-.rs-chips{flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap}
-.rs-chips:empty{display:none}
-.rs-chip{flex:none;display:inline-flex;align-items:center;gap:5px;padding:1px 10px 1px 1px;border:2px solid var(--ink);border-radius:999px;background:var(--paper)}
-.rs-chip img,.rs-chip svg.pal{width:40px;height:40px;object-fit:contain}
-.rs-chip b{font-family:var(--head);font-weight:400;font-size:28px;line-height:1;min-width:26px;text-align:center}
-.rs-stars{display:inline-flex}
-.rs-stars svg{width:19px;height:19px}
-.rs-more{flex:none;font-family:var(--head);font-size:20px;color:var(--ink);text-decoration:underline;text-underline-offset:4px}
+/* 끝낸 아이 반 막대(X6) — 번호 · 아이별 별 X · 막대 하나 + '아직 n명'(수만) */
+.rs-done{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.rs-done:empty{display:none}
+.rs-bar{flex:1 1 160px;min-width:80px;display:block;height:26px;border:3px solid var(--ink);border-radius:10px;background:var(--paper);overflow:hidden}
+.rs-bar i{display:block;height:100%;background:var(--good);transition:width .4s ease-out}
+.rs-left{flex:none;font-family:var(--head);font-size:20px;color:var(--ink-2)}
 .rstrip{cursor:pointer}
 .rstrip:focus-visible{outline:4px solid var(--bird);outline-offset:3px}
 /* 모인 결과 크게 보기(띠를 누르면 무대 위에) */
@@ -112,11 +110,17 @@
 .rsall-top h2{font-size:32px}
 .rsall-top button{min-height:56px;font-size:22px}
 .rsall-btns{display:flex;gap:12px}
-.rsall-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-content:start;gap:10px;overflow:hidden}
-.rsall-grid .rs-chip{justify-content:flex-start;gap:6px;min-width:0;overflow:hidden}
-.rsall-grid .rs-chip img,.rsall-grid .rs-chip svg.pal{width:44px;height:44px}
-.rsall-grid .rs-chip b{font-size:32px;min-width:40px}
-.rsall-grid .rs-stars svg{width:19px;height:19px}
+.rsall-done{display:flex;align-items:center;gap:18px}
+.rsall-done .rs-bar{flex:1;height:48px;border-radius:14px}
+.rsall-done .rs-left{min-width:130px;font-size:28px}
+/* 별 분포 — 칸마다 막대 + 몇 명(1~3명은 '조금' · 막대도 같은 짧은 토막이라 길이로 수를 읽지 않음) */
+.rsall-dist{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:980px;width:100%;margin:0 auto}
+.rsd-row{display:grid;grid-template-columns:auto 1fr 110px;align-items:center;gap:18px}
+.rsd-stars{display:inline-flex;gap:4px}.rsd-stars svg{width:40px;height:40px}
+.rsd-bar{display:block;height:40px;border:3px solid var(--ink);border-radius:12px;background:var(--paper);overflow:hidden}
+.rsd-bar i{display:block;height:100%;background:var(--good)}
+.rsd-bar i.few{width:28px;background:var(--leaf-l)}
+.rsd-row b{font-family:var(--head);font-weight:400;font-size:30px;text-align:right}
 .rsall-none{margin:auto;font-family:var(--head);font-size:28px;color:var(--ink-2)}
 
 /* 좁은 화면(세로 휴대폰) — 한 줄씩 */
@@ -136,3 +140,5 @@
   body[data-screen="join"] .bar-mid{display:none}
   button.huge.jenter{min-width:0;width:100%;min-height:88px;font-size:34px}
 }
+/* 아이 결과 카드 — 방에서 결과를 보냈으면 한 줄(X6) */
+.resultcard .rsent{grid-column:1/-1;margin:0;font-family:var(--head);font-size:22px;color:var(--ink-2)}

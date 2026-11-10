@@ -1,6 +1,7 @@
 // 방 번호 다같이 브라우저 시험(진짜 DB · 네트워크) — 브라우저 하나에 페이지 둘(선생님 TV · 아이 기기 · 저장소가 섞이지 않게 창 둘)
 //  선생님 방 열기 → 아이 들어가기(틀린 방 번호 → "다시 봐요" 먼저) → 선생님 높게·낮게 보기 → 아이 화면이 보기로(2.5초 안)
-//  → 연습 → 확인 게임 → 아이 자동으로 게임 끝 → TV 모인 결과에 그 아이 번호 · 별 → 선생님 결과 뒤에도 띠가 남음 → 아이 나가기
+//  → 연습 → 확인 게임 → 아이 자동으로 게임 끝 → TV 띠에 '끝낸 아이 1 / 1' 반 막대(번호 · 별 X · X6) · 아이 카드 'TV에 갔어요'
+//  → 선생님 결과 뒤에도 띠가 남음 · 크게 보기도 번호 X(별 분포 1~3명 = '조금') → 아이 나가기
 //  시험 방은 0000~0999(?testroom=1 시험 고리 · 아이들 방 1000~9999와 안 섞임). npm run test:db
 //  사진: SHOTS=<폴더> node tests/room.browser.cjs
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
@@ -138,10 +139,18 @@ const tap = (page, sel) => page.locator(sel).first().click();
     check('아이 결과 보냄', sent && sent.ok && sent.cell === 'so4' && sent.s === 3 && sent.n > 0, sent);
     const kbar = await K.locator('.cbarslot').innerText().catch(() => '');
     check('아이 결과 아래 "선생님을 기다려요"(다음 놀이 X)', kbar.includes('선생님을 기다려요') && !kbar.includes('다음 놀이'), kbar);
+    const kcard = await until(() => K.evaluate(() => document.querySelector('.resultcard .rsent')?.textContent), 4000);
+    check('아이 결과 카드에 "TV에 갔어요" 한 줄', kcard === 'TV에 갔어요', kcard);
+    check('아이 결과 화면 스크롤 0', (await scrollOf(K)) <= 1 && await K.evaluate(() => { const c = document.querySelector('.resultcard'), o = c && c.closest('.overlay'); return !!c && c.getBoundingClientRect().bottom <= (o ? o.getBoundingClientRect().bottom : innerHeight) + 1; }));
     await shot(K, '5_kid_result');
-    // TV 모인 결과 띠에 7번 · 별 셋
-    const chipOk = await until(() => T.evaluate(() => { const c = document.querySelector('.rs-chip[data-no="7"]'); return c && c.dataset.s === '3' && document.querySelector('.rs-head').textContent; }), 8000);
-    check(`TV 띠에 7번 · 별 3 (${((Date.now() - sentAt) / 1000).toFixed(1)}초) — "${chipOk}"`, !!chipOk && /끝낸 아이 1명/.test(chipOk), chipOk);
+    // TV 모인 결과 띠 — '끝낸 아이 1 / 1' 반 막대 · 번호 · 별 · 친구 칩 X(X6 · 9살 공격 채택)
+    const stripOf = () => T.evaluate(() => {
+      const s = document.querySelector('.rstrip'), b = s && s.querySelector('.rs-bar i');
+      return s && { head: s.querySelector('.rs-head').textContent, txt: s.innerText.replace(/방 \d{4}/, ''), chips: s.querySelectorAll('.rs-chip,[data-no]').length, svgs: s.querySelectorAll('svg').length, w: b ? b.style.width : null };
+    });
+    const st1 = await until(async () => { const v = await stripOf(); return v && /끝낸 아이 1 \/ 1/.test(v.head) && v; }, 8000);
+    check(`TV 띠 '끝낸 아이 1 / 1' 반 막대 (${((Date.now() - sentAt) / 1000).toFixed(1)}초) — "${st1 && st1.head}"`, !!st1 && st1.w === '100%', st1);
+    check('TV 띠에 아이 번호 · 별 · 친구 칩 없음', !!st1 && !/(^|\D)7(\D|$)/.test(st1.txt) && !/null|undefined/.test(st1.txt) && !st1.chips && !st1.svgs, st1);
     check('TV 칸 화면 스크롤 0', (await scrollOf(T)) <= 1);
     await shot(T, '6_tv_strip_game');
 
@@ -149,11 +158,23 @@ const tap = (page, sel) => page.locator(sel).first().click();
     const tDone = await until(() => T.evaluate(() => { if (window.__cellResult) return true; window.__cellAuto && window.__cellAuto(); return false; }), 150000, 160);
     await until(() => T.evaluate(() => window.__roomPub && window.__roomPub.phase === 'done'), 8000);
     await T.waitForTimeout(2600);
-    const after = await T.evaluate(() => ({ chip: !!document.querySelector('.rs-chip[data-no="7"]'), head: document.querySelector('.rs-head')?.textContent }));
-    check('선생님 결과 카드 뒤에도 띠에 7번이 남음', tDone && after.chip, after);
+    const after = await stripOf();
+    check('선생님 결과 카드 뒤에도 띠에 끝낸 아이 1 / 1이 남음', tDone && after && /끝낸 아이 1 \/ 1/.test(after.head) && after.w === '100%', after);
     const kStill = await K.evaluate(() => window.__cellPhase && window.__cellPhase());
     check('선생님 결과(done) 뒤 아이는 결과 화면 그대로', kStill === 'result', kStill);
     await shot(T, '7_tv_strip_result');
+    // 크게 보기 — 같은 규칙(번호 · 아이별 별 X) · 별 분포는 1~3명인 칸을 '조금'으로
+    await tap(T, '.rstrip');
+    const big = await until(() => T.evaluate(() => {
+      const a = document.querySelector('.rsall:not([hidden]) .rsall-card');
+      if (!a) return null;
+      const rows = [...a.querySelectorAll('.rsd-row')].map(r => r.querySelector('b').textContent);
+      return { head: a.querySelector('h2').textContent, txt: a.innerText, chips: a.querySelectorAll('.rs-chip,[data-no]').length, rows, bar: a.querySelector('.rs-bar i')?.style.width };
+    }), 3000);
+    check(`크게 보기 — 번호 X · 별 분포 ${big && big.rows.join(' · ')}`, !!big && /끝낸 아이 1 \/ 1/.test(big.head) && big.bar === '100%' && !big.chips && !/(^|\D)7(\D|$)/.test(big.txt.replace(/방 \d{4}/, '')) && big.rows.join('|') === '조금|0명|0명|0명' && !/null|undefined/.test(big.txt), big);
+    check('크게 보기 화면 스크롤 0', (await scrollOf(T)) <= 1);
+    await shot(T, '7b_tv_strip_big');
+    await T.locator('.rsall-btns button', { hasText: '닫기' }).click();
 
     // ── 6. 아이 나가기 ──
     await tap(K, '.roomchip');
