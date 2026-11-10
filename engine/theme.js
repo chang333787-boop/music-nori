@@ -41,7 +41,7 @@ export const isChordTone = (p, name) => tonesOf(name).includes(pc(p));
 export const PARTS = [
   { key: 'bear', lane: 'any', name: '반주', base: 1, max: 2 },   // 곰 = 처음부터 반주(1) · 셈1을 지나면 커졌다 작아졌다(2)
   { key: 'bunny', lane: 'sound', name: '반짝 소리', max: 3 },
-  { key: 'bird', lane: 'melody', name: '가락', max: 3 },
+  { key: 'bird', lane: 'melody', name: '가락', max: 4 },
   { key: 'hog', lane: 'rhythm', name: '북', max: 7 },
   { key: 'turtle', lane: 'score', name: '낮은 소리', max: 2 },
 ];
@@ -64,7 +64,7 @@ export const partOfCell = id => { const c = cellById(id); return c ? PARTS.find(
 export const STEP_TEXT = {
   bear: ['', '', '셈여림'],
   bunny: ['', '트라이앵글', '글로켄슈필', '첼레스타'],
-  bird: ['', '가락 앞부분', '가락 뒷부분', '가락 화음'],
+  bird: ['', '가락 앞부분', '가락 뒷부분', '가락 화음', '레'],
   hog: ['', '큰북', '작은북', '하이햇', '마디 끝 채움', '심벌', '장구', '작은북 띠띠'],
   turtle: ['', '낮은 소리', '걷는 낮은 소리'],
 };
@@ -94,12 +94,13 @@ export function themeBar(i, lv) {
   if (hg >= 5 && secStart) ev.push(D('hog', 'cymbal', 0, 0.4));
   if (hg >= 6 && bar % 2 === 1) ev.push(D('hog', 'kung', 0, 0.38), D('hog', 'deok', 1.5, 0.3));   // 장구(장1 장단보) — 두 마디마다 쿵 · 덕
   if (hg >= 7) { ev.push(D('hog', 'snare', 1.5, 0.26)); if (!phraseEnd) ev.push(D('hog', 'snare', 3.5, 0.26)); }   // 작은북 띠띠(리3 8분음표 둘) — 둘째 · 넷째 박을 8분음표 둘로(마디 끝 채움 마디는 넷째 박 그대로 · 세기 낮게)
-  // 참새 — 가락(플루트): 1 A만 · 2 모두 · 3 + B에 아래 화음 음
+  // 참새 — 가락(플루트): 1 A만 · 2 모두 · 3 + B에 아래 화음 음 · 4(가4 레) + 가락이 길게 머무는 마디에 레가 든 차례가기 지나가는 음(도-레-미 · 미-레-도)
   const bd = lv.bird;
   if (bd >= 2 || (bd >= 1 && !inB)) for (const n of MEL[bar]) {
     ev.push(N('bird', 'flute', n.p, n.b, n.d * 0.92, 0.5));
     if (bd >= 3 && inB) { const h = harmonyBelow(n.p, chordAt(bar, n.b)); if (h != null) ev.push(N('bird', 'clarinet', h, n.b, n.d * 0.92, 0.3)); }
   }
+  if (bd >= 4 && STEP_RUN[bar]) STEP_RUN[bar].forEach((p, k) => ev.push(N('bird', 'lead', p, 2 + k / 2, k === 2 ? 0.9 : 0.42, 0.36)));
   // 토끼 — 반짝: 1 트라이앵글(네 마디마다) · 2 + 글로켄 오름(마디 끝) · 3 + 첼레스타 엇박
   const bn = lv.bunny;
   if (bn >= 1 && bar % 4 === 0) ev.push(D('bunny', 'triangle', 0, 0.55));
@@ -109,6 +110,9 @@ export function themeBar(i, lv) {
   if ((lv.bear || 1) >= 2) { const g = DYN[bar]; for (const e of ev) e.vel = Math.min(1, +(e.vel * g).toFixed(3)); }
   return ev;
 }
+// 참새 4계단(가4 레) — 가락이 셋째 박부터 길게 머무는 마디(2 · 8 · 12마디)의 셋째 · 넷째 박에 차례가기 세 음(8분 · 8분 · 4분)
+//  화음 음(C · Am의 도 · 미)이 박 위, 레는 박 사이 지나가는 음 · 8마디(마침)는 미-레-도로 내려와 도에서 끝남 · 주제곡 가락(MEL)은 그대로
+export const STEP_RUN = { 1: [72, 74, 76], 7: [76, 74, 72], 11: [72, 74, 76] };
 export const DYN = [0.8, 0.8, 0.8, 0.85, 0.8, 0.8, 0.85, 0.9, 0.72, 0.86, 1.0, 1.15, 1.1, 0.96, 0.82, 0.7];
 // 가락 아래 화음 음(셋째 · 넷째 아래 중 화음 음) — 없으면 null
 export function harmonyBelow(p, name) {

@@ -1,0 +1,54 @@
+/* 가4 레 · 차례가기 — 보기 · 연습(그림 둘) · 확인 게임 '레 계단'(높이 판 · 카드 · 사다리 띠 · 계이름 동그라미는 _mel.css) */
+.g4-cols{grid-template-columns:minmax(0,.74fr) minmax(0,1.26fr)}
+.g4-exgrid{gap:10px}
+.g4-exgrid .m-ex{min-height:0;padding:6px 14px}
+.g4-exgrid .m-song{gap:2px;padding:6px 14px 8px}
+
+/* 연습 — 왼쪽 계단 판(+까닭 한 줄) · 오른쪽 그림 답 둘 */
+.m-play.g4-play{grid-template-columns:36% minmax(0,1fr)}   /* _mel.css .m-play보다 늘 이기게 */
+.g4-play .m-why{min-height:68px}
+
+/* 답 단추 — ? 판 = 미 · 레 · 도(계이름 동그라미 칩) / 그림 판 = 갈래 이름 + 그림(칩 없음 · 셋째는 빼고 둘을 세로 가운데) */
+.g4-ans{width:300px}
+.g4-ans .ans{transition:opacity 120ms ease-out,transform var(--up),box-shadow var(--up)}
+.answers.g4-ans:not(.pic) .ans{min-height:92px;font-size:40px}
+.g4-ans:not(.pic) .chip{width:64px;height:64px}
+.g4-ans .m-dot{width:56px;height:56px}
+.g4-ans.pic{width:auto;min-width:0}
+/* '잘 들어요'는 늘 단추 묶음 위 자리에(app.css의 떠 있는 꼴을 풀어 판정 말풍선과 겹치지 않게 · 단추가 오르내리지 않게) · 아래 같은 높이 자리는 뺌 */
+.g4-ans.m-busy::after{display:none}
+.g4-ans.m-busy.busy::before{position:static;transform:none}
+.g4-ans.pic .chip{display:none}
+.g4-ans.pic .ans{justify-content:center;min-height:164px;padding:2px 18px}
+.g4-ans.pic .ans.locked{display:none}
+.g4-ans.pic .lab{display:flex;align-items:center;justify-content:center;gap:24px;width:100%}
+.g4-cap{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:6.5em;font-family:var(--head);font-size:30px;line-height:1.2;text-align:center}
+.g4-cap small{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
+
+/* 확인 게임 — 왼쪽 계단 판(늘 그대로 · 고른 뒤 참새가 들은 가락대로 밟음) · 가운데 ? 판 칸 셋 · 오른쪽 답 / 그림 판은 칸을 빼고 답이 넓게 */
+.g4-scene{position:absolute;inset:0;display:grid;grid-template-columns:330px minmax(0,1fr) auto;column-gap:26px;padding:14px 28px 16px 22px}
+.g4-scene .m-board{grid-column:1;min-height:0}
+.g4-mid{grid-column:2;display:flex;align-items:stretch;justify-content:center;gap:14px;padding:30px 0 2px}
+.g4-scene>.answers{grid-column:3}
+.g4-scene.pic .g4-mid{display:none}
+.g4-scene.pic>.answers,.g4-scene.pic>.tvs-side{grid-column:2/4}
+.g4-axis{position:relative;width:46px;flex:none;margin-top:52px}
+.g4-axis .m-badge{position:absolute;left:0;width:46px;height:46px;font-size:24px;transform:translateY(-50%)}
+.g4-row{display:flex;gap:14px}
+.g4-slot{position:relative;display:flex;flex-direction:column;width:118px;background:var(--surface);border:3px solid var(--ink);border-radius:22px}
+.g4-ord{flex:none;height:52px;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:22px;border-bottom:3px solid var(--ink)}
+.g4-track{position:relative;flex:1}
+.g4-band{position:absolute;left:10px;right:10px;height:18px;border-radius:9px;background:var(--c);opacity:.26;transform:translateY(-50%)}
+/* 지금 여기 — 잉크 4px 테두리 + 작은 세모 */
+.g4-slot.now{outline:4px solid var(--ink);outline-offset:4px}
+.g4-slot.now::after{content:'';position:absolute;left:50%;top:-26px;margin-left:-11px;border:11px solid transparent;border-top:13px solid var(--ink);border-bottom:0}
+.g4-note{position:absolute;left:50%;width:72px;height:72px;border-radius:50%;background:var(--c);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%)}
+.g4-note .m-badge{width:44px;height:44px;font-size:25px}
+.g4-note.pop{animation:g4-pop 160ms ease-out}
+@keyframes g4-pop{0%{transform:translate(-50%,-50%) scale(.6)}100%{transform:translate(-50%,-50%) scale(1)}}
+.g4-q{position:absolute;inset:8px;z-index:1;display:flex;align-items:center;justify-content:center;border:4px dashed var(--ink);border-radius:16px;background:var(--surface);font-family:var(--head);font-size:52px;line-height:1;color:var(--ink)}   /* 높이를 모르는 자리 — 칸 전체를 점선으로(한 높이에 놓지 않음) */
+
+/* 소리는 TV 하나 · 답은 각자(_tvs.js) — TV 막대는 답 단추 자리 · 그림 판은 그림 칩을 제 크기로 */
+.g4-scene>.tvs-side{grid-column:3;align-self:center}
+.g4-scene.pic>.tvs-side{width:640px;max-width:100%;justify-self:center}   /* 칸 둘 = 한 막대를 둘로(소4 모양) — 막대가 줄지 않게 너비를 정함 */
+.g4-scene .tvs-chip svg{width:auto;height:auto}

@@ -20,8 +20,8 @@ const visit = (id, path = []) => {
 };
 for (const c of CELLS) visit(c.id);
 // 첫 판
-assert.equal(FIRST.length, 16);
-assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 16칸');
+assert.equal(FIRST.length, 17);
+assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 칸 모두');
 for (const id of FIRST) assert.ok(cellById(id).game, id + ' 확인 게임 설명');
 // 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다
 for (const [i, id] of ORDER.entries()) for (const p of cellById(id).pre) if (FIRST.includes(p)) assert.ok(ORDER.indexOf(p) < i, `${id}보다 ${p}가 먼저`);
@@ -170,13 +170,13 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   delete globalThis.localStorage;
 }
-// ── 나머지 고르기 다섯 칸(X2) — 단계 꼬리표 문항 표 · 단계 안 섞기 · 씨앗 1000개 · 찍기 · 번갈아 · 같은 답 · 단계 꼴 봇 ──
+// ── 나머지 고르기 여섯 칸(X2 · 가4 11-10) — 단계 꼬리표 문항 표 · 단계 안 섞기 · 씨앗 1000개 · 찍기 · 번갈아 · 같은 답 · 단계 꼴 봇 ──
 {
   const mem = new Map();
   globalThis.localStorage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)) };
   const K = await import('../app/js/cellkit.js');
   const M = {};
-  for (const id of ['so3', 'so5', 'ga2', 'ga3', 'ak2']) M[id] = await import(`../app/js/cells/${id}.js`);
+  for (const id of ['so3', 'so5', 'ga2', 'ga3', 'ga4', 'ak2']) M[id] = await import(`../app/js/cells/${id}.js`);
   const STAGES = ['intro', 'grow', 'twist', 'end'];
   // 판마다 고를 수 있는 답(찍기 봇이 누를 수 있는 것) — 소5는 크기 단추가 비틀기부터 · 가3은 그림 수 · 악2는 비틀기부터 넷
   const OPTS = {
@@ -184,6 +184,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     so5: (p, k) => (k < M.so5.CUTS[1] ? ['pitch', 'len'] : ['pitch', 'len', 'vol']),
     ga2: () => [69, 67, 64],
     ga3: p => p.opts.map((_, j) => j),
+    ga4: p => (p.fmt === 'q' ? [0, 1, 2] : [0, 1]),
     ak2: p => (p.twist ? [0, 1, 2, 3] : [0, 1]),
   };
   // 줄의 답이 문항 내용과 맞는지(표 하나가 정본 — 뒤집어도 맞아야 함)
@@ -192,6 +193,10 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     so5: p => p.right === p.k && (p.k === 'pitch' ? p.a.p !== p.b.p && p.a.d === p.b.d && p.a.v === p.b.v : p.k === 'len' ? p.a.d !== p.b.d && p.a.p === p.b.p && p.a.v === p.b.v : p.a.v !== p.b.v && p.a.p === p.b.p && p.a.d === p.b.d),
     ga2: p => p.right === p.ps[p.q],
     ga3: p => p.opts[p.right] === p.ps && p.opts.length === 1 + p.alt.length,
+    // 가4 — ? 판: 답 자리 = 미 · 레 · 도 중 ? 자리 음 / 그림 판: 들려줄 가락과 다른 그림이 차례가기 · 뛰어가기 하나씩 · 높낮이 모양 같음 · (섞은 뒤) 답 자리 = 들려줄 그림
+    ga4: p => (p.fmt === 'q' ? p.right === [64, 62, 60].indexOf(p.ps[p.q])
+      : M.ga4.kindOf(p.ps) === p.kind && [p.kind, M.ga4.kindOf(p.alt)].sort().join() === 'skip,step' && p.ps.length === p.alt.length
+        && p.ps.every((x, j) => !j || Math.sign(x - p.ps[j - 1]) === Math.sign(p.alt[j] - p.alt[j - 1])) && (!p.opts || (p.opts[p.right] === p.ps && p.opts.length === 2))),
     ak2: p => p.right === (p.twist ? [3, 2, 0, -2].indexOf(p.pos) : p.pos % 2 === 0 ? 0 : 1),
   };
   // 섞어도 단계마다 같은 문항 묶음인지 견주는 열쇠(뒤집기는 같은 문항으로 봄)
@@ -200,6 +205,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     so5: p => `${p.k}:${p.inst}:${[JSON.stringify(p.a), JSON.stringify(p.b)].sort().join('|')}`,
     ga2: p => `${p.ps.join(',')}:${p.q}:${p.inst}`,
     ga3: p => `${p.ps.join(',')}:${p.inst}`,
+    ga4: p => (p.fmt === 'q' ? `q:${p.ps.join(',')}:${p.q}:${p.inst}` : `pic:${[p.ps.join(','), p.alt.join(',')].sort().join('|')}:${p.inst}`),
     ak2: p => `${p.pos}:${p.twist}`,
   };
   const allLate = Array(12).fill(null);
@@ -224,6 +230,21 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     bots.push(['찍기', (k, p, o) => o[Math.floor(rr() * o.length)]]);
     // 가2 화면 틈 봇(11-10) — 화면에 안 보이는 음을 고름(하나면 그것 · 둘이면 그중 하나 · 다 보이면 아무거나)
     if (id === 'ga2') bots.push(['안 보이는 음', (k, p, o) => { const shown = p.ps.filter((_, j) => j !== p.q), miss = o.filter(v => !shown.includes(v)), from = miss.length ? miss : o; return from[Math.floor(rr() * from.length)]; }]);
+    // 가4 화면 틈 봇(11-10) — ? 판: 안 보이는 음 · 사이 음(양옆 두 음 사이에 끼는 음) / 그림 판: 레가 든 그림 · 차례가기 그림 · 뛰어가기 그림 · 높낮이 모양(오르내림만 듣고 같은 모양 그림)
+    //  ? 판 넷은 화면이 같은 짝 둘(도-?-미 · 미-?-도)이라 보이는 것만으로는 둘까지 · 그림 판은 두 그림 모양이 같고 들려줄 쪽 · 자리를 씨앗이 정해 반반
+    if (id === 'ga4') {
+      const QK = [64, 62, 60], any = o => o[Math.floor(rr() * o.length)];
+      const shape = ps => ps.slice(1).map((x, j) => Math.sign(x - ps[j])).join();
+      const picBy = (p, o, f) => { const hit = o.filter(j => f(p.opts[j])); return any(hit.length && hit.length < o.length ? hit : o); };
+      bots.push(
+        ['안 보이는 음', (k, p, o) => { if (p.fmt !== 'q') return any(o); const shown = p.ps.filter((_, j) => j !== p.q), miss = o.filter(v => !shown.includes(QK[v])); return any(miss.length ? miss : o); }],
+        ['사이 음', (k, p, o) => { if (p.fmt !== 'q') return any(o); const a = p.ps[p.q - 1], b = p.ps[p.q + 1], mid = o.filter(v => a != null && b != null && (QK[v] - a) * (QK[v] - b) < 0); return any(mid.length ? mid : o); }],
+        ['레가 든 그림', (k, p, o) => (p.fmt === 'q' ? 1 : picBy(p, o, ps => ps.includes(62)))],
+        ['차례가기 그림', (k, p, o) => (p.fmt === 'q' ? 1 : picBy(p, o, ps => M.ga4.kindOf(ps) === 'step'))],
+        ['뛰어가기 그림', (k, p, o) => (p.fmt === 'q' ? any(o) : picBy(p, o, ps => M.ga4.kindOf(ps) === 'skip'))],
+        ['높낮이 모양', (k, p, o) => (p.fmt === 'q' ? 1 : picBy(p, o, ps => shape(ps) === shape(p.ps)))],
+      );
+    }
     const got = new Map(bots.map(([n]) => [n, 0]));
     let same = 0, alt = 0, origin = 0;
     for (let sd = 1; sd <= 1000; sd++) {
@@ -255,6 +276,18 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   // 가2 — '늘 라'가 7판을 맞혀도 별 X(찍기 바닥 = 단계마다 가장 흔한 답의 몫)
   assert.ok(K.minKeepP(M.ga2.GUESS(M.ga2.PLAN)) > M.ga2.PLAN.filter(p => p.right === 69).length, '가2 바닥 > 늘 라 맞힌 수');
+  // 가4 — ? 판 넷 · 그림 판 여덟 · ? 판은 화면이 같은 짝 둘(소리로만 갈림) · 그림 판 짝은 모두 높낮이 모양이 같음 · 바닥 9/12
+  {
+    const G = M.ga4, Q = G.PLAN.filter(p => p.fmt === 'q'), P = G.PLAN.filter(p => p.fmt === 'pic');
+    assert.deepEqual([Q.length, P.length], [4, 8], '가4 ? 판 넷 · 그림 판 여덟');
+    assert.ok(G.PLAN.slice(0, 4).every(p => p.fmt === 'q'), '가4 ? 판은 앞 넷(소개)');
+    const screen = p => p.ps.map((x, j) => (j === p.q ? '?' : x)).join();
+    const byScreen = {}; for (const p of Q) (byScreen[screen(p)] = byScreen[screen(p)] || new Set()).add(p.right);
+    assert.ok(Object.values(byScreen).every(v => v.size === 2), '가4 ? 판 화면마다 답이 둘(화면만으로는 반)');
+    assert.equal(Q.filter(p => p.ps.filter((_, j) => j !== p.q).includes(p.ps[p.q])).length, 2, '가4 답 음이 화면에 한 번 더 보이는 ? 판 둘');
+    assert.ok(P.every(p => G.kindOf(p.ps) !== 'mix' && G.kindOf(p.alt) !== 'mix'), '가4 그림 판 가락은 차례가기 · 뛰어가기 둘 중 하나로만');
+    assert.equal(K.minKeepP(G.GUESS(G.PLAN)), 9, '가4 별 ① 바닥 9/12');
+  }
   delete globalThis.localStorage;
 }
 // ── 리3 8분음표 둘(박 칸 · 11-10) — 단계 꼬리표 문항 표 · 단계 안 섞기 · 씨앗 1000개 · 두드림 봇(찍기 · 같은 답 · 번갈아 · 단계 꼴 · 화면 틈) ──
@@ -315,7 +348,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   const fakeH = (tag, attrs, ...kids) => ({ tag, attrs, kids, nodeType: 1, cloneNode() { return this; } });
   const kit = { h: fakeH, band: 'mid', stageShuffle: K.stageShuffle, rng: K.rng, engine: null, playSeq: () => ({}), friendImg: () => fakeH('img'), setPose: () => {} };
   const num = (x, row) => (typeof x === 'function' ? x(row) : x);
-  for (const id of ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3']) {
+  for (const id of ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4']) {
     const mod = await import(`../app/js/cells/${id}.js`);
     assert.equal(mod.TVS, true, id + ' TVS = true');
     const S = mod.tvsSpec({ tell() {}, say() {} }, kit);
@@ -383,4 +416,4 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   console.log('✓ 칸 → 곡 바꾸기 부탁 ' + Object.keys(PLAY_CARD).length + '칸');
 }
-console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 다섯 칸 문항 표(X2) · TV 소리 모드 일곱 칸 · 장1 장단 표기`);
+console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 여섯 칸 문항 표(X2) · TV 소리 모드 여덟 칸 · 장1 장단 표기`);
