@@ -83,6 +83,7 @@ export default function mount(root, ctx) {
 
   let mod = null, phase = -1, cleanup = null, auto = null, gone = false, tellTimer = 0;
   let showTap = null, tvsReady = null, resSubs = new Set(), since = 0, gameAt = 0, resList = [], resultShown = false, sentP = null, stripSig = '';   // gameAt = 확인 게임 알림의 서버 시각(판 씨앗 · N2)       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
+  let prevOn = null;                                // 같은 화면 바로 앞 판의 별(결과 '한 번 더' 뒤 '아까' 별 · X2 — 화면 안 기억만)
   const ui = {
     stage: body,
     bar: barSlot,
@@ -252,7 +253,8 @@ export default function mount(root, ctx) {
       const pose = stars >= 3 ? 'happy' : stars >= 1 ? 'play' : 'idle';   /* 평가 3차: 점수와 상관없는 만세 X */
       overlay.classList.add('result');
       const shown0 = low ? { ...r, title: E(r.title), facts: (r.facts || []).map(E), rules: (r.rules || []).map(E), tip: E(r.tip) } : r;
-      const shown = { ...shown0, delays, newFrom: tv ? 3 : best0, fresh };
+      const shown = { ...shown0, delays, newFrom: tv ? 3 : best0, fresh, before: prevOn };
+      prevOn = r.starOn.slice();
       overlay.replaceChildren(h('div', { class: 'resultwrap' }, K.resultCard(shown), friendImg(friend, pose, { label: false, cls: 'resultpal' })));
       overlay.hidden = false;
       bar.mid(h('span', { class: 'steps labeled' }, ...PHASES.map(([, name]) => h('span', { class: 'st done' }, h('span', { class: 'd' }), name))));

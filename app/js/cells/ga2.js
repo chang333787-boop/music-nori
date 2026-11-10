@@ -9,19 +9,37 @@
 //  11-07 평가 2차: 예전 '라는 몇 번째?'(칸을 누름)는 누를 곳이 안 보이고 칸이 3 → 4개로 늘며 자리가 밀렸음 → 답 단추 셋 고정으로 바꿈
 //  11-07 평가 3차: 듣는 동안 A.busy('잘 들어요') · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 노래 그림 동전 26px(라라 겹침)
 import { SOL, MI, LA, FA, nameOf, colorOf, posOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge } from './_mel.js';
+import { factTip, stageCuts } from '../cellkit.js';
 
 const S = SOL, M = MI, L = LA;
 const EXAMPLES = [
   { inst: 'choir', name: '목소리', ps: [S, L, S] },
   { inst: 'recorder', name: '리코더', ps: [M, S, L] },
 ];
-// q = 물음표 자리(0부터)
-const PLAN = [
-  { ps: [M, S, L], q: 2 }, { ps: [S, L, S], q: 1 }, { ps: [L, S, M], q: 2 }, { ps: [M, L, S], q: 1 },
-  { ps: [L, M, S], q: 0 }, { ps: [S, S, L], q: 1 }, { ps: [S, L, M], q: 1 }, { ps: [L, S, M], q: 1 },
-  { ps: [S, M, S, L], q: 3, inst: 'recorder' }, { ps: [M, S, L, S], q: 1, inst: 'piano' }, { ps: [S, L, S, M], q: 3, inst: 'recorder' },
-  { ps: [L, S, M, S], q: 0 },
+// 확인 게임 문항 표(X2 · 단계 꼬리표) — 줄 하나 = { stage, ps(가락), q(물음표 자리 · 0부터), inst, right(= ps[q]) }
+const row = (stage, ps, q, inst = 'xylo') => ({ stage, ps, q, inst, right: ps[q] });
+export const PLAN = [
+  row('intro', [M, S, L], 2), row('intro', [S, L, S], 1), row('intro', [L, S, M], 2), row('intro', [M, L, S], 1),
+  row('grow', [L, M, S], 0), row('grow', [S, S, L], 1), row('grow', [S, L, M], 1), row('grow', [L, S, M], 1),
+  row('twist', [S, M, S, L], 3, 'recorder'), row('twist', [M, S, L, S], 1, 'piano'), row('twist', [S, L, S, M], 3, 'recorder'),
+  row('end', [L, S, M, S], 0),
 ];
+export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 8, 11] — 섞어도 '9번째부터 네 음' 말이 그대로 맞게
+// 단계 안 섞기(N2) — 차례만(뒤집기 X: 라 ↔ 미를 바꾸면 '라는 솔 바로 위'를 듣는 문항이 미를 듣는 쉬운 문항이 됨) · 답 수는 라 7 · 솔 3 · 미 2라 같게 맞추지 않음
+export const SHUF = { answerOf: p => p.right, balance: false };
+// 찍기 바닥 확률 — 셋 중 하나(1/3)가 아니라 '단계마다 가장 흔한 답'을 누르는 찍기까지 막게(가1 GUESS와 같은 생각)
+//  라가 12판 중 7판의 답이라, 1/3로 바닥(7)을 정하면 '늘 라' 봇이 별 ①을 받음 → 단계마다 가장 흔한 답의 몫(소개 3/4 · 발전 1/2 · 비틀기 1/3 · 마무리 1)
+const SHARE = (() => { const by = {}; for (const p of PLAN) (by[p.stage] = by[p.stage] || []).push(p.right); const o = {}; for (const [st, a] of Object.entries(by)) o[st] = Math.max(...a.map(x => a.filter(y => y === x).length)) / a.length; return o; })();
+export const GUESS = plan => plan.map(p => Math.max(1 / 3, SHARE[p.stage]));
+// 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+export function tipOf(plan, results, picks) {
+  const miss = f => plan.filter((p, k) => results[k] === false && f(p, picks[k])).length;
+  return factTip(results, [
+    { n: miss((p, pick) => (p.right === L && pick === S) || (p.right === S && pick === L)), text: '라와 솔을 헷갈렸어요. 라는 솔보다 한 계단 살짝 높아요 — 손을 어깨에서 턱으로 올려 봐요.' },
+    { n: miss(p => p.q === 0), text: '물음표가 맨 앞일 때 헷갈렸어요. 뒤에 오는 소리보다 높은지 낮은지 견줘 봐요.' },
+    { n: miss(p => p.ps.length === 4), text: '네 음일 때(9번째부터) 헷갈렸어요. 첫 번째, 두 번째… 손가락으로 세며 들어 봐요.' },
+  ], '물음표가 맨 앞에 와도, 라와 솔이 붙어 나와도 모두 가려냈어요.');
+}
 const ORD = ['첫 번째', '두 번째', '세 번째', '네 번째'];
 const why = b => (b === S ? '솔과 같은 높이, 솔이에요' : b === L ? '솔보다 살짝 높은 소리, 라예요' : '솔보다 낮은 소리, 미예요');
 // 칸 안 높이(위에서 %) — 음 자리(미 0 · 파 1 · 솔 2 · 라 3)를 그대로
@@ -120,7 +138,7 @@ export default {
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [], picks = [];
-    let i = -1, cur = null, gone = false;
+    let i = -1, cur = null, gone = false, plan = PLAN, sd = null;
     ui.say('참새 노래에서 ? 자리 소리를 골라요');
     const bird = h('div', { class: 'e2-bird' }, kit.friendImg('bird', 'idle', { label: false }));
     const pose = ps => kit.setPose(bird.firstChild, 'bird', ps);
@@ -140,7 +158,8 @@ export default {
     const sc = startCard(ui, kit, {
       title: '물음표 소리',
       lines: ['참새 노래를 듣고 ? 자리에서 난 소리를 라, 솔, 미 중에서 골라요', '12번'],
-      onStart: () => { ui.setBar(again); toneSet(); },
+      // 시작할 때 판 차례를 정함 — 단계(세 음 0~3 · 4~7 · 네 음 8~10 · 마무리 11) 안에서만 섞음(N2 · 씨앗은 기록에)
+      onStart: () => { sd = kit.seed ? kit.seed() : 1; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF); ui.setBar(again); toneSet(); },
     });
     ui.stage.append(sc.card);
     // 시작 — 라 · 솔 · 미(기준 소리) 한 번
@@ -158,10 +177,10 @@ export default {
     function next() {
       if (gone) return;
       i++;
-      if (i >= PLAN.length) return end();
-      const pl = PLAN[i];
-      cur = { ...pl, inst: pl.inst || 'xylo', ans: pl.ps[pl.q], open: false, done: false, tok: 0 };
-      ui.count(i + 1, PLAN.length);
+      if (i >= plan.length) return end();
+      const pl = plan[i];
+      cur = { ...pl, ans: pl.right, open: false, done: false, tok: 0 };
+      ui.count(i + 1, plan.length);
       A.clear();
       slots.forEach((x, k) => {
         x.track.querySelectorAll('.e2-note,.e2-q').forEach(e => e.remove());
@@ -188,7 +207,7 @@ export default {
       if (!cur || !cur.open) return;
       cur.open = false; cur.done = true;
       const right = p === cur.ans;
-      results.push(right); picks.push(p);
+      results.push(p == null ? null : right); picks.push(p);   // 시간 지남은 틀림과 따로(N1)
       markPick(A, cur.ans, p); A.busy(false);
       const box = slots[cur.q];
       box.track.querySelector('.e2-q')?.remove();
@@ -211,19 +230,9 @@ export default {
       });
     }
     function end() {
-      const s = kit.scoreChoices(results, 5, { chance: PLAN.map(() => 1 / 3) });   // 찍기 바닥 — 라 · 솔 · 미 셋 중 하나
-      const bad = PLAN.map((pl, k) => (results[k] ? null : { ...pl, pick: picks[k] })).filter(Boolean);
-      const ls = bad.filter(b => (b.ps[b.q] === L && b.pick === S) || (b.ps[b.q] === S && b.pick === L)).length;
-      const front = bad.filter(b => b.q === 0).length;
-      const four = bad.filter(b => b.ps.length === 4).length;
-      let tip;
-      if (!bad.length) tip = '물음표가 맨 앞에 와도, 라와 솔이 붙어 나와도 모두 가려냈어요.';
-      else if (ls >= bad.length / 2) tip = '라와 솔을 헷갈렸어요. 라는 솔보다 한 계단 살짝 높아요 — 손을 어깨에서 턱으로 올려 봐요.';
-      else if (front >= bad.length / 2) tip = '물음표가 맨 앞일 때 헷갈렸어요. 뒤에 오는 소리보다 높은지 낮은지 견줘 봐요.';
-      else if (four >= bad.length / 2) tip = '네 음일 때(9번째부터) 헷갈렸어요. 첫 번째, 두 번째… 손가락으로 세며 들어 봐요.';
-      else tip = '미는 솔보다 한 계단 건너 아래, 라는 솔 바로 위예요.';
+      const s = kit.scoreChoices(results, 5, { chance: GUESS(plan) }), tip = tipOf(plan, results, picks);
       bird.hidden = true; A.el.hidden = true; scene.querySelector('.e2-mid').hidden = true; ui.count(null);   /* 결과 뒤에는 나무만(친구 그림은 칸 화면이 붙임) */
-      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd });
     }
     kit.setAuto(() => { if (sc.waiting()) press(sc.btn); else if (cur && cur.open) choose(cur.ans); });
     const onKey = e => { const k = { ArrowUp: L, ArrowRight: S, ArrowLeft: S, ArrowDown: M, 1: L, 2: S, 3: M }[e.key]; if (k) choose(k); };

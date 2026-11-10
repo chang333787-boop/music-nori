@@ -73,7 +73,14 @@ const server = http.createServer((req, res) => {
 
     // ── N2: 듣지 않고 별 받기 막기 ──
     // 4. 소3 — 긴 소리(1.2초)와 짧은 소리(0.25초)에서 답 단추가 열리는 때가 같아야(화면으로 길이가 새지 않게)
-    await page.evaluate(() => { localStorage.removeItem('mn.prog'); window.__cellResult = null; location.hash = '#/cell/so3/game'; });
+    //  판 차례가 씨앗으로 섞이므로(X2) 첫 두 판이 긴 · 짧은 소리로 갈리는 씨앗을 골라 엶
+    const sd3 = await page.evaluate(async () => {
+      const K = await import('./app/js/cellkit.js'), M = await import('./app/js/cells/so3.js');
+      for (let n = 1; n < 200; n++) { const p = K.stageShuffle(M.PLAN, M.CUTS, K.rng(K.seedOf('seed', String(n), 'so3')), M.SHUF); if (p[0].right !== p[1].right) return n; }
+      return 0;
+    });
+    await page.goto(base + `?seed=${sd3}#/cell/so3/game`);
+    await page.evaluate(() => { localStorage.removeItem('mn.prog'); window.__cellResult = null; });
     await page.waitForTimeout(700);
     await page.evaluate(() => {
       window.__t3 = { count: {}, open: {} };
@@ -90,11 +97,25 @@ const server = http.createServer((req, res) => {
     }
     const t3 = await page.evaluate(() => window.__t3);
     const d1 = t3.open[1] - t3.count[1], d2 = t3.open[2] - t3.count[2];
-    if (!(Math.abs(d1 - d2) <= 50)) bad(`소3 답 단추 열림 — 긴 소리 ${Math.round(d1)}ms · 짧은 소리 ${Math.round(d2)}ms`); else ok(`소3 답 단추 열림이 길이와 상관없이 같음(${Math.round(d1)} · ${Math.round(d2)}ms)`);
+    if (!(Math.abs(d1 - d2) <= 50)) bad(`소3 답 단추 열림 — 긴 소리 ${Math.round(d1)}ms · 짧은 소리 ${Math.round(d2)}ms`); else ok(`소3 답 단추 열림이 길이와 상관없이 같음(${Math.round(d1)} · ${Math.round(d2)}ms · 씨앗 ${sd3})`);
+    // 4b. '아까' 별(X2) — 같은 화면에서 결과 '한 번 더'로 다시 하면 결과 별 옆에 앞 판 별이 점선 빈 별로(첫 결과엔 없음)
+    const toResult = async () => { for (let k = 0; k < 700; k++) { const d = await page.evaluate(() => (window.__cellResult ? 1 : (window.__cellAuto && window.__cellAuto(), 0))); if (d) return true; await page.waitForTimeout(160); } return false; };
+    await toResult();
+    await page.waitForTimeout(600);
+    const r1 = await page.evaluate(() => ({ before: document.querySelectorAll('.resultcard .beforestar').length, stars: window.__cellResult.stars }));
+    await page.evaluate(() => { window.__cellResult = null; });
+    await page.locator('.cbar button.again', { hasText: '한 번 더' }).click();
+    await page.waitForTimeout(500);
+    await toResult();
+    await page.waitForTimeout(600);
+    const r2 = await page.evaluate(() => ({ before: document.querySelectorAll('.resultcard .beforestar').length, label: document.querySelector('.resultcard .beforestar em')?.textContent, px: parseFloat(getComputedStyle(document.querySelector('.resultcard .beforestar em') || document.body).fontSize), sd: JSON.parse(localStorage.getItem('mn.prog') || '{}').so3?.hist?.map(x => x.sd) }));
+    if (r1.before !== 0 || r2.before !== r1.stars || r2.label !== '아까' || r2.px < 18) bad(`'아까' 별: ` + JSON.stringify({ r1, r2 }));
+    else ok(`'아까' 별 — 첫 결과 0 · '한 번 더' 뒤 ${r2.before}개(점선 빈 별 · ${r2.px}px) · 기록 sd ${r2.sd.join(' · ')}`);
     // 5. 씨앗 — ?seed=1 · 2로 소4 · 가1을 끝까지(완벽 봇 = 별 셋) · 기록에 sd · 같은 씨앗이면 같은 sd
     const sds = {};
-    for (const [id, sdq] of [['so4', 1], ['so4', 2], ['ga1', 1], ['ga1', 1]]) {
-      await page.goto(base + `?seed=${sdq}#/cell/${id}/game`);
+    let run = 0;                                             // 주소가 # 뒤만 다르면 새로 읽지 않아 앞 판 결과(__cellResult)가 남음 → 판마다 run을 붙여 새로 읽음
+    for (const [id, sdq] of [['so4', 1], ['so4', 2], ['ga1', 1], ['ga1', 1], ['ga3', 1], ['ga3', 1]]) {
+      await page.goto(base + `?seed=${sdq}&run=${++run}#/cell/${id}/game`);
       await page.waitForTimeout(800);
       let rr = null;
       for (let k = 0; k < 700 && !rr; k++) {
@@ -104,7 +125,7 @@ const server = http.createServer((req, res) => {
       if (!rr || rr.stars !== 3 || rr.sd == null) bad(`${id} ?seed=${sdq}: ` + JSON.stringify(rr));
       else { ok(`${id} ?seed=${sdq} — 별 셋 · 기록 sd ${rr.sd} · 별 ① "${rr.rule}"`); (sds[id + sdq] = sds[id + sdq] || []).push(rr.sd); }
     }
-    if (sds.ga11 && (sds.ga11.length !== 2 || sds.ga11[0] !== sds.ga11[1])) bad('같은 씨앗인데 sd가 다름 ' + JSON.stringify(sds.ga11)); else ok('같은 씨앗 = 같은 판(sd 같음)');
+    for (const k of ['ga11', 'ga31']) if (sds[k] && (sds[k].length !== 2 || sds[k][0] !== sds[k][1])) bad('같은 씨앗인데 sd가 다름 ' + k + JSON.stringify(sds[k])); else ok(`같은 씨앗 = 같은 판(${k.slice(0, 3)} sd 같음)`);
     if (sds.so41 && sds.so42 && sds.so41[0] === sds.so42[0]) bad('다른 씨앗인데 sd가 같음');
     // 6. 보기 — '연습해 볼래요'는 예시 두 번 뒤 주황(X10) · 흰 단추일 때도 누르면 연습으로
     await page.goto(base + '#/cell/so4');

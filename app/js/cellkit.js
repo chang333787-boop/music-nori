@@ -89,6 +89,9 @@ export function stageShuffle(plan, cuts, r, { flip = null, answerOf = null, maxR
   }
   return plan.slice();
 }
+// 단계 꼬리표 문항 표(X2) → 단계 경계 — 줄마다 stage('intro' 소개 · 'grow' 발전 · 'twist' 비틀기 · 'end' 마무리)가 바뀌는 자리
+//  문항 표 하나에서 경계를 읽어 CUTS가 표와 어긋날 수 없게(새 칸 · TV 소리 모드 · 섞어 듣기가 모두 이 표를 씀)
+export const stageCuts = plan => plan.map((p, k) => (k && p.stage !== plan[k - 1].stage ? k : 0)).filter(Boolean);
 // 결과 한 줄(tip) — 사실만(N1 · 11-08 토론): 틀린 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만.
 //  그 밖에는 몇째 판을 틀렸는지만 · 시간이 지난 판은 따로 한 줄. branches = [{ n: 그 갈래 틀린 수, text }](앞에서부터 우선)
 export function factTip(results, branches, perfect) {
@@ -105,6 +108,7 @@ export function factTip(results, branches, perfect) {
 }
 
 // 결과 카드 — r = { title, replay:[true/false], group(다시 보기 묶음 크기 · 기본 4 · 배열이면 묶음마다 길이), facts:[…], starOn, rules, tip }
+//  before = 같은 화면에서 바로 앞 판(결과의 '한 번 더' 앞)의 starOn — 그 별 옆에 '아까' 빈 테두리 별(X2 · 화면 안 기억만 · 기기 기록끼리 견주지 않음)
 export function resultCard(r) {
   const g = r.group || 4;
   const cuts = new Set();
@@ -120,16 +124,19 @@ export function resultCard(r) {
     freshLine(r.fresh));
 }
 // 별 줄 — 켜진 별은 소리에 맞춰 하나씩 톡(delays · music.starSounds) · 이번에 처음 받은 별엔 '새 별'(newFrom = 전에 받은 최고 별 수)
-export function starRow(rules, starOn, { delays = null, newFrom = 3 } = {}) {
+//  before = 아까(같은 화면 바로 앞 판) 받은 별 — 그 줄 끝에 점선 빈 별 + '아까'(이번 별과 헷갈리지 않게 작게 · 채우지 않음)
+export function starRow(rules, starOn, { delays = null, newFrom = 3, before = null } = {}) {
   let j = 0, lit = 0;
-  return h('div', { class: 'stars' }, ...rules.map((t, k) => {
+  return h('div', { class: 'stars' + (before ? ' hasbefore' : '') }, ...rules.map((t, k) => {
     const on = !!starOn[k], d = on && delays ? delays[j++] : null;
     if (on) lit++;
     const el = h('div', { class: 'star' + (on ? ' on' : '') + (d != null ? ' pop' : ''), style: d != null ? { '--d': d + 'ms' } : null, html: STAR_SVG(on) + `<span>${t}</span>` });
     if (on && lit > newFrom) el.append(h('b', { class: 'newstar' }, '새 별'));
+    if (before && before[k]) el.append(h('span', { class: 'beforestar', html: BEFORE_SVG + '<em>아까</em>' }));
     return el;
   }));
 }
+const BEFORE_SVG = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3l5 11 12 1.4-9 8.2 2.6 11.9L20 29.6 9.4 35.5 12 23.6 3 15.4 15 14z" fill="none" stroke="#3B2A1E" stroke-width="2.6" stroke-dasharray="4 3" stroke-linejoin="round"/></svg>';
 // 처음 화면 음악에 새 줄이 생겼으면 한 줄(친구 얼굴 + 무엇이 더해졌는지)
 export function freshLine(fresh) {
   if (!fresh || !fresh.length) return null;

@@ -10,6 +10,7 @@
 //  11-07 평가 3차: 잠근 답 단추는 빼고 남은 단추를 세로 가운데 · 게임은 눈으로 푸는 문제라 '다시 듣기' 대신 아래 띠 자리까지 무대를 키움(오선도 크게)
 //   · 막대 → 음표 바뀜은 transform · opacity로만(left · width 움직임 X)
 import { colorOf, badge, voice, songNotes, playBeats, startCard, press, speaker, hearHead, markPick, judge } from './_mel.js';
+import { factTip, stageCuts } from '../cellkit.js';
 
 const PITCH = { '-2': 60, '-1': 62, 0: 64, 1: 65, 2: 67, 3: 69, 4: 71, 5: 72, 6: 74, 7: 76, 8: 77 };
 const POS_OF = Object.fromEntries(Object.entries(PITCH).map(([k, v]) => [v, Number(k)]));
@@ -24,12 +25,28 @@ const EXAMPLES = [
   { pos: 3, x: 86, sub: '줄 사이에 있어요' },
 ];
 const TWIST = [3, 2, 0, -2];                          // 비틀기 답(위 → 아래 = 오선 높이 차례)
-const PLAN = [
-  { pos: 0 }, { pos: 3 }, { pos: 1 }, { pos: 2 },
-  { pos: 6 }, { pos: 5 }, { pos: 4 }, { pos: 7 },
-  { pos: 2, twist: true }, { pos: 3, twist: true }, { pos: 0, twist: true },
-  { pos: -2, twist: true },
+// 확인 게임 문항 표(X2 · 단계 꼬리표) — 줄 하나 = { stage, pos(음 자리 · 미 = 0), twist(몇째 고르기), right(답 단추 0~3) }
+//  앞 여덟 판: 0 = 줄이 가운데를 지나는 음 · 1 = 줄 사이에 있는 음 / 비틀기 · 마무리: TWIST 차례(둘째 칸 · 둘째 줄 · 첫째 줄 · 아래 덧줄)
+const row = (stage, pos, twist = false) => ({ stage, pos, twist, right: twist ? TWIST.indexOf(pos) : isLine(pos) ? 0 : 1 });
+export const PLAN = [
+  row('intro', 0), row('intro', 3), row('intro', 1), row('intro', 2),
+  row('grow', 6), row('grow', 5), row('grow', 4), row('grow', 7),
+  row('twist', 2, true), row('twist', 3, true), row('twist', 0, true),
+  row('end', -2, true),
 ];
+export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 8, 11] — 섞어도 '9번째부터 몇째' 말이 그대로 맞게
+// 단계 안 섞기(N2) — 차례만(뒤집기 X: 줄 음 ↔ 칸 음을 바꾸면 다른 음이 됨) · 답 수는 판마다 고를 것이 달라 같게 맞추지 않음
+export const SHUF = { answerOf: p => p.right, balance: false };
+export const GUESS = plan => plan.map(p => (p.twist ? 1 / 4 : 1 / 2));   // 찍기 바닥 — 앞 여덟 판 둘 중 하나 · 비틀기 넷 중 하나
+// 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+export function tipOf(plan, results) {
+  const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
+  return factTip(results, [
+    { n: miss(p => p.twist), text: '몇째인지 고를 때(9번째부터) 헷갈렸어요. 줄과 칸은 맨 아래 줄부터 첫째, 둘째로 세요.' },
+    { n: miss(p => !p.twist && !isLine(p.pos)), text: '줄 사이에 있는 음을 더 많이 놓쳤어요. 칸 음은 위아래 두 줄에 닿아 있어요.' },
+    { n: miss(p => !p.twist && isLine(p.pos)), text: '줄이 지나는 음을 더 많이 놓쳤어요. 줄 음은 줄이 음표 한가운데를 지나가요.' },
+  ], '줄 음·칸 음도, 몇째 줄·몇째 칸도 모두 가려냈어요.');
+}
 // 답 칩 그림 — 줄이 지나는 음표 · 줄 사이 음표 · 아래 덧줄 음표
 const INK = '#3B2A1E';
 const HEAD = (y, x = 28) => `<ellipse cx="${x}" cy="${y}" rx="12" ry="8.5" transform="rotate(-14 ${x} ${y})" fill="#FFFFFF" stroke="${INK}" stroke-width="3"/>`;
@@ -221,7 +238,7 @@ export default {
     const { h, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [];
-    let i = -1, cur = null, gone = false, twist = false;
+    let i = -1, cur = null, gone = false, twist = false, plan = PLAN, sd = null;
     const SAY1 = '줄이 음표 가운데를 지나나요, 줄 사이에 있나요?', SAY2 = '몇째 줄, 몇째 칸일까요? 아래 줄부터 세어요';
     ui.say(SAY1);
     let st = bigStaff(kit, { gap: 52 });
@@ -254,14 +271,15 @@ export default {
     const sc = startCard(ui, kit, {
       title: '줄과 칸 가려내기',
       lines: ['음표 가운데를 줄이 지나는지, 줄 사이에 있는지 골라요', '9번째부터는 몇째 줄·몇째 칸인지 골라요', '12번'],
-      onStart: () => { grow(); T.after(300, next); },
+      // 시작할 때 판 차례를 정함 — 단계(줄 · 칸 0~3 · 4~7 · 몇째 8~10 · 아래 덧줄 11) 안에서만 섞음(N2 · 씨앗은 기록에)
+      onStart: () => { sd = kit.seed ? kit.seed() : 1; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF); grow(); T.after(300, next); },
     });
     ui.stage.append(sc.card);
     function next() {
       if (gone) return;
       i++;
-      if (i >= PLAN.length) return end();
-      const pl = PLAN[i];
+      if (i >= plan.length) return end();
+      const pl = plan[i];
       if (pl.twist && !twist) {                           // 비틀기 들어가기 — 답 넷을 열고 한 번 알려 줌
         twist = true; i--;
         st.clear(); A.clear(); relabel();
@@ -270,7 +288,7 @@ export default {
         return;
       }
       const mine = cur = { ...pl, open: false };
-      ui.count(i + 1, PLAN.length);
+      ui.count(i + 1, plan.length);
       st.clear(); A.clear();
       const nt = st.note(pl.pos, '50%'); nt.n.classList.add('pop');
       pose('idle');
@@ -278,12 +296,12 @@ export default {
       T.after(kit.msUntil(s.ac, s.starts[0]) + 150, () => { if (cur === mine) mine.open = true; });
       T.after(kit.msUntil(s.ac, s.end) + 4200, () => { if (cur === mine && mine.open) choose(null); });
     }
-    const want = c => (c.twist ? TWIST.indexOf(c.pos) : isLine(c.pos) ? 0 : 1);
+    const want = c => c.right;
     function choose(k) {
       if (!cur || !cur.open) return;
       cur.open = false;
       const ans = want(cur), right = k === ans;
-      results.push(right);
+      results.push(k == null ? null : right);   // 시간 지남은 틀림과 따로(N1)
       markPick(A, ans, k);
       st.mark(cur.pos); st.tag(cur.pos, '50%', kit.ez(posName(cur.pos)));
       judge(ui, right, { missed: k == null, eye: true });
@@ -292,16 +310,9 @@ export default {
       T.after(1700, next);
     }
     function end() {
-      const s = kit.scoreChoices(results, 5, { chance: PLAN.map(p => (p.twist ? 1 / 4 : 1 / 2)) });   // 찍기 바닥 — 앞 여덟 판 둘 중 하나 · 비틀기 넷 중 하나
-      const wrongAt = results.map((ok, k) => (ok ? -1 : k)).filter(k => k >= 0);
-      const num = wrongAt.filter(k => PLAN[k].twist).length, sp = wrongAt.filter(k => !PLAN[k].twist && !isLine(PLAN[k].pos)).length;
-      let tip;
-      if (!wrongAt.length) tip = '줄 음·칸 음도, 몇째 줄·몇째 칸도 모두 가려냈어요.';
-      else if (num >= wrongAt.length / 2) tip = '몇째인지 고를 때(9번째부터) 헷갈렸어요. 줄과 칸은 맨 아래 줄부터 첫째, 둘째로 세요.';
-      else if (sp >= wrongAt.length / 2) tip = '줄 사이에 있는 음을 더 많이 놓쳤어요. 칸 음은 위아래 두 줄에 닿아 있어요.';
-      else tip = '줄이 지나는 음을 더 많이 놓쳤어요. 줄 음은 줄이 음표 한가운데를 지나가요.';
+      const s = kit.scoreChoices(results, 5, { chance: GUESS(plan) }), tip = tipOf(plan, results);
       turtle.hidden = true; A.el.hidden = true; st.clear(); ui.count(null); tall(false);   /* 결과 앞에 띠를 되돌림(결과 단추가 띠에 놓임) */
-      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd });
     }
     kit.setAuto(() => { if (sc.waiting()) press(sc.btn); else if (cur && cur.open) choose(want(cur)); });
     const onKey = e => { const k = '1234'.indexOf(e.key); if (k >= 0 && cur && !A.btn(k).classList.contains('locked')) choose(k); };
