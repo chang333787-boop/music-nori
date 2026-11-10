@@ -19,9 +19,9 @@ import * as music from '../music.js';
 import { levelsOf, newParts } from '../../../engine/theme.js';
 
 const PHASES = [['show', '보기'], ['follow', '연습'], ['game', '확인 게임']];
-// 소리는 TV 하나 · 답은 각자(11-08 토론 T1 · 교사 승인) — 이 칸들은 방이 열린 TV의 확인 게임에서 TV만 소리를 내고 아이 기기는 답만
+// 소리는 TV 하나 · 답은 각자(11-08 토론 T1 · 교사 승인) — 칸 모듈이 `export const TVS = true`이면(app/js/cells/_tvs.js) 방이 열린 TV의 확인 게임에서 TV만 소리를 내고 아이 기기는 답만
 //  TVS_LEAD = 알림 뒤 첫 판까지(아이 기기가 따라오고 서버 시각을 맞출 틈) · 이 기기 시각(Date ms) → performance.now() 시각
-const TVS = new Set(['so4']), TVS_LEAD = 5000;
+const TVS_LEAD = 5000;
 const perfAt = wall => performance.now() + (wall - Date.now());
 const warned = new Set();                    // 이 창에서 한 번만 안내
 
@@ -75,7 +75,7 @@ export default function mount(root, ctx) {
     if (!tv) return;
     const i = TV_STEPS.findIndex(s => s.key === key), st = TV_STEPS[i], sc = TV_SCRIPT[cell.id] || {};
     guideStep.textContent = `${i + 1} ${st.name} · ${st.min}분`;
-    guideText.textContent = E((key === 'game' && troom && TVS.has(cell.id) && sc.game_tvs) || sc[key] || '');   // 방이 열린 TVS 칸은 'TV 소리 · 각자 답' 발문
+    guideText.textContent = E((key === 'game' && troom && tvsCell && sc.game_tvs) || sc[key] || '');   // 방이 열린 TVS 칸은 'TV 소리 · 각자 답' 발문
   };
   if (troom) stage.append(allEl);
   const screenEl = h('div', { class: 'cellscreen' + (tv ? ' tvmode' : '') }, stage, guide, barEl);
@@ -84,6 +84,7 @@ export default function mount(root, ctx) {
   let mod = null, phase = -1, cleanup = null, auto = null, gone = false, tellTimer = 0;
   let showTap = null, tvsReady = null, resSubs = new Set(), since = 0, gameAt = 0, resList = [], resultShown = false, sentP = null, stripSig = '';   // gameAt = 확인 게임 알림의 서버 시각(판 씨앗 · N2)       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
   let prevOn = null;                                // 같은 화면 바로 앞 판의 별(결과 '한 번 더' 뒤 '아까' 별 · X2 — 화면 안 기억만)
+  let tvsCell = false;                              // 이 칸 모듈이 TVS = true(소리는 TV 하나 · 답은 각자를 앎)
   const ui = {
     stage: body,
     bar: barSlot,
@@ -128,13 +129,13 @@ export default function mount(root, ctx) {
     phase = i; auto = null; K.sfx.reset(); music.stopFx();   // 이어 맞힘 사다리는 단계마다 처음부터 · 결과 팡파르는 멈춤
     // 소리는 TV 하나 · 답은 각자(TVS 칸 · 방이 열린 TV의 확인 게임) — 판 씨앗을 함께 알리고, 알림 시각 + LEAD부터 모든 기기가 같은 판 시간표
     tvsReady = null;
-    const tvsOn = troom && i === 2 && TVS.has(cell.id);
+    const tvsOn = troom && i === 2 && tvsCell;
     const sdNew = tvsOn ? (Math.random() * 4294967296) >>> 0 : null;
     if (troom) {
       const job = room.teacher.pub(cell.id, PHASES[i][0], undefined, tvsOn ? { sd: sdNew } : {});
       job.then(r => { if (r.at && i === 2) gameAt = r.at; if (r.at && (!since || again)) { since = r.at; drawStrip(); } });
       if (tvsOn) tvsReady = job.then(r => (r.ok ? { sd: sdNew, start: perfAt(r.at + TVS_LEAD - r.off) } : null));
-    } else if (inRoom && i === 2 && TVS.has(cell.id) && room.kid.last && room.kid.last.cell === cell.id && room.kid.last.phase === 'game' && Number.isInteger(room.kid.last.sd)) {
+    } else if (inRoom && i === 2 && tvsCell && room.kid.last && room.kid.last.cell === cell.id && room.kid.last.phase === 'game' && Number.isInteger(room.kid.last.sd)) {
       const p = room.kid.last;
       tvsReady = room.kid.clock().then(c => ({ sd: p.sd, start: perfAt(p.at + TVS_LEAD - (c ? c.off : 0)) }));
     }
@@ -311,7 +312,7 @@ export default function mount(root, ctx) {
   window.__cellPhase = () => (overlay.hidden ? PHASES[phase] && PHASES[phase][0] : 'result');
 
   (async () => {
-    try { mod = (await import(`../cells/${cell.id}.js`)).default; }
+    try { const ns = await import(`../cells/${cell.id}.js`); mod = ns.default; tvsCell = ns.TVS === true; }
     catch (e) {
       console.error(e);
       body.replaceChildren(h('div', { class: 'panelcard startcard', style: { margin: 'auto' } }, h('h2', {}, '이 놀이는 다음에 열려요'), h('p', { class: 'sub' }, '마을 지도에서 다른 놀이를 골라요')));

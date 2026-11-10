@@ -1,6 +1,7 @@
 // 방 번호 다같이 브라우저 시험(진짜 DB · 네트워크) — 브라우저 하나에 페이지 둘(선생님 TV · 아이 기기 · 저장소가 섞이지 않게 창 둘)
 //  선생님 방 열기 → 아이 들어가기(틀린 방 번호 → "다시 봐요" 먼저) → 선생님 높게·낮게 보기 → 아이 화면이 보기로(2.5초 안)
-//  → 연습 → 확인 게임 → 아이 자동으로 게임 끝 → TV 모인 결과에 그 아이 번호 · 별 → 선생님 결과 뒤에도 띠가 남음 → 아이 나가기
+//  → 연습 → 확인 게임 → 아이 자동으로 게임 끝 → TV 모인 결과에 그 아이 번호 · 별 → 선생님 결과 뒤에도 띠가 남음
+//  → 가1 솔·미도 TV 소리 모드(여러 번 누르는 답 · 같은 씨앗 · 막대) → 아이 나가기
 //  시험 방은 0000~0999(?testroom=1 시험 고리 · 아이들 방 1000~9999와 안 섞임). npm run test:db
 //  사진: SHOTS=<폴더> node tests/room.browser.cjs
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
@@ -24,6 +25,7 @@ const shot = async (page, name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { r
 const scrollOf = page => page.evaluate(() => { const m = document.getElementById('main'); return Math.max(document.documentElement.scrollHeight - innerHeight, m.scrollHeight - m.clientHeight, document.documentElement.scrollWidth - innerWidth); });
 async function until(fn, ms, step = 80) { const t0 = Date.now(); while (Date.now() - t0 < ms) { const v = await fn(); if (v) return v; await sleep(step); } return null; }
 const tap = (page, sel) => page.locator(sel).first().click();
+let kd2 = 0;                                       // 가1 TV 소리 모드 가운데 사진 한 번만
 
 (async () => {
   await new Promise(r => server.listen(0, r));
@@ -154,6 +156,39 @@ const tap = (page, sel) => page.locator(sel).first().click();
     const kStill = await K.evaluate(() => window.__cellPhase && window.__cellPhase());
     check('선생님 결과(done) 뒤 아이는 결과 화면 그대로', kStill === 'result', kStill);
     await shot(T, '7_tv_strip_result');
+
+    // ── 5b. 다른 TVS 칸 — 가1 솔·미(여러 번 누르는 답)도 소리는 TV 하나 · 답은 각자(X2 · 칸 모듈의 TVS = true) ──
+    {
+      await K.evaluate(() => { window.__cellResult = null; window.__tvs = null; window.__roomSent = null; });
+      await T.evaluate(() => { window.__cellResult = null; window.__tvs = null; window.__tvsSeen = 0; location.hash = '#/tvcell/ga1'; });
+      const kidOn = await until(() => K.evaluate(() => location.hash.includes('cell/ga1') && window.__cellPhase && window.__cellPhase() === 'show'), 8000, 80);
+      check('아이 화면이 솔·미 보기로', !!kidOn);
+      for (const ph of ['follow', 'game']) {
+        const tp = await until(() => T.evaluate(p => { if (window.__cellPhase && window.__cellPhase() === p) return true; window.__cellAuto && window.__cellAuto(); return false; }, ph), 60000, 160);
+        if (!tp) { check(`선생님 가1 ${ph} 단계`, false); break; }
+      }
+      const guideTxt = await T.locator('.tvg-text').innerText().catch(() => '');
+      check('TV 안내 줄 = 가1 TV 소리 발문', guideTxt.includes('소리는 TV에서만'), guideTxt.slice(0, 40));
+      const kd = await until(async () => {
+        if (SHOTS && !kd2) { const mid = await K.evaluate(() => window.__tvs && performance.now() - window.__tvs.start > 20000); if (mid) { kd2 = 1; await shot(T, '7b_tv_tvs_ga1'); await shot(K, '7c_kid_tvs_ga1'); } }
+        return K.evaluate(() => { if (window.__cellResult && window.__cellResult.id === 'ga1') return window.__cellResult; window.__cellAuto && window.__cellAuto(); return null; });
+      }, 150000, 160);
+      check('아이 가1 끝(TV 소리 모드 · 별 셋)', kd && kd.stars === 3, kd && { stars: kd.stars, title: kd.title });
+      const kt = await K.evaluate(() => window.__tvs && { role: window.__tvs.role, cell: window.__tvs.cell, sd: window.__tvs.sd, wall: performance.timeOrigin + window.__tvs.start });
+      const tt = await T.evaluate(() => window.__tvs && { role: window.__tvs.role, cell: window.__tvs.cell, sd: window.__tvs.sd, wall: performance.timeOrigin + window.__tvs.start, bar: !!document.querySelector('.tvs-ratio') });
+      const skew = kt && tt ? Math.abs(kt.wall - tt.wall) : null;
+      check(`가1 TV 소리 모드 — 같은 씨앗 · 시간표 어긋남 ${skew == null ? '?' : Math.round(skew)}ms`, kt && tt && kt.cell === 'ga1' && tt.cell === 'ga1' && kt.role === 'kid' && tt.role === 'tv' && kt.sd === tt.sd && skew < 400, { kt, tt });
+      const seen = await until(() => T.evaluate(() => window.__tvsSeen || 0), 5000);
+      check(`가1 TV에 '같게 · 다르게' 막대(최고 ${seen})`, tt && tt.bar && seen >= 1, seen);
+      const kr = await K.evaluate(() => ({ bar: !!document.querySelector('.tvs-ratio'), r: JSON.parse(localStorage.getItem('mn.prog') || '{}').ga1?.hist?.slice(-1)[0]?.r }));
+      check('가1 아이 기기엔 막대 X · 기록 r = tvs', !kr.bar && kr.r === 'tvs', kr);
+      const sent2 = await until(() => K.evaluate(() => window.__roomSent), 8000);
+      check('가1 아이 결과 보냄', sent2 && sent2.ok && sent2.cell === 'ga1' && sent2.s === 3, sent2);
+      const tEnd = await until(() => T.evaluate(() => window.__cellResult && window.__cellResult.title), 30000);
+      check('가1 TV 결과 = 반 전체', /반 전체/.test(tEnd || ''), tEnd);
+      check('가1 TV · 아이 화면 스크롤 0', (await scrollOf(T)) <= 1 && (await scrollOf(K)) <= 1);
+      await shot(T, '7d_tv_ga1_result');
+    }
 
     // ── 6. 아이 나가기 ──
     await tap(K, '.roomchip');

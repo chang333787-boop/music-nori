@@ -1,0 +1,23 @@
+/* 소리는 TV 하나 · 답은 각자(app/js/cells/_tvs.js) — TVS 칸이 같이 씀 · 처음 불릴 때 한 번 붙임
+   아이 기기: 고른 뒤 '답했어요'(고른 쪽을 가림 — 단추 모두 옅게) · TV: 답 자리에 반이 고른 쪽 막대(수 X) */
+.answers.answered .ans{opacity:.5}
+.tvs-side{width:380px;flex:none;display:flex;align-items:center;justify-content:center;z-index:1}
+.tvs-ratio{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;background:var(--surface);border:3px solid var(--ink);border-radius:22px;padding:18px 16px 12px}
+.tvs-lab{display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--head);font-size:24px;border-radius:14px;padding:4px 6px;text-align:center}
+.tvs-lab.want{box-shadow:0 0 0 4px var(--great)}
+.tvs-chip{display:flex;align-items:center;justify-content:center}
+.tvs-chip img,.tvs-chip svg{width:64px;height:64px;object-fit:contain}
+.tvs-chip .m-dot{width:44px;height:44px}
+.tvs-bar{display:flex;height:40px;border:3px solid var(--ink);border-radius:12px;overflow:hidden;min-width:0}
+.tvs-bar i{display:block;flex:1 1 0;min-width:0;transition:flex-grow .4s ease-out}
+.tvs-s0{background:#5E9B4F}.tvs-s1{background:#2F72B8;border-left:3px solid var(--ink)}
+.tvs-ratio.empty .tvs-bar i{background:#EDE5D8}
+.tvs-cap{grid-column:1/-1;text-align:center;font-family:var(--head);font-size:20px;color:var(--ink-2)}
+/* 칸 셋 이상 — 칸마다 막대 한 줄(이름 · 그림 왼쪽) */
+.tvs-ratio.rows{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px 10px}
+.tvs-row{display:grid;grid-template-columns:150px minmax(0,1fr);align-items:center;gap:12px}
+.tvs-row .tvs-lab{flex-direction:row;justify-content:flex-start;gap:8px;font-size:22px}
+.tvs-row .tvs-chip img,.tvs-row .tvs-chip svg{width:48px;height:48px}
+.tvs-track{display:block;height:34px;border:3px solid var(--ink);border-radius:10px;overflow:hidden;background:var(--surface)}
+.tvs-fill{display:block;height:100%;width:0;background:#2F72B8;transition:width .4s ease-out}
+.tvs-ratio.rows.empty .tvs-track{background:#EDE5D8}

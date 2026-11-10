@@ -11,6 +11,7 @@
 //   게임도 연습처럼 소리를 들어야 고를 수 있음(짧은 소리는 끝까지 · 긴 소리는 0.65초) · 막대는 transform으로 자람(_snd.js growBar)
 import { voice, exGroup, nowCard, pal, pose, growBar, slide, pop } from './_snd.js';
 import { factTip, stageCuts } from '../cellkit.js';
+import { tvsGame } from './_tvs.js';
 
 const MAXD = 1.5;                                     // 줄 끝까지 = 1.5초
 const LONG = 0.6;                                     // 이보다 길면 '긴 소리'
@@ -95,6 +96,34 @@ function lanes(kit, n, { nums = false } = {}) {
     rows,
   };
 }
+
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 판마다 소리 하나(0.3초 뒤) · 답은 소리 시작 0.65초 뒤 · 가장 긴 소리(1.2초) 끝 + 3.5초에 닫힘
+//  긴 소리든 짧은 소리든 같은 시간표(답 열림 · 닫힘으로 길이가 새지 않게) · 소리가 나는 동안 TV 화면에도 길이를 그리지 않음(고른 뒤 막대로)
+export const TVS = true;
+const TVS_OPEN = 300 + (LONG + 0.05) * 1000, TVS_CLOSE = 300 + Math.max(...Object.values(LEN).flat()) * 1000 + 3500;
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF),
+  P: TVS_CLOSE + 800, OPEN: TVS_OPEN, CLOSE: TVS_CLOSE,
+  say: { kid: 'TV 소리를 듣고 — 긴 소리일까요, 짧은 소리일까요?', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+  items: [
+    { key: 'long', label: '긴 소리', chip: barIcon(kit, true) },
+    { key: 'short', label: '짧은 소리', chip: barIcon(kit, false) },
+  ],
+  rightOf: p => p.right,
+  view({ V, T, side }) {
+    const { h } = kit;
+    const ln = lanes(kit, 1);
+    const sq = h('div', { class: 'ln-pal' }, h('img', { src: SCENE + 'prop_squirrel.webp', alt: '', draggable: 'false' }));
+    return {
+      el: h('div', { class: 'ln-follow tvs3' }, sq, ln.el, side),
+      item: () => ln.ask(0),
+      play: (p, at) => V.play([{ p: p.p, d: p.d }], { inst: p.inst, at }),
+      close: p => ln.grow(0, p.d, 0.35, T),
+      done: () => { sq.hidden = true; },
+    };
+  },
+  tip: tipOf, chance: GUESS,
+});
 
 export default {
   // ── 보기: 예시 넷 ──
@@ -203,6 +232,8 @@ export default {
 
   // ── 확인 게임: 다람쥐 기차 — 긴 소리 손님은 긴 칸, 짧은 소리 손님은 짧은 칸 · 12판 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [], picks = [];

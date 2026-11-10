@@ -72,4 +72,5 @@ export default {
   - 뒤집기는 뜻이 그대로일 때만: 소3 = 같은 단계 짝의 반대 길이 · 소5 = 두 소리 차례 바꿈. 가2(라 ↔ 미는 쉬운 문항이 됨) · 가3(답 = 그림 자리 · `arrange`가 같은 씨앗으로 그림 차례를 섞음) · 악2(줄 음 ↔ 칸 음은 다른 음)는 차례만.
   - 찍기 바닥: 소3 1/2 · 소5 1/2 → 크기 단추 뒤 1/3 · 가3 그림 수 · 악2 1/2 → 비틀기 1/4 · **가2 = 단계마다 가장 흔한 답의 몫**(라가 12판 중 7판의 답이라 1/3이면 '늘 라'가 별 ①을 받음 → 바닥 10/12). `X2LOG=1 node tests/cells.test.mjs` = 봇마다 별 비율.
   - 마지막 단계가 한 판뿐이고 뒤집기가 없는 칸(소5 크기 · 가2 라 · 악2 아래 덧줄)은 마지막 판 답이 늘 같다(찍기로 1점까지 — 바닥은 그대로 둠).
+- **TV 소리 모드(X2 둘째 커밋)**: 칸 모듈이 `export const TVS = true` + `export const tvsSpec = (ui, kit) => ({ plan(sd), P, OPEN, CLOSE, items, rightOf, view, tip, chance, … })`를 내보내고 확인 게임 첫 줄에서 `const tvs = kit.tvs && kit.tvs(); if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));` — 공용 `_tvs.js`가 시간표 · 가림 · 답 글자 · TV 막대 · 결과를 맡음(docs/room.md v2). 칸 화면(cell.js)은 이 TVS 표시만 봄(칸 이름 목록 X).
 - 시험: `tests/cells.test.mjs`(찍기 · 번갈아 · 같은 답 봇 · 씨앗 1000개) · `tests/truth.browser.cjs`(시계 · 시간 지남 · TV 징검다리 기록 X · 소3 답 열림 시각 · 씨앗).

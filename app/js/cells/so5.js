@@ -11,6 +11,7 @@
 //   넷째 카드 '높이만 바뀌어요' / 아랫줄 '크기는 그대로' · 듣는 동안 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기' · 소리 그림 막대는 transform으로 자람
 import { voice, exGroup, nowCard, pal, pose, growBar, slide } from './_snd.js';
 import { factTip, stageCuts } from '../cellkit.js';
+import { tvsGame } from './_tvs.js';
 
 const BASE = { p: 67, d: 0.6, v: 0.55 };
 const SOFT = 0.16, LOUD = 0.8;                       // 크기 짝 — 압축기에 눌리지 않게 크게도 0.8까지만
@@ -125,6 +126,42 @@ const press = el => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: 
 const playPair = (V, x) => V.play([{ p: x.a.p, d: x.a.d, vel: x.a.v, gap: 0.4 }, { p: x.b.p, d: x.b.d, vel: x.b.v }], { inst: x.inst });
 
 
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 판마다 두 소리(0.3초 뒤 · 사이 0.4초) · 7판째부터 크기 단추
+//  답 열림은 가장 늦은 둘째 소리 시작(첫 소리가 가장 긴 1.1초인 판)에 맞춰 고정 — 열리는 때로 첫 소리 길이(= 길이 문항)가 새지 않게
+//  닫힘 = 가장 긴 짝(1.8초) 끝 + 3.5초
+export const TVS = true;
+const TVS_OPEN = 300 + (Math.max(...PLAN.flatMap(x => [x.a.d, x.b.d])) + 0.4) * 1000;
+const TVS_CLOSE = 300 + Math.max(...PLAN.map(x => x.a.d + 0.4 + x.b.d)) * 1000 + 3500;
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF),
+  P: TVS_CLOSE + 800, OPEN: TVS_OPEN, CLOSE: TVS_CLOSE,
+  say: { kid: 'TV 소리를 듣고 — 바뀐 것 하나를 골라요', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+  items: ['pitch', 'len', 'vol'].map(k => ({ key: k, label: NAME[k], chip: ICON[k], locked: k === 'vol' })),
+  setup(x, A, k) {
+    if (k < VOL_AT) return;
+    A.lock('vol', false);
+    if (k === VOL_AT) { A.btn('vol').animate([{ transform: 'scale(.7)' }, { transform: 'scale(1.05)', offset: 0.7 }, { transform: 'none' }], { duration: 360, easing: 'ease-out' }); ui.tell('크기 단추가 나왔어요', 'info', 1800); }
+  },
+  rightOf: x => x.right,
+  wrongText: x => '이번엔 ' + NAME[x.k],
+  view({ kidSide, V, T, side }) {
+    const P = pic(kit);
+    const bunny = kit.h('div', { class: 'g5-bunny' }, pal(kit, 'bunny'));
+    const setP = p => pose(kit, bunny.firstChild, 'bunny', p);
+    return {
+      el: kit.h('div', { class: 'g5-wrap' }, bunny, P.el, side),
+      item: () => { P.reset(); P.ask(); setP('idle'); },
+      play(x, at) {
+        const s = V.play([{ p: x.a.p, d: x.a.d, vel: x.a.v, gap: 0.4 }, { p: x.b.p, d: x.b.d, vel: x.b.v }], { inst: x.inst, at });
+        T.after(kit.msUntil(s.ac, s.starts[0]), () => P.blink(0, T)); T.after(kit.msUntil(s.ac, s.starts[1]), () => P.blink(1, T));
+      },
+      close: (x, r) => { P.grow(0, x.a, 0.3); P.grow(1, x.b, 0.3); P.mark(x); setP(!kidSide || r ? 'happy' : r === false ? 'oops' : 'idle'); },
+      done: () => { bunny.style.visibility = 'hidden'; },
+    };
+  },
+  tip: tipOf, chance: GUESS,
+});
+
 export default {
   // ── 보기: 세 성질을 한 번씩 ──
   show(ui, kit) {
@@ -217,6 +254,8 @@ export default {
 
   // ── 확인 게임: 무엇이 바뀌었나 — 12판 · 7판째부터 크기 단추 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [], picks = [];

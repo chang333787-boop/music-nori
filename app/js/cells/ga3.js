@@ -10,6 +10,7 @@
 //   · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 노래 그림 동전 26px
 import { DO, RE, MI, FA, SOL, LA, nameOf, heightBoard, heightPic, songNotes, voice, playBeats, startCard, press, exCard, hearHead, markPick, judge } from './_mel.js';
 import { factTip, stageCuts, shuffle } from '../cellkit.js';
+import { tvsGame } from './_tvs.js';
 
 const D = DO, M = MI, S = SOL, L = LA;
 const EXAMPLES = [
@@ -60,6 +61,42 @@ function shape(ps) {
 }
 // 그림 — 같은 세로 자(도 · 미 · 솔 · 라)로 그려 높이를 견줄 수 있게
 const picOf = (ps, o) => heightPic(ps.map((p, t) => ({ p, t })), { rows: ROWS, join: true, ...o });
+
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 참새 노래(음 0.42초 + 틈 0.18초)를 TV에서 · 마지막 음이 나기 시작하면 고를 수 있음(음 수는 그림에 이미 보임)
+//  가장 긴 다섯 음 끝 + 3.5초에 닫힘 · 그림 차례도 씨앗으로 정해 모든 기기가 같음 · TV 막대 = 그림마다 한 줄
+export const TVS = true;
+const T3_NOTE = 600, T3_CLOSE = 300 + 5 * T3_NOTE - 180 + 3500;
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => { const r = kit.rng(sd); return arrange(kit.stageShuffle(PLAN, CUTS, r, SHUF), r); },
+  P: T3_CLOSE + 700, OPEN: p => 300 + (p.ps.length - 1) * T3_NOTE, CLOSE: T3_CLOSE,
+  say: { kid: 'TV 참새 노래와 같은 모양 그림을 골라요', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+  items: [0, 1, 2, 3].map(k => ({ key: k, label: '', locked: k === 3 })),
+  answersOpt: { cls: 'g3-ans four m-busy' },
+  setup: (p, A) => [0, 1, 2, 3].forEach(k => {
+    A.btn(k).querySelector('.lab').replaceChildren(...(p.opts[k] ? [picOf(p.opts[k], { height: 76, unit: p.opts[k].length > 3 ? 85 : 170, r: 12, pad: 2, label: false }).el] : []));
+    A.lock(k, k >= p.opts.length);
+  }),
+  side: (p, k) => ({ label: `${k + 1}`, chip: picOf(p.opts[k], { height: 56, unit: p.opts[k].length > 3 ? 26 : 48, r: 8, pad: 2, label: false }).el }),
+  rightOf: p => p.right,
+  wrongText: p => `이번엔 ${p.right + 1}번째 그림`,
+  intro: V => kit.playSeq(kit.engine, [D, M, S].map(p => ({ p, d: 0.42, gap: 0.16 })), { inst: 'xylo', out: V.out }),
+  view({ kidSide, V, T, side }) {
+    const board = heightBoard(kit, { notes: [D, M, S, L], ghosts: GHOSTS, rh: 44 });
+    return {
+      el: kit.h('div', { class: 'g3-scene' }, board.el, side),
+      item: () => { board.rest(); board.pose('idle'); },
+      play(p, at) {
+        board.pose('play');
+        const s = kit.playSeq(kit.engine, p.ps.map(q => ({ p: q, d: 0.42, gap: 0.18 })), { inst: p.inst, out: V.out, at });
+        p.ps.forEach((q, j) => T.after(kit.msUntil(s.ac, s.starts[j]), () => board.move(q)));
+        T.after(kit.msUntil(s.ac, s.end) + 100, () => board.pose('idle'));
+      },
+      close: (p, r) => { if (!kidSide || r) board.move(p.ps[p.ps.length - 1], 'happy'); else board.pose(r === false ? 'oops' : 'idle'); },
+      done: () => { board.el.hidden = true; },
+    };
+  },
+  tip: tipOf, chance: GUESS,
+});
 
 export default {
   // ── 보기 ──
@@ -165,6 +202,8 @@ export default {
 
   // ── 확인 게임: 건너뛰는 가락 그림 고르기 — 10판 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [];

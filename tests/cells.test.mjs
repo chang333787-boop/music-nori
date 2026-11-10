@@ -255,6 +255,47 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   assert.ok(K.minKeepP(M.ga2.GUESS(M.ga2.PLAN)) > M.ga2.PLAN.filter(p => p.right === 69).length, '가2 바닥 > 늘 라 맞힌 수');
   delete globalThis.localStorage;
 }
+// ── 소리는 TV 하나 · 답은 각자(X2 둘째 커밋) — TVS 칸 일곱의 시간표 · 답 글자(소리 · 화면 없이 표만) ──
+{
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const K = await import('../app/js/cellkit.js'), TV = await import('../app/js/cells/_tvs.js');
+  const fakeH = (tag, attrs, ...kids) => ({ tag, attrs, kids, nodeType: 1, cloneNode() { return this; } });
+  const kit = { h: fakeH, band: 'mid', stageShuffle: K.stageShuffle, rng: K.rng, engine: null, playSeq: () => ({}), friendImg: () => fakeH('img'), setPose: () => {} };
+  const num = (x, row) => (typeof x === 'function' ? x(row) : x);
+  for (const id of ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3']) {
+    const mod = await import(`../app/js/cells/${id}.js`);
+    assert.equal(mod.TVS, true, id + ' TVS = true');
+    const S = mod.tvsSpec({ tell() {}, say() {} }, kit);
+    const keys = S.items.map(it => it.key), codes = S.items.map((it, j) => it.code || 'ABCD'[j]);
+    assert.equal(new Set(codes).size, codes.length, id + ' 답 글자가 겹치지 않음');
+    assert.ok(codes.every(c => /^[A-Za-z0-9.]$/.test(c) && c !== 'x'), id + ' 답 글자 = DB 규칙 한 글자(x = 못 고름)');
+    let longest = 0;
+    for (let sd = 1; sd <= 300; sd++) {
+      const plan = S.plan(sd);
+      if (sd === 1) assert.deepEqual(S.plan(1), plan, id + ' 같은 씨앗이면 같은 판(TV · 아이 기기)');
+      for (const row of plan) {
+        const o = num(S.OPEN, row), c = num(S.CLOSE, row), P = num(S.P, row);
+        assert.ok(o >= 300 && c - o >= 2999 && P - c >= 400, `${id} 판 시간(열림 ${o} · 닫힘 ${c} · 판 ${P})`);
+        const r = S.rightOf(row);
+        if (S.seq) assert.ok(Array.isArray(r) && r.every(k => keys.includes(k)), id + ' 답 = 단추 차례');
+        else assert.ok(keys.includes(r), `${id} 답 ${r}이 단추에 있음`);
+        // 답 열림이 답에 따라 달라지면 소리 없는 아이 기기 화면으로 답이 샘 — 뒤집은 문항(답만 다름)도 같은 때에 열려야
+        if (mod.SHUF && mod.SHUF.flip) assert.equal(num(S.OPEN, mod.SHUF.flip(row)), o, `${id} 뒤집어도 답 열림이 같음`);
+      }
+      longest = Math.max(longest, TV.tvsTimes(plan, S.P)[plan.length]);
+    }
+    if (id === 'so3' || id === 'so5') assert.equal(new Set(mod.PLAN.map(row => num(S.OPEN, row))).size, 1, id + ' 답 열림은 판마다 같음(길이가 새지 않게)');
+    assert.ok(longest <= 100000, `${id} TV 소리 모드 한 판 ${Math.round(longest / 1000)}초(100초 안)`);
+  }
+  // 가1 메아리 답 글자 — 두 음 · 세 음 차례가 모두 다른 한 글자
+  const g1 = await import('../app/js/cells/ga1.js'), S1 = g1.tvsSpec({}, kit);
+  const seqs = [];
+  for (const n of [2, 3]) for (let b = 0; b < 1 << n; b++) seqs.push(Array.from({ length: n }, (_, j) => (b >> j & 1 ? 67 : 64)));
+  assert.equal(new Set(seqs.map(S1.seq.code)).size, seqs.length, '가1 메아리 차례마다 다른 글자');
+  assert.ok(seqs.every(q => /^[0-9a-f]$/.test(S1.seq.code(q))), '가1 메아리 글자 0~f');
+  assert.ok(!(await import('../app/js/cells/ak2.js')).TVS, '악2(오선을 보고 푸는 문제)는 TVS X');
+  delete globalThis.localStorage;
+}
 // ── 장1 장단보 채우기(11-08 · docs/gugak.md 표기 그대로) ──
 {
   globalThis.localStorage = { getItem: () => null, setItem: () => {} };
@@ -278,4 +319,4 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   assert.match(jd.tipOf(jd.PLAN, deokMiss), /덕\(채편\)/);
   delete globalThis.localStorage;
 }
-console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 다섯 칸 문항 표(X2) · 장1 장단 표기`);
+console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 다섯 칸 문항 표(X2) · TV 소리 모드 일곱 칸 · 장1 장단 표기`);

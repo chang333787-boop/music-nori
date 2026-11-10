@@ -8,7 +8,8 @@
 //   소개(세 음 · ?가 끝) → 발전(?가 맨 앞 · 솔 옆 · 답이 솔 · 미인 판 섞음) → 비틀기(네 음 · 리코더 · 피아노) → 마무리(네 음 · ?가 맨 앞)
 //  11-07 평가 2차: 예전 '라는 몇 번째?'(칸을 누름)는 누를 곳이 안 보이고 칸이 3 → 4개로 늘며 자리가 밀렸음 → 답 단추 셋 고정으로 바꿈
 //  11-07 평가 3차: 듣는 동안 A.busy('잘 들어요') · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 노래 그림 동전 26px(라라 겹침)
-import { SOL, MI, LA, FA, nameOf, colorOf, posOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge } from './_mel.js';
+import { SOL, MI, LA, FA, nameOf, colorOf, posOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge, dot } from './_mel.js';
+import { tvsGame } from './_tvs.js';
 import { factTip, stageCuts } from '../cellkit.js';
 
 const S = SOL, M = MI, L = LA;
@@ -44,6 +45,58 @@ const ORD = ['첫 번째', '두 번째', '세 번째', '네 번째'];
 const why = b => (b === S ? '솔과 같은 높이, 솔이에요' : b === L ? '솔보다 살짝 높은 소리, 라예요' : '솔보다 낮은 소리, 미예요');
 // 칸 안 높이(위에서 %) — 음 자리(미 0 · 파 1 · 솔 2 · 라 3)를 그대로
 const topOf = p => 16 + (3 - posOf(p)) / 3 * 68;
+
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 참새 노래(음 0.42초 + 틈 0.2초)를 TV에서 · ? 자리 소리가 나기 시작하면 고를 수 있음(? 자리는 화면에 이미 보임)
+//  가장 긴 네 음 끝 + 3.5초에 닫힘 · 칸 그림은 혼자 할 때와 같음(? 자리 · 다른 음)
+export const TVS = true;
+const T2_NOTE = 620, T2_CLOSE = 300 + 4 * T2_NOTE - 200 + 3500;
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF),
+  P: T2_CLOSE + 700, OPEN: p => 300 + p.q * T2_NOTE, CLOSE: T2_CLOSE,
+  say: { kid: 'TV 참새 노래를 듣고 ? 자리 소리를 골라요', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+  items: [L, S, M].map(p => ({ key: p, label: nameOf(p), chip: dot(kit.h, p) })),
+  answersOpt: { cls: 'm-ans e2-ans m-busy' },
+  rightOf: p => p.right,
+  intro: V => kit.playSeq(kit.engine, [L, S, M].map(p => ({ p, d: 0.45, gap: 0.2 })), { inst: 'xylo', out: V.out }),
+  view({ kidSide, V, T, side }) {
+    const { h } = kit;
+    const bird = h('div', { class: 'e2-bird' }, kit.friendImg('bird', 'idle', { label: false }));
+    const poseB = ps => kit.setPose(bird.firstChild, 'bird', ps);
+    const slots = ORD.map(t => {
+      const track = h('div', { class: 'e2-track' }, ...[L, S, M].map(q => h('i', { class: 'e2-band', style: { top: topOf(q) + '%', '--c': colorOf(q) } })), h('i', { class: 'e2-band ghost', style: { top: topOf(FA) + '%' } }));
+      return { el: h('div', { class: 'e2-slot off' }, h('span', { class: 'e2-ord' }, t), track), track };
+    });
+    const axis = h('div', { class: 'e2-axis', 'aria-hidden': 'true' }, ...[L, S, M].map(p => { const b = badge(h, p); b.style.top = topOf(p) + '%'; return b; }));
+    const note = (p, cls = '') => h('span', { class: 'e2-note ' + cls, style: { '--c': colorOf(p), top: topOf(p) + '%' } }, badge(h, p));
+    const nowSlot = k => slots.forEach((x, j) => x.el.classList.toggle('now', j === k));
+    const mid = h('div', { class: 'e2-mid' }, axis, h('div', { class: 'e2-row' }, ...slots.map(x => x.el)));
+    return {
+      el: h('div', { class: 'e2-scene' }, h('div', { class: 'e2-tree' }, h('img', { src: 'app/img/scene/prop_tree.webp', alt: '', draggable: 'false' }), bird), mid, side),
+      item(pl) {
+        poseB('idle'); nowSlot(-1);
+        slots.forEach((x, k) => {
+          x.track.querySelectorAll('.e2-note,.e2-q').forEach(e => e.remove());
+          x.el.classList.toggle('off', k >= pl.ps.length); x.el.classList.remove('ask');
+          if (k >= pl.ps.length) return;
+          if (k === pl.q) { x.el.classList.add('ask'); x.track.append(h('span', { class: 'e2-q' }, '?')); } else x.track.append(note(pl.ps[k]));
+        });
+      },
+      play(pl, at) {
+        poseB('play');
+        const s = kit.playSeq(kit.engine, pl.ps.map(p => ({ p, d: 0.42, gap: 0.2 })), { inst: pl.inst, out: V.out, at });
+        pl.ps.forEach((_, k) => T.after(kit.msUntil(s.ac, s.starts[k]), () => nowSlot(k)));
+        T.after(kit.msUntil(s.ac, s.end) + 100, () => { poseB('idle'); nowSlot(-1); });
+      },
+      close(pl, r) {
+        const box = slots[pl.q];
+        box.track.querySelector('.e2-q')?.remove(); box.track.append(note(pl.right, 'pop')); box.el.classList.remove('ask');
+        poseB(!kidSide || r ? 'happy' : r === false ? 'oops' : 'idle');
+      },
+      done: () => { bird.hidden = true; mid.hidden = true; },
+    };
+  },
+  tip: tipOf, chance: GUESS,
+});
 
 export default {
   // ── 보기 ──
@@ -135,6 +188,8 @@ export default {
 
   // ── 확인 게임: 물음표 소리 — 12판 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [], picks = [];

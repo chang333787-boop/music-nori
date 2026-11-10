@@ -8,6 +8,7 @@
 //   참새 움직임은 transform(top · bottom X) · 듣는 동안 답 묶음 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기'
 import { exGroup, nowCard, pal, pose, voice } from './_snd.js';
 import { factTip } from '../cellkit.js';
+import { tvsGame } from './_tvs.js';
 
 const REF = 72;                                       // 기준 = 높은 도(C5)
 const EXAMPLES = [
@@ -63,116 +64,36 @@ export function tipOf(plan, results) {
   ], '높이 차이가 작은 소리까지 모두 가려냈어요.');
 }
 
-// ── 소리는 TV 하나 · 답은 각자(11-08 토론 T1) — 방이 열린 TV에서 확인 게임을 열면 ──
+// ── 소리는 TV 하나 · 답은 각자(11-08 토론 T1 · 공용 _tvs.js) — 방이 열린 TV에서 확인 게임을 열면 ──
 //  TV: 판 시간표대로 두 소리를 틀고(아이 기기는 소리 X) · 판이 끝나면 '나무 쪽 · 연못 쪽' 비율 막대(수 X)와 맞는 자리
-//  아이: 소리 없이 답 단추만 · 고르면 '답했어요'(고른 쪽을 가림 — 옆 친구가 따라 하지 않게) · 판이 끝나면 다 같이 맞는 자리
-//  시간표 = 판마다 P ms(두 소리 0.3초 뒤 · 둘째 소리부터 고르기 · 둘째 소리 끝 + 3.5초에 닫힘) · 아무도 기다리지 않음 · 늦게 받은 판은 '시간 지남'
+//  시간표 = 판마다 P ms(두 소리 0.3초 뒤 · 둘째 소리부터 고르기 · 둘째 소리 끝 + 3.5초에 닫힘)
+export const TVS = true;
 export const TVS_P = 5400;
 const TVS_OPEN = 920, TVS_CLOSE = 4920;
-function tvsGame(ui, kit, tvs) {
-  const { h, engine } = kit;
-  const T = kit.timers(), V = voice(engine), kidSide = tvs.role === 'kid';
-  const results = [], ans = [];
-  let plan = PLAN, sd = null, cur = null, open = false, picked = null, gone = false, offRes = null, lastBar = -1, tvsFinal = false;
-  ui.say(kidSide ? 'TV 소리를 듣고 — 높으면 나무, 낮으면 연못' : '소리는 TV에서 — 아이들은 각자 기기로 골라요');
-  const bird = h('div', { class: 'g-bird', 'data-at': 'mid' }, pal(kit, 'bird'));
-  const tree = h('div', { class: 'g-zone g-tree' }, sceneImg(kit, 'prop_tree', 'g-tree-img'));
-  const pond = h('div', { class: 'g-zone g-pond' }, sceneImg(kit, 'prop_pond', 'g-pond-img'));
-  const scene = h('div', { class: 'g-scene' }, tree, pond, bird);
-  const A = kit.answers([
-    { key: 'up', label: '나무 — 높아요', chip: sceneImg(kit, 'prop_tree', '') },
-    { key: 'down', label: '연못 — 낮아요', chip: sceneImg(kit, 'prop_pond', '') },
-  ], k => pick(k === 'up'));
-  // TV: 답 단추 자리에 비율 막대(판이 끝난 뒤 · 수 X) / 아이: 답 단추
-  const barUp = h('i', { class: 'tvs-up' }), barDn = h('i', { class: 'tvs-dn' });
-  const ratio = h('div', { class: 'tvs-ratio', hidden: true, 'aria-label': '반 전체가 고른 쪽' },
-    h('span', { class: 'tvs-lab' }, sceneImg(kit, 'prop_tree', ''), '나무'), h('span', { class: 'tvs-bar' }, barUp, barDn), h('span', { class: 'tvs-lab' }, sceneImg(kit, 'prop_pond', ''), '연못'),
-    h('small', { class: 'tvs-cap' }, ''));
-  const side = kidSide ? A.el : h('div', { class: 'tvs-side' }, ratio);
-  const wait = h('div', { class: 'overlay clear' }, h('div', { class: 'panelcard startcard' },
-    h('h2', {}, kidSide ? 'TV를 봐요' : '아이 기기를 맞추는 중'),
-    h('p', { class: 'sub' }, kidSide ? '소리는 TV에서 나요 — 곧 시작해요' : '5초 뒤에 첫 소리가 나요')));
-  ui.stage.append(h('div', { class: 'g-wrap' }, scene, side), wait);
-  ui.setBar();
-  const birdTo = (where, ps) => { bird.dataset.at = where; pose(kit, bird.firstChild, 'bird', ps); };
-  A.busy(true);
-  tvs.ready.then(r => {
-    if (gone) return;
-    if (!r) { wait.querySelector('h2').textContent = '연결이 끊겼어요'; return; }
-    sd = r.sd; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF);
-    const now = performance.now(), endAt = r.start + plan.length * TVS_P;
-    if (endAt < now) { wait.querySelector('h2').textContent = '이번 판은 이미 끝났어요'; wait.querySelector('.sub').textContent = '선생님이 다음 판을 열면 같이 해요'; return; }
-    T.after(Math.max(0, r.start - now - 1500), () => { wait.querySelector('.sub').textContent = '곧 시작해요'; });
-    plan.forEach((_, k) => T.after(Math.max(0, r.start + k * TVS_P - now), () => item(k, r.start + k * TVS_P)));
-    T.after(Math.max(0, endAt - now + 300), end);
-    window.__tvs = { role: tvs.role, sd, start: r.start };
-  });
-  let rowsNow = [];                                   // TV — 이번 판(알림 시각 뒤)에 답을 보낸 기기 줄
-  if (!kidSide) offRes = kit.onRes((list, g) => { rowsNow = list.filter(row => row.c === 'so4' && typeof row.ans === 'string' && (row.at || 0) >= (g || 0)); drawRatio(); });
-  kit.setAuto(() => { if (kidSide && open && picked == null) pick(cur.b > REF); });   // 자동 시험: 아이 기기가 맞는 답
-
-  function item(k, at) {
-    if (gone) return;
-    wait.remove();
-    const late = performance.now() - at;                // 늦게 받으면(탭이 잠깐 숨는 등) 그만큼 당겨서
-    const [iv, inst] = plan[k];
-    cur = { k, b: REF + iv, inst }; picked = null;
-    ui.count(k + 1, plan.length);
-    A.clear(); A.el.classList.remove('answered'); A.busy(true); birdTo('mid', 'idle');
-    if (!kidSide && late < TVS_OPEN) kit.playSeq(engine, [{ p: REF, d: 0.42, gap: 0.2 }, { p: cur.b, d: 0.5 }], { inst, out: V.out, at: Math.max(0.02, 0.3 - late / 1000) });
-    T.after(Math.max(0, TVS_OPEN - late), () => { if (gone || cur.k !== k) return; open = true; if (kidSide) { A.busy(false); A.timer((TVS_CLOSE - Math.max(late, TVS_OPEN)) / 1000); } });
-    T.after(Math.max(0, TVS_CLOSE - late), () => close(k));
-  }
-  function pick(up) {
-    if (!open || picked != null) return;
-    picked = up;
-    A.el.classList.add('answered');                     // 고른 쪽을 가림 — '답했어요'만
-    ui.tell('답했어요', 'info', 1200);
-  }
-  function close(k) {
-    if (gone || !cur || cur.k !== k) return;
-    open = false; A.timer(0); A.busy(true); A.el.classList.remove('answered');
-    const want = cur.b > REF, r = picked == null ? null : picked === want;
-    results.push(r); ans.push(picked == null ? 'x' : picked ? 'U' : 'D');
-    birdTo(want ? 'top' : 'bot', kidSide ? (r ? 'happy' : 'idle') : 'happy');
-    if (kidSide) {
-      A.mark(want ? 'up' : 'down', 'right');
-      if (picked != null && !r) A.btn(picked ? 'up' : 'down').classList.add('wrong');
-      ui.tell(r ? '맞아요' : r === false ? '이번엔 ' + (want ? '나무' : '연못') : '시간이 지났어요', r ? 'good' : 'oops', 1600);
-      kit.sendAns(ans.join(''));
-    } else {
-      lastBar = k; ratio.dataset.want = want ? 'up' : 'down'; drawRatio();
-    }
-  }
-  // TV — 방금 끝난 판에서 아이들이 고른 쪽 비율(수 X) · 답이 아직 안 모였으면 막대를 비워 둠
-  function drawRatio() {
-    if (kidSide || lastBar < 0) return;
-    let u = 0, d = 0;
-    for (const row of rowsNow) { const c = row.ans[lastBar]; if (c === 'U') u++; else if (c === 'D') d++; }
-    ratio.hidden = false;
-    const t = u + d;
-    barUp.style.flexGrow = String(t ? u : 1); barDn.style.flexGrow = String(t ? d : 1);
-    ratio.classList.toggle('empty', !t);
-    ratio.querySelector('.tvs-cap').textContent = `${lastBar + 1}번째 판`;
-    window.__tvsRatio = { k: lastBar, u, d }; window.__tvsSeen = Math.max(window.__tvsSeen || 0, u + d);
-  }
-  function end() {
-    if (gone) return;
-    open = false; A.timer(0); bird.hidden = true; ui.tell(null); ui.count(null); ui.setBar();
-    if (kidSide) {
-      const s = kit.scoreChoices(results, 5, { chance: plan.map(() => 1 / 2) }), tip = tipOf(plan, results);
-      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`, '소리는 TV에서 들었어요'], starOn: s.starOn, rules: s.rules, tip, sd, ans: ans.join(''), mode: 'tvs' });
-      return;
-    }
-    // TV — 마지막 판 답이 서버에 닿을 틈을 주고(결과를 한 번 더 읽고 2.6초) 판마다 반의 절반 넘게 맞힌 판(답이 없으면 빈 점) · '반 별'
-    if (!tvsFinal) { tvsFinal = true; ratio.querySelector('.tvs-cap').textContent = '답을 모으는 중'; if (kit.refreshRes) kit.refreshRes(); T.after(2600, end); return; }
-    const rows = rowsNow;
-    const major = plan.map((p, k) => { let ok = 0, n = 0; for (const row of rows) { const c = row.ans[k]; if (c === 'U' || c === 'D') { n++; if ((c === 'U') === (p[0] > 0)) ok++; } } return n ? ok * 2 > n : null; });
-    const s = kit.scoreChoices(major, 5, { chance: plan.map(() => 1 / 2) });
-    kit.finish({ title: '반 전체 — 판마다 절반 넘게 맞힌 판', replay: major, facts: [`답을 보낸 기기 ${rows.length}대`], starOn: s.starOn, rules: s.rules, tip: '' });
-  }
-  return () => { gone = true; T.clear(); V.hush(); if (offRes) offRes(); };
-}
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF),
+  P: TVS_P, OPEN: TVS_OPEN, CLOSE: TVS_CLOSE,
+  say: { kid: 'TV 소리를 듣고 — 높으면 나무, 낮으면 연못', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+  items: [
+    { key: 'up', label: '나무 — 높아요', chip: sceneImg(kit, 'prop_tree', ''), tv: '나무', code: 'U' },
+    { key: 'down', label: '연못 — 낮아요', chip: sceneImg(kit, 'prop_pond', ''), tv: '연못', code: 'D' },
+  ],
+  rightOf: p => (p[0] > 0 ? 'up' : 'down'),
+  view({ kidSide, V, side }) {
+    const { h } = kit;
+    const bird = h('div', { class: 'g-bird', 'data-at': 'mid' }, pal(kit, 'bird'));
+    const scene = h('div', { class: 'g-scene' }, h('div', { class: 'g-zone g-tree' }, sceneImg(kit, 'prop_tree', 'g-tree-img')), h('div', { class: 'g-zone g-pond' }, sceneImg(kit, 'prop_pond', 'g-pond-img')), bird);
+    const birdTo = (where, ps) => { bird.dataset.at = where; pose(kit, bird.firstChild, 'bird', ps); };
+    return {
+      el: h('div', { class: 'g-wrap' }, scene, side),
+      item: () => birdTo('mid', 'idle'),
+      play: ([iv, inst], at) => kit.playSeq(kit.engine, [{ p: REF, d: 0.42, gap: 0.2 }, { p: REF + iv, d: 0.5 }], { inst, out: V.out, at }),
+      close: ([iv], r) => birdTo(iv > 0 ? 'top' : 'bot', kidSide ? (r ? 'happy' : 'idle') : 'happy'),
+      done: () => { bird.hidden = true; },
+    };
+  },
+  tip: tipOf, chance: plan => plan.map(() => 1 / 2),
+});
 
 export default {
   // ── 보기: 예시 넷 ──
@@ -253,7 +174,7 @@ export default {
   // ── 확인 게임: 나무일까, 연못일까 — 12판 · 한 판 약 4초 ──
   game(ui, kit) {
     const tvs = kit.tvs && kit.tvs();
-    if (tvs) return tvsGame(ui, kit, tvs);            // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);      // 소리 길(다시 듣기 때 앞 소리를 끔)
     const results = [];
