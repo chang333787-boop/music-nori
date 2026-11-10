@@ -36,10 +36,10 @@ export const COMP = { C: [60, 64, 67], Am: [57, 60, 64], F: [57, 60, 65], G: [55
 export const tonesOf = name => (chordByName(name) || chordByName('C')).pcs;
 export const isChordTone = (p, name) => tonesOf(name).includes(pc(p));
 
-// ── 친구 다섯 = 다섯 줄 · 첫 판 15칸 = 15계단(11-08 장1 장단보 → 고슴도치 '장구' · 셈1 → 곰 '셈여림') ──
+// ── 친구 다섯 = 다섯 줄 · 첫 판 칸 하나 = 계단 하나(11-08 장1 장단보 → 고슴도치 '장구' · 셈1 → 곰 '셈여림' · 11-10 빠1 → 곰 '빠르기') ──
 //  곰 = 반주(처음부터) · 토끼 = 반짝 소리(소리 갈래) · 참새 = 가락(가락 갈래) · 고슴도치 = 북(박·리듬 갈래) · 거북 = 베이스(악보 갈래)
 export const PARTS = [
-  { key: 'bear', lane: 'any', name: '반주', base: 1, max: 2 },   // 곰 = 처음부터 반주(1) · 셈1을 지나면 커졌다 작아졌다(2)
+  { key: 'bear', lane: 'any', name: '반주', base: 1, max: 3 },   // 곰 = 처음부터 반주(1) · 셈1을 지나면 커졌다 작아졌다(2) · 빠1을 지나면 끝 두 마디가 점점 느리게(3)
   { key: 'bunny', lane: 'sound', name: '반짝 소리', max: 3 },
   { key: 'bird', lane: 'melody', name: '가락', max: 3 },
   { key: 'hog', lane: 'rhythm', name: '북', max: 6 },
@@ -62,7 +62,7 @@ export const newParts = (heard = {}, now = {}) => PARTS.filter(p => p.lane && (n
 export const partOfCell = id => { const c = cellById(id); return c ? PARTS.find(p => p.lane === c.lane) || null : null; };
 // 그 갈래 줄의 계단마다 무엇이 더해지는지(결과 · 처음 화면 한 줄)
 export const STEP_TEXT = {
-  bear: ['', '', '셈여림'],
+  bear: ['', '', '셈여림', '빠르기'],
   bunny: ['', '트라이앵글', '글로켄슈필', '첼레스타'],
   bird: ['', '가락 앞부분', '가락 뒷부분', '가락 화음'],
   hog: ['', '큰북', '작은북', '하이햇', '마디 끝 채움', '심벌', '장구'],
@@ -106,8 +106,24 @@ export function themeBar(i, lv) {
   if (bn >= 3) for (const b of [1.5, 3.5]) { const c = COMP[chordAt(bar, b)]; ev.push(N('bunny', 'celesta', c[2] + 12, b, 0.35, 0.22)); }
   // 곰 2계단(셈1 여리게·세게) — 셈여림: A는 조금 여리게(mp) · B 앞 네 마디 점점 세게 · 뒤 네 마디 점점 여리게
   if ((lv.bear || 1) >= 2) { const g = DYN[bar]; for (const e of ev) e.vel = Math.min(1, +(e.vel * g).toFixed(3)); }
+  // 곰 3계단(빠1 느리게·보통·빠르게) — 빠르기: 끝 두 마디(15 · 16)가 점점 느리게(rit.) · 다음 바퀴 첫 마디는 제 빠르기(a tempo)
+  //  사건의 박(b) · 길이(d)를 늘어난 박 자리로 옮김 → 소리 쪽(music.js)은 barLen만큼 마디를 잡음(박 놀이 반주 accompBar는 그대로)
+  const w = warpOf(bar, lv);
+  if (w) for (const e of ev) { const a = w(e.b); if (e.d != null) e.d = +(w(e.b + e.d) - a).toFixed(4); e.b = +a.toFixed(4); }
   return ev;
 }
+// 빠르기 계단(곰 3) — 마디 안 박 길이 배수가 처음 s0 → 끝 s1로 고르게 늘어남(점점 느리게). 15마디 1 → 1.2 · 16마디 1.2 → 1.5
+//  = 빠르기 100(보통 · 빠1의 '보통')에서 약 67(빠1의 '느리게')까지 · 박 자리 W(b) = s0·b + (s1 − s0)·b²/8 · 마디 길이 = W(4) = 2(s0 + s1)
+export const RIT = { 14: [1, 1.2], 15: [1.2, 1.5] };
+export function warpOf(i, lv = {}) {
+  if ((lv.bear || 1) < 3) return null;
+  const r = RIT[((i % BARS) + BARS) % BARS];
+  if (!r) return null;
+  const [s0, s1] = r;
+  return b => s0 * b + (s1 - s0) * b * b / 8;
+}
+// 마디 길이(박 · 제 빠르기 박으로 셈) — 배경 음악이 마디를 차례로 잡을 때(music.js pump)
+export const barLen = (i, lv = {}) => { const w = warpOf(i, lv); return w ? w(4) : 4; };
 export const DYN = [0.8, 0.8, 0.8, 0.85, 0.8, 0.8, 0.85, 0.9, 0.72, 0.86, 1.0, 1.15, 1.1, 0.96, 0.82, 0.7];
 // 가락 아래 화음 음(셋째 · 넷째 아래 중 화음 음) — 없으면 null
 export function harmonyBelow(p, name) {

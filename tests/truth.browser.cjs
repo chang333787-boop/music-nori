@@ -111,10 +111,39 @@ const server = http.createServer((req, res) => {
     const r2 = await page.evaluate(() => ({ before: document.querySelectorAll('.resultcard .beforestar').length, label: document.querySelector('.resultcard .beforestar em')?.textContent, px: parseFloat(getComputedStyle(document.querySelector('.resultcard .beforestar em') || document.body).fontSize), sd: JSON.parse(localStorage.getItem('mn.prog') || '{}').so3?.hist?.map(x => x.sd) }));
     if (r1.before !== 0 || r2.before !== r1.stars || r2.label !== '아까' || r2.px < 18) bad(`'아까' 별: ` + JSON.stringify({ r1, r2 }));
     else ok(`'아까' 별 — 첫 결과 0 · '한 번 더' 뒤 ${r2.before}개(점선 빈 별 · ${r2.px}px) · 기록 sd ${r2.sd.join(' · ')}`);
+    // 4c. 빠1 — 느린 소리(박 4)와 빠른 소리(박 9)에서 답 단추가 열리는 때가 같아야(소리 창이 늘 3.6초 · 화면으로 빠르기가 새지 않게)
+    //  발전 단계(4~7번째 판) 안에서 느리게 · 빠르게가 이어지는 씨앗을 골라 그 두 판의 열림을 견줌
+    {
+      const pick = await page.evaluate(async () => {
+        const K = await import('./app/js/cellkit.js'), M = await import('./app/js/cells/ppa1.js');
+        for (let n = 1; n < 300; n++) { const p = K.stageShuffle(M.PLAN, M.CUTS, K.rng(K.seedOf('seed', String(n), 'ppa1')), M.SHUF); for (let k = M.CUTS[0] + 1; k + 1 < M.CUTS[1]; k++) if (p[k].right === 'slow' && p[k + 1].right === 'fast') return { n, k }; }
+        return null;
+      });
+      await page.goto(base + `?seed=${pick.n}&run=pp#/cell/ppa1/game`);
+      await page.evaluate(() => { localStorage.removeItem('mn.prog'); window.__cellResult = null; });
+      await page.waitForTimeout(700);
+      await page.evaluate(() => {
+        window.__tp = { count: {}, open: {}, done: {} };
+        const cnt = document.querySelector('.ccount'), ans = document.querySelector('.answers');
+        let cur = 0;
+        new MutationObserver(() => { const m = /^(\d+) \//.exec(cnt.textContent); if (m && +m[1] !== cur) { cur = +m[1]; window.__tp.count[cur] = performance.now(); } }).observe(cnt, { childList: true, characterData: true, subtree: true });
+        new MutationObserver(() => { if (cur && !ans.classList.contains('busy') && !window.__tp.open[cur]) window.__tp.open[cur] = performance.now(); }).observe(ans, { attributes: true, attributeFilter: ['class'] });
+        window.__cellAuto();                                   // 시작
+      });
+      const want = pick.k + 2;                                 // 1부터 센 판 번호(느리게 = want-1 · 빠르게 = want) · 보통 단추가 나오는 판(기다림이 김)은 뺌
+      for (let k = 0; k < 400; k++) {
+        const st = await page.evaluate(w => { const t = window.__tp; for (let j = 1; j <= w; j++) if (t.open[j] && !t.done[j]) { t.done[j] = 1; window.__cellAuto(); } return t.open[w] ? 1 : 0; }, want);
+        if (st) break;
+        await page.waitForTimeout(100);
+      }
+      const tp = await page.evaluate(() => window.__tp);
+      const ds = tp.open[want - 1] - tp.count[want - 1], df = tp.open[want] - tp.count[want];
+      if (!(Math.abs(ds - df) <= 60)) bad(`빠1 답 단추 열림 — 느리게 ${Math.round(ds)}ms · 빠르게 ${Math.round(df)}ms`); else ok(`빠1 답 단추 열림이 빠르기와 상관없이 같음(느리게 ${Math.round(ds)} · 빠르게 ${Math.round(df)}ms · 씨앗 ${pick.n})`);
+    }
     // 5. 씨앗 — ?seed=1 · 2로 소4 · 가1을 끝까지(완벽 봇 = 별 셋) · 기록에 sd · 같은 씨앗이면 같은 sd
     const sds = {};
     let run = 0;                                             // 주소가 # 뒤만 다르면 새로 읽지 않아 앞 판 결과(__cellResult)가 남음 → 판마다 run을 붙여 새로 읽음
-    for (const [id, sdq] of [['so4', 1], ['so4', 2], ['ga1', 1], ['ga1', 1], ['ga3', 1], ['ga3', 1]]) {
+    for (const [id, sdq] of [['so4', 1], ['so4', 2], ['ga1', 1], ['ga1', 1], ['ga3', 1], ['ga3', 1], ['ppa1', 1], ['ppa1', 1]]) {
       await page.goto(base + `?seed=${sdq}&run=${++run}#/cell/${id}/game`);
       await page.waitForTimeout(800);
       let rr = null;
@@ -125,7 +154,7 @@ const server = http.createServer((req, res) => {
       if (!rr || rr.stars !== 3 || rr.sd == null) bad(`${id} ?seed=${sdq}: ` + JSON.stringify(rr));
       else { ok(`${id} ?seed=${sdq} — 별 셋 · 기록 sd ${rr.sd} · 별 ① "${rr.rule}"`); (sds[id + sdq] = sds[id + sdq] || []).push(rr.sd); }
     }
-    for (const k of ['ga11', 'ga31']) if (sds[k] && (sds[k].length !== 2 || sds[k][0] !== sds[k][1])) bad('같은 씨앗인데 sd가 다름 ' + k + JSON.stringify(sds[k])); else ok(`같은 씨앗 = 같은 판(${k.slice(0, 3)} sd 같음)`);
+    for (const k of ['ga11', 'ga31', 'ppa11']) if (sds[k] && (sds[k].length !== 2 || sds[k][0] !== sds[k][1])) bad('같은 씨앗인데 sd가 다름 ' + k + JSON.stringify(sds[k])); else ok(`같은 씨앗 = 같은 판(${k.slice(0, 3)} sd 같음)`);
     if (sds.so41 && sds.so42 && sds.so41[0] === sds.so42[0]) bad('다른 씨앗인데 sd가 같음');
     // 6. 보기 — '연습해 볼래요'는 예시 두 번 뒤 주황(X10) · 흰 단추일 때도 누르면 연습으로
     await page.goto(base + '#/cell/so4');

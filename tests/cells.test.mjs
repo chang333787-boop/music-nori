@@ -20,8 +20,8 @@ const visit = (id, path = []) => {
 };
 for (const c of CELLS) visit(c.id);
 // 첫 판
-assert.equal(FIRST.length, 15);
-assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 15칸');
+assert.equal(FIRST.length, 16);
+assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 16칸');
 for (const id of FIRST) assert.ok(cellById(id).game, id + ' 확인 게임 설명');
 // 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다
 for (const [i, id] of ORDER.entries()) for (const p of cellById(id).pre) if (FIRST.includes(p)) assert.ok(ORDER.indexOf(p) < i, `${id}보다 ${p}가 먼저`);
@@ -176,7 +176,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   globalThis.localStorage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)) };
   const K = await import('../app/js/cellkit.js');
   const M = {};
-  for (const id of ['so3', 'so5', 'ga2', 'ga3', 'ak2']) M[id] = await import(`../app/js/cells/${id}.js`);
+  for (const id of ['so3', 'so5', 'ga2', 'ga3', 'ak2', 'ppa1']) M[id] = await import(`../app/js/cells/${id}.js`);
   const STAGES = ['intro', 'grow', 'twist', 'end'];
   // 판마다 고를 수 있는 답(찍기 봇이 누를 수 있는 것) — 소5는 크기 단추가 비틀기부터 · 가3은 그림 수 · 악2는 비틀기부터 넷
   const OPTS = {
@@ -185,6 +185,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     ga2: () => [69, 67, 64],
     ga3: p => p.opts.map((_, j) => j),
     ak2: p => (p.twist ? [0, 1, 2, 3] : [0, 1]),
+    ppa1: (p, k) => (k < M.ppa1.CUTS[0] ? ['slow', 'fast'] : ['slow', 'mid', 'fast']),
   };
   // 줄의 답이 문항 내용과 맞는지(표 하나가 정본 — 뒤집어도 맞아야 함)
   const RIGHT = {
@@ -193,6 +194,11 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     ga2: p => p.right === p.ps[p.q],
     ga3: p => p.opts[p.right] === p.ps && p.opts.length === 1 + p.alt.length,
     ak2: p => p.right === (p.twist ? [3, 2, 0, -2].indexOf(p.pos) : p.pos % 2 === 0 ? 0 : 1),
+    // 빠1 — 답 = 박 빠르기 · 헷갈림 거리는 뒤집어도 헷갈림 거리(촘촘한 음 = 늘 느린 박 · 긴 음 = 늘 빠른 박 · 센 = 느리게 · 여린 = 빠르게 · 높이 판 = 보통)
+    ppa1: p => p.right === p.t && M.ppa1.clipOf(p).steps.length === { slow: 4, mid: 6, fast: 9 }[p.t]
+      && ({ cmp: p.t !== 'mid' && p.mel === 'plain', plain: p.mel === 'plain', theme: p.t === 'mid' && p.mel === 'theme',
+        dens: (p.t === 'slow' && p.mel === 'dense') || (p.t === 'fast' && p.mel === 'long'), dyn: (p.t === 'slow' && p.vel > 0.7) || (p.t === 'fast' && p.vel < 0.3),
+        high: p.t === 'mid' && Math.abs(p.shift) === 12 })[p.kind],
   };
   // 섞어도 단계마다 같은 문항 묶음인지 견주는 열쇠(뒤집기는 같은 문항으로 봄)
   const NORM = {
@@ -201,6 +207,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     ga2: p => `${p.ps.join(',')}:${p.q}:${p.inst}`,
     ga3: p => `${p.ps.join(',')}:${p.inst}`,
     ak2: p => `${p.pos}:${p.twist}`,
+    ppa1: p => `${p.stage}:${p.kind}:${p.inst}:${p.acc}`,
   };
   const allLate = Array(12).fill(null);
   for (const [id, mod] of Object.entries(M)) {
@@ -224,6 +231,12 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     bots.push(['찍기', (k, p, o) => o[Math.floor(rr() * o.length)]]);
     // 가2 화면 틈 봇(11-10) — 화면에 안 보이는 음을 고름(하나면 그것 · 둘이면 그중 하나 · 다 보이면 아무거나)
     if (id === 'ga2') bots.push(['안 보이는 음', (k, p, o) => { const shown = p.ps.filter((_, j) => j !== p.q), miss = o.filter(v => !shown.includes(v)), from = miss.length ? miss : o; return from[Math.floor(rr() * from.length)]; }]);
+    // 빠1 화면 틈 봇(11-10) — 소리를 끄고 '잘 들어요'가 얼마나 오래 가는지(답 열림) · 소리 길이만 봄: 길면 느리게 · 짧으면 빠르게 · 같으면 아무거나
+    //  (소리 창이 빠르기와 상관없이 3.6초라 단서가 없어야 함 → 찍기와 같아야)
+    if (id === 'ppa1') {
+      const md = (k, p) => { const same = PLAN.filter(x => x.stage === p.stage); return [same.map(M.ppa1.openSec), same.map(M.ppa1.soundSec)]; };
+      bots.push(['소리 길이', (k, p, o) => { const [opens, lens] = md(k, p), mo = opens.reduce((a, b) => a + b) / opens.length, ml = lens.reduce((a, b) => a + b) / lens.length; const d = (M.ppa1.openSec(p) - mo) + (M.ppa1.soundSec(p) - ml); return d > 1e-6 ? 'slow' : d < -1e-6 ? 'fast' : o[Math.floor(rr() * o.length)]; }]);
+    }
     const got = new Map(bots.map(([n]) => [n, 0]));
     let same = 0, alt = 0, origin = 0;
     for (let sd = 1; sd <= 1000; sd++) {
@@ -264,7 +277,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   const fakeH = (tag, attrs, ...kids) => ({ tag, attrs, kids, nodeType: 1, cloneNode() { return this; } });
   const kit = { h: fakeH, band: 'mid', stageShuffle: K.stageShuffle, rng: K.rng, engine: null, playSeq: () => ({}), friendImg: () => fakeH('img'), setPose: () => {} };
   const num = (x, row) => (typeof x === 'function' ? x(row) : x);
-  for (const id of ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3']) {
+  for (const id of ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3', 'ppa1']) {
     const mod = await import(`../app/js/cells/${id}.js`);
     assert.equal(mod.TVS, true, id + ' TVS = true');
     const S = mod.tvsSpec({ tell() {}, say() {} }, kit);
@@ -296,6 +309,45 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   assert.equal(new Set(seqs.map(S1.seq.code)).size, seqs.length, '가1 메아리 차례마다 다른 글자');
   assert.ok(seqs.every(q => /^[0-9a-f]$/.test(S1.seq.code(q))), '가1 메아리 글자 0~f');
   assert.ok(!(await import('../app/js/cells/ak2.js')).TVS, '악2(오선을 보고 푸는 문제)는 TVS X');
+  delete globalThis.localStorage;
+}
+// ── 빠1 느리게·보통·빠르게(11-10) — 박 빠르기 · 화면 틈 · 차례 ──
+{
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const K = await import('../app/js/cellkit.js'), P = await import('../app/js/cells/ppa1.js');
+  assert.deepEqual(cellById('ppa1').pre, ['ri1'], '빠1은 일정박(리1) 뒤 — 빠르기 = 박의 빠르기');
+  assert.ok(ORDER.indexOf('ri1') < ORDER.indexOf('ppa1') && ORDER.indexOf('sem1') < ORDER.indexOf('ppa1'), '추천 차례 셈1 → 리1 → 빠1');
+  // 빠르기 셋 = 박 0.9 · 0.6 · 0.4초(1.5배씩) · 같은 시간(3.6초) 안 박 4 · 6 · 9번
+  assert.deepEqual(['slow', 'mid', 'fast'].map(t => P.clip(t).steps.length), [4, 6, 9]);
+  assert.ok(Math.abs(P.BEAT.slow / P.BEAT.mid - 1.5) < 1e-9 && Math.abs(P.BEAT.mid / P.BEAT.fast - 1.5) < 1e-9, '빠르기 칸마다 1.5배');
+  // 화면 틈: 한 단계 안에서는 소리 길이 · 답 열림이 빠르기(답)와 상관없이 같음 — 뒤집은 문항도
+  for (const st of ['intro', 'grow', 'twist', 'end']) {
+    const rows = P.PLAN.filter(p => p.stage === st).flatMap(p => [p, P.flip(p)]);
+    assert.equal(new Set(rows.map(P.soundSec)).size, 1, st + ' 소리 길이가 답마다 다름');
+    assert.equal(new Set(rows.map(P.openSec)).size, 1, st + ' 답 열림이 답마다 다름');
+  }
+  // 음이 창 밖으로 넘치지 않음 · 높이는 C4~C6(높이 판만 한 옥타브 아래 E3까지) · 박이 창 처음에 하나
+  for (const p of P.PLAN.flatMap(x => [x, P.flip(x)])) {
+    const c = P.clipOf(p);
+    assert.ok(c.notes.every(n => n.at + n.d <= c.win + 1e-9 && n.p >= (p.kind === 'high' ? 52 : 60) && n.p <= 84), p.kind + ' 음 자리');
+    assert.equal(c.steps[0], 0);
+  }
+  // 촘촘함 판 — 느린 박 위 음이 박보다 많고(4배) · 빠른 박 위 음이 박보다 적음(음 수로 고르는 아이는 틀림)
+  const dense = P.clipOf({ ...P.PLAN.find(p => p.mel === 'dense') }), long = P.clipOf(P.flip(P.PLAN.find(p => p.mel === 'dense')));
+  assert.ok(dense.notes.length === dense.steps.length * 4 && long.notes.length < long.steps.length / 2, '촘촘함 판 음 수');
+  // 음 촘촘함 봇(오개념 '음이 많으면 빠르게') — 별 셋은 못 받음 · 결과 한 줄에 '음 수'
+  {
+    const rate = p => P.clipOf(p).notes.length / P.WIN, plan = K.stageShuffle(P.PLAN, P.CUTS, K.rng(3), P.SHUF);
+    const res = plan.map((p, k) => { const r = rate(p), g = r > 2.1 ? 'fast' : r < 1.3 ? 'slow' : 'mid'; return (k < P.CUTS[0] && g === 'mid' ? 'slow' : g) === p.right; });
+    assert.ok(res.filter(x => !x).length >= 2 && !K.scoreChoices(res, 5, { chance: P.GUESS(plan) }).starOn[2], '음 촘촘함 봇은 별 셋 X');
+    const three = plan.map(p => p.stage !== 'twist');
+    assert.match(P.tipOf(plan, three, plan.map(p => p.right)), /음 수 · 세기 · 높이에 속은 적이 있어요/, '비틀기 넷을 다 틀리면 헷갈림 거리 한 줄');
+  }
+  // TV 소리 모드 한 판 길이(가장 느린 판에 맞춘 시간표)
+  const S = P.tvsSpec({ tell() {}, say() {} }, { h: () => ({}), band: 'mid', stageShuffle: K.stageShuffle, rng: K.rng });
+  const total = P.PLAN.reduce((a, r) => a + S.P(r), 0);
+  assert.ok(total <= 90000, `빠1 TV 소리 모드 ${Math.round(total / 1000)}초`);
+  console.log(`✓ 빠1 — 박 4 · 6 · 9 · 단계마다 소리 길이 · 답 열림 같음 · TV 소리 모드 ${Math.round(total / 1000)}초 · 찍기 바닥 ${K.minKeepP(P.GUESS(P.PLAN))}/12`);
   delete globalThis.localStorage;
 }
 // ── 장1 장단보 채우기(11-08 · docs/gugak.md 표기 그대로) ──
@@ -332,4 +384,4 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   console.log('✓ 칸 → 곡 바꾸기 부탁 ' + Object.keys(PLAY_CARD).length + '칸');
 }
-console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 다섯 칸 문항 표(X2) · TV 소리 모드 일곱 칸 · 장1 장단 표기`);
+console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 여섯 칸 문항 표(X2) · TV 소리 모드 여덟 칸 · 빠1 · 장1 장단 표기`);

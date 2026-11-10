@@ -4,7 +4,9 @@ import { friendImg } from '../band.js';
 import { CELLS, LANES, ORDER, cellById, nextCell, cellName } from '../../../engine/cells.js';
 import { getProg, STAR_SVG } from '../cellkit.js';
 
-const ROWS = ['sound', 'melody', 'rhythm', 'score', 'any'];   // any = 곰 갈래(셈여림·빠르기) — 11-08 셈1부터 열림
+const ROWS = ['sound', 'melody', 'rhythm', 'score', 'any'];   // any = 곰 갈래(셈여림·빠르기) — 11-08 셈1 · 11-10 빠1
+// 곰 줄 끝 한 줄 — 아직 첫 판에 없는 셈여림 · 빠르기 칸 이름(지금 = 셈여림의 변화 · 빠르기의 변화 · 첫 판에 들면 저절로 빠짐)
+const LATER = CELLS.filter(c => c.lane === 'any' && !c.first && /^(sem|ppa)\d/.test(c.id)).map(c => c.name);
 
 export default function mount(root, ctx) {
   const prog = getProg();
@@ -28,8 +30,7 @@ export default function mount(root, ctx) {
           h('span', { class: 'mstars', html: [0, 1, 2].map(i => STAR_SVG(i < st)).join('') }));
         onPress(btn, () => ctx.go(c.route || 'cell/' + id));
         return btn;
-      }), lane === 'any' ? h('span', { class: 'mlater' }, '빠르기는 다음에 열려요') : null));
+      }), lane === 'any' && LATER.length ? h('span', { class: 'mlater' }, `${LATER.join(' · ')}는 다음에 열려요`) : null));
   });
   root.append(h('div', { class: 'map' }, ...rows));
-  void CELLS;
 }
