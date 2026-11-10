@@ -1,0 +1,45 @@
+/* 빠1 느리게·보통·빠르게 — 걸음 띠(가로 = 시간 · 띠 길이 = 같은 시간 · 위 = 음 막대 · 아래 = 발자국 = 박) · 곰
+   고르기 전(hid)에는 재생선만(빠르기와 상관없이 같은 속도) · 고른 뒤(shown) 발자국 · 음 막대 · 곰이 그 빠르기로 걸음 */
+.pp{position:relative;width:100%;min-height:0;display:grid;gap:20px;align-items:center}
+.pp-show{grid-template-rows:minmax(0,1fr) auto;align-content:stretch}
+.pp-play{grid-template-columns:minmax(0,1fr) auto;gap:28px}
+.pp-scene{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:center;min-height:0}
+.pp-tracks{display:flex;flex-direction:column;gap:14px;min-width:0}
+.pp-trk{display:grid;grid-template-rows:auto 128px;gap:6px;min-width:0}
+.pp-trk[hidden]{display:none}
+.pp-lab{justify-self:start;font-family:var(--head);font-weight:400;font-size:22px;line-height:1.15;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:3px 16px}
+.pp-lane{position:relative;background:var(--bear-t);border:3px solid var(--ink);border-radius:18px;overflow:hidden}
+.pp-notes{position:absolute;left:18px;right:18px;top:10px;height:50px}
+.pp-steps{position:absolute;left:18px;right:18px;bottom:6px;height:52px;border-top:3px dashed rgba(59,42,30,.18)}
+.pp-note{position:absolute;min-width:6px;height:10px;border-radius:6px;background:#9C8F80;transform:translateY(50%)}
+.pp-note.on{background:var(--ink)}
+/* 발자국 — 왼발 · 오른발 번갈아 위아래 · 지금 박 = 잉크 */
+.pp-step{position:absolute;top:4px;width:26px;height:35px;margin-left:-13px;border-radius:50% 50% 45% 45%;background:var(--bear);border:3px solid var(--ink);box-sizing:border-box}
+.pp-step:nth-child(even){top:12px}
+.pp-step.on{background:var(--ink);transform:scale(1.15)}
+.pp-lane.hid .pp-notes,.pp-lane.hid .pp-steps{visibility:hidden}
+.pp-sweep{position:absolute;top:0;bottom:0;left:18px;right:18px;pointer-events:none}
+.pp-head{position:absolute;left:-2px;top:6px;bottom:6px;width:4px;border-radius:2px;background:var(--ink)}
+.pp-legend{margin:0;font-family:var(--head);font-size:20px;line-height:1.2;color:var(--ink-2)}
+/* 곰 — 고른 뒤 그 빠르기로 걸음(한 번 끄덕 = 박 하나) */
+.pp-bear{display:flex;justify-content:center}
+.pp-bear .pal{width:140px;height:auto;transform-origin:50% 100%}
+.pp-bear.walk .pal{animation:ppstep var(--beat,.6s) ease-in-out infinite}
+.pp-bear[hidden]{visibility:hidden}
+@keyframes ppstep{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
+@media (prefers-reduced-motion:reduce){.pp-bear.walk .pal{animation:none}}
+.pp-exgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.pp-ex{min-height:104px}
+.pp-ex b{font-size:24px;line-height:1.2}
+/* 보기 카드 묶음(소리 칸 공용 모양 — so5.css와 같게) */
+.snd-exwrap{display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0}
+.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:18px;line-height:1.2;color:#3B2A1E}
+.snd-spk{position:absolute;top:10px;right:12px;width:30px;height:30px;pointer-events:none}
+.snd-spk.in{position:static;width:26px;height:26px}
+.snd-spk svg{display:block;width:100%;height:100%}
+.snd-exwrap .excard{position:relative;padding-right:48px}
+.excard.now{outline:4px solid var(--ink);outline-offset:3px}
+/* 듣는 동안 '잘 들어요'(A.busy) — 자리를 늘 잡아 둬서 켜고 끌 때 답 단추가 위아래로 밀리지 않게(so5와 같게) */
+.answers::before{content:'잘 들어요';align-self:center;font-family:var(--head);font-size:22px;border:3px solid transparent;border-radius:999px;padding:4px 18px;visibility:hidden}
+.answers.busy::before{visibility:visible;position:static;left:auto;top:auto;transform:none}
+.cbody .kbd{font-size:18px}

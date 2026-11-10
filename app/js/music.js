@@ -3,9 +3,10 @@
 //  · 방에 들어온 아이 기기 · 선생님 칸 '배경 음악 끔'이면 X · 탭이 숨으면 멈췄다가 다음 마디부터
 //  · 16마디 × 세 바퀴(약 2분) 뒤 마침 화음으로 끝내고 조용히(화면을 다시 열면 처음부터)
 //  · 줄마다 볼륨(친구 다섯) — 친구를 누르면 그 줄만 두 마디 크게(음색 듣기) · 새 줄은 첫 네 마디 크게
+//  · 마디 길이는 theme.js barLen(곰 3계단 '빠르기' = 끝 두 마디가 점점 느리게 → 마디가 길어짐) — 마디 시작 시각을 차례로 더해 잡음(tNext)
 import { engine } from './audio.js';
 import { lsGet, lsSet } from './util.js';
-import { THEME, BARS, themeBar, cadence, levelsOf, newParts, PARTS, fanfare, FANFARE_BPM, STAR_NOTES, goodNotes } from '../../engine/theme.js';
+import { THEME, BARS, themeBar, barLen, cadence, levelsOf, newParts, PARTS, fanfare, FANFARE_BPM, STAR_NOTES, goodNotes } from '../../engine/theme.js';
 
 const LOOPS = 3, LEAD = 0.35, VOL = 0.38;            // 배경 음악은 작게(다섯 다 함께일 때 RMS 약 −20dBFS · tools/render_sound.cjs로 잼)
 let gate = () => true;                 // main.js가 줌(방에 있는 아이 기기면 false)
@@ -59,8 +60,8 @@ function start(fromBar = 0) {
   const gains = {};
   for (const p of PARTS) { const g = ac.createGain(); g.gain.value = 1; g.connect(master); gains[p.key] = g; }
   const beat = 60 / THEME.bpm, barSec = beat * 4;
-  st = { ac, lv, master, gains, beat, barSec, t0: ac.currentTime + 0.15, bar: fromBar, next: fromBar, endBar: LOOPS * BARS, timer: 0, spot: null, fresh };
-  st.t0 -= fromBar * barSec;
+  //  t0 = 박 자리의 기준(처음 화면 친구 끄덕임 · 새 줄 크게) — 이어 틀 때도 마디 첫 박이 박 자리라 그 마디 시작으로 둠 · tNext = 다음에 잡을 마디 시작
+  st = { ac, lv, master, gains, beat, barSec, t0: ac.currentTime + 0.15, tNext: ac.currentTime + 0.15, tEnd: 0, bar: fromBar, next: fromBar, endBar: LOOPS * BARS, timer: 0, spot: null, fresh };
   window.__music = { playing: true, fresh, bar: fromBar, events: 0 };
   if (fresh.length) spotlight(fresh, 4, true);
   pump();
@@ -71,15 +72,20 @@ function start(fromBar = 0) {
 // 마디 하나씩 예약(0.35초 앞만 — 노드가 쌓이지 않게)
 function pump() {
   if (!st) return;
-  const { ac, t0, barSec, beat } = st;
-  while (st.next <= st.endBar && t0 + st.next * barSec < ac.currentTime + LEAD) {
-    const i = st.next++, tb = t0 + i * barSec;
-    const ev = i === st.endBar ? cadence(st.lv) : themeBar(i % BARS, st.lv);
+  const { ac, beat } = st;
+  while (st.next <= st.endBar && st.tNext < ac.currentTime + LEAD) {
+    const i = st.next++, tb = st.tNext, last = i === st.endBar;
+    const ev = last ? cadence(st.lv) : themeBar(i % BARS, st.lv);
     for (const e of ev) play(e, tb, beat, st.gains[e.part] || st.master);
+    const len = last ? 4 : barLen(i % BARS, st.lv);
+    st.tNext = tb + len * beat;
+    if (last) st.tEnd = st.tNext;
+    // 바퀴가 새로 시작하면 박 자리 기준을 그 첫 마디로(앞 바퀴 끝이 느려져 박 자리가 밀렸으면 끄덕임을 다시 맞춤)
+    if (i % BARS === 0 && Math.abs(tb - (st.t0 + Math.round((tb - st.t0) / beat) * beat)) > 0.005) { st.t0 = tb; emit(); }
     st.bar = i;
-    window.__music = { ...(window.__music || {}), bar: i, events: (window.__music && window.__music.events || 0) + ev.length };
+    window.__music = { ...(window.__music || {}), bar: i, events: (window.__music && window.__music.events || 0) + ev.length, len: +len.toFixed(3) };
   }
-  if (st.next > st.endBar && ac.currentTime > t0 + (st.endBar + 1) * barSec + 1.5) { done = true; stop(false); }
+  if (st.next > st.endBar && st.tEnd && ac.currentTime > st.tEnd + 1.5) { done = true; stop(false); }
 }
 function play(e, tb, beat, out) {
   const t = tb + e.b * beat;

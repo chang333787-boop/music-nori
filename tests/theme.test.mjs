@@ -1,7 +1,7 @@
 // 주제곡 「숲속 음악대」 시험 — 곡 모양 · 화음 · 계단 · 박 놀이 반주 · 손맛(docs/sound.md §6)
 import assert from 'node:assert/strict';
 import { THEME, THEME_ERRORS, BARS, MEL, chordAt, chordSpans, isChordTone, PARTS, levelsOf, stepsOf, newParts, partOfCell, STEP_TEXT,
-  themeBar, cadence, accompBar, themeRun, harmonize, holdPitch, goodNotes, LADDER, STAR_NOTES, fanfare, COMP, ROOT } from '../engine/theme.js';
+  themeBar, barLen, warpOf, cadence, accompBar, themeRun, harmonize, holdPitch, goodNotes, LADDER, STAR_NOTES, fanfare, COMP, ROOT } from '../engine/theme.js';
 import { FIRST } from '../engine/cells.js';
 import { pc } from '../engine/theory.js';
 import { checkAll, loadHashes, pct, LIMIT } from '../tools/simcheck.mjs';
@@ -50,9 +50,24 @@ for (const p of PARTS) if (p.lane) for (let k = (p.base || 0) + 1; k <= p.max; k
 }
 // 곰 2계단(셈1) = 셈여림 — B 앞은 점점 세게 · 뒤는 점점 여리게(가장 센 마디가 B 가운데)
 { const peak = (b, l) => Math.max(...themeBar(b, l).map(e => e.vel)); const L2 = { ...L0, bear: 2 }; assert.ok(peak(11, L2) > peak(8, L2) && peak(11, L2) > peak(15, L2), '곰 셈여림 곡선'); }
+// 곰 3계단(빠1) = 빠르기 — 끝 두 마디(15 · 16)만 점점 느리게(마디가 길어지고 박 사이가 벌어짐) · 나머지 마디 · 다음 바퀴 첫 마디는 제 빠르기
+{
+  const L3 = { ...L0, bear: 3 }, L2 = { ...L0, bear: 2 };
+  assert.deepEqual(Array.from({ length: BARS }, (_, i) => barLen(i, L2)), Array(BARS).fill(4), '곰 2계단까지는 마디 길이 그대로');
+  assert.ok(Array.from({ length: 14 }, (_, i) => barLen(i, L3)).every(x => x === 4) && barLen(16, L3) === 4, '빠르기 계단도 1~14마디 · 다음 바퀴 첫 마디는 제 빠르기');
+  assert.ok(barLen(14, L3) > 4 && barLen(15, L3) > barLen(14, L3), `끝 두 마디가 점점 길어짐(${barLen(14, L3)} · ${barLen(15, L3)})`);
+  const w = warpOf(15, L3), gaps = [0, 1, 2, 3].map(b => w(b + 1) - w(b));
+  assert.ok(gaps.every((g, k) => !k || g > gaps[k - 1]), '16마디 안에서도 박 사이가 점점 벌어짐(점점 느리게)');
+  assert.ok(gaps[3] > 1.4 && gaps[3] < 1.55, `마지막 박 빠르기 약 ${Math.round(100 / gaps[3])} — 보통(100)에서 빠1 '느리게'(67) 가까이`);
+  // 같은 음 · 같은 줄 · 같은 차례 — 박 자리만 옮김(16마디 가락 음이 그대로 · 마지막 음이 마디 안)
+  const a = themeBar(15, L2).filter(e => e.part === 'bear'), b = themeBar(15, L3).filter(e => e.part === 'bear');
+  assert.deepEqual(b.map(e => e.p), a.map(e => e.p));
+  assert.ok(b.some((e, k) => e.b > a[k].b), '박 자리가 뒤로');
+  assert.ok(JSON.stringify(themeBar(3, L2)) === JSON.stringify(themeBar(3, L3)), '느려지지 않는 마디는 셈여림 계단과 같음');
+}
 // 모든 사건이 마디 안 · 줄 이름이 친구
 for (let i = 0; i < BARS; i++) for (const e of themeBar(i, ALL)) {
-  assert.ok(e.b >= 0 && e.b < 4, `${i + 1}마디 사건 박 ${e.b}`);
+  assert.ok(e.b >= 0 && e.b < barLen(i, ALL), `${i + 1}마디 사건 박 ${e.b}`);
   assert.ok(PARTS.some(p => p.key === e.part), '줄 이름 ' + e.part);
   if (e.kind === 'note') assert.ok(e.p > 30 && e.p < 110 && e.d > 0 && e.vel > 0 && e.vel <= 1, '음 값');
 }
