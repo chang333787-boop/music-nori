@@ -1,6 +1,6 @@
 // 개념 칸 지도 시험 — 먼저 필요한 칸이 모두 있는지 · 고리(순환) 없음 · 첫 판 13칸 · 추천 차례가 앞 칸을 지키는지
 import assert from 'node:assert/strict';
-import { CELLS, LANES, FIRST, ORDER, cellById, nextCell, missingPre, passed, cellName, easyText, EASY_WORDS, stdText, PLAY_STD } from '../engine/cells.js';
+import { CELLS, LANES, FIRST, ORDER, cellById, nextCell, missingPre, passed, cellName, easyText, EASY_WORDS, stdText, PLAY_STD, PLAY_CARD } from '../engine/cells.js';
 
 const ids = new Set(CELLS.map(c => c.id));
 assert.equal(ids.size, CELLS.length, '칸 id 겹침');
@@ -194,3 +194,14 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   delete globalThis.localStorage;
 }
 console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 장1 장단 표기`);
+
+// 칸 결과 → 곡 바꾸기 부탁(11-10): 첫 판 칸만 · 부탁 키는 play.js CARDS의 여덟 중 하나 · 단추 글은 '바꿔/넣어/고쳐/지어/늘여 보기'
+{
+  const KEYS = ['pitch', 'long', 'fix', 'rest', 'meter', 'tempo', 'dyn', 'make'];
+  for (const [id, [key, label]] of Object.entries(PLAY_CARD)) {
+    assert.ok(FIRST.includes(id), 'PLAY_CARD 칸이 첫 판에 없음: ' + id);
+    assert.ok(KEYS.includes(key), 'PLAY_CARD 부탁 키가 없음: ' + id + ' ' + key);
+    assert.ok(/ 보기$/.test(label) && label.length <= 12, 'PLAY_CARD 단추 글: ' + label);
+  }
+  console.log('✓ 칸 → 곡 바꾸기 부탁 ' + Object.keys(PLAY_CARD).length + '칸');
+}

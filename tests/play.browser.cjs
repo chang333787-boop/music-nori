@@ -89,6 +89,16 @@ const server = http.createServer((req, res) => {
     await page.waitForTimeout(900);
     v = await look();
     if (v.ls !== '[0,7]' || v.s.card !== 2) { fail++; console.log('✗ 부탁 점 — 새로 열었더니 진행이 [0,7]이 아니거나 안 끝낸 첫 부탁(2)에서 시작 안 함: ' + JSON.stringify({ ls: v.ls, s: v.s })); }
+    // 칸 결과에서 바로(11-10): #/play/dyn → 셈여림 부탁이 열림 · 진행은 그대로 · 곡 주소와 같이 써도 됨
+    for (const [hash, key] of [['#/play/dyn', 'dyn'], ['#/play/frere/meter', 'meter']]) {
+      await page.evaluate(x => { location.hash = '#/'; setTimeout(() => { location.hash = x; }, 50); }, hash);
+      await page.waitForTimeout(1100);
+      const w = await look();
+      if (w.s.key !== key || w.ls !== '[0,7]') { fail++; console.log('✗ 칸에서 바로 — ' + hash + ' 이 ' + key + ' 부탁을 안 열거나 진행이 바뀜: ' + JSON.stringify({ s: w.s, ls: w.ls })); }
+      else console.log('✓ 칸에서 바로 — ' + hash + ' → ' + key + ' 부탁');
+    }
+    await page.evaluate(() => { location.hash = '#/'; setTimeout(() => { location.hash = '#/play'; }, 50); });
+    await page.waitForTimeout(1100);
     // 예전 저장(play.card = 3)은 [0,1,2]로 옮겨 읽음
     await page.evaluate(() => { localStorage.removeItem('mn.play.done'); localStorage.setItem('mn.play.card', '3'); });
     await page.reload();

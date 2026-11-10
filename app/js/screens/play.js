@@ -253,7 +253,9 @@ export default function mount(root, ctx) {
   preload([['bear', 'idle'], ['bear', 'play']]);
   let inst = INSTS.some(([k]) => k === lsGet('play.inst')) ? lsGet('play.inst') : 'piano';
   let view = 'roll';
-  const want = ctx.args && ctx.args[0];
+  const args = (ctx.args || []).filter(Boolean);
+  const wantCard = CARDS.findIndex(c => args.includes(c.key));   // #/play/pitch — 칸 결과에서 그 부탁으로 바로(11-10)
+  const want = args.find(a => !CARDS.some(c => c.key === a));
   let tuneDef = (want && pickable(want)) || songById(FIRST);   // '처음 곡으로'가 돌아갈 곡
   let song = makeSong(tuneDef);
   let sel = -1;                           // 고른 덩어리의 첫 조각(song.ev 차례)
@@ -262,7 +264,7 @@ export default function mount(root, ctx) {
   const old = Math.max(0, Math.min(CARDS.length, Number(lsGet('play.card', 0)) || 0));   // 예전 저장(끝낸 가장 큰 번호)
   const done = new Set((lsGet('play.done', null) || Array.from({ length: old }, (_, k) => k)).filter(k => k >= 0 && k < CARDS.length));
   const firstOpen = () => { for (let k = 0; k < CARDS.length; k++) if (!done.has(k)) return k; return CARDS.length; };
-  let cardNo = firstOpen();               // 지금 연 부탁(0부터) — 처음엔 아직 안 끝낸 첫 부탁 · 점을 눌러 아무 부탁이나
+  let cardNo = wantCard >= 0 ? wantCard : firstOpen();               // 지금 연 부탁(0부터) — 처음엔 아직 안 끝낸 첫 부탁 · 점을 눌러 아무 부탁이나
   let card = null;                        // { def, base, info, st, msg, need, doneMsg, done, note, bear }
   let player = null, pre = null, raf = 0, playT0 = 0, playSec = 0, nowIdx = -1, msgUntil = 0, msgText = '';
   let L = null, staffEls = null, pickerEl = null, anim = null;

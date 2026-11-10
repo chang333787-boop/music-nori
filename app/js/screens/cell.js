@@ -11,7 +11,7 @@
 import { h, onPress, josa, copyText, lsGet } from '../util.js';
 import { friendImg, setPose, preload, BAND } from '../band.js';
 import * as room from '../room.js';
-import { cellById, LANES, missingPre, nextCell, cellName, easyText } from '../../../engine/cells.js';
+import { cellById, LANES, missingPre, nextCell, cellName, easyText, PLAY_CARD } from '../../../engine/cells.js';
 import * as K from '../cellkit.js';
 import { TV_STEPS, TV_SCRIPT } from '../../../engine/tvscript.js';
 import { starSounds } from '../music.js';
@@ -261,7 +261,8 @@ export default function mount(root, ctx) {
         setGuide('predict');
         if (troom) room.teacher.pub(cell.id, 'done');
         drawStrip();
-        ui.setBar(subBtn('한 번 더', () => runPhase(2), 'again'), goBtn('곡 바꾸기에서 해 보기', () => ctx.go('play')));
+        const pc = PLAY_CARD[cell.id];   // 배운 요소의 부탁으로 바로(11-10)
+        ui.setBar(subBtn('한 번 더', () => runPhase(2), 'again'), goBtn(pc ? '곡에서 ' + pc[1] : '곡 바꾸기에서 해 보기', () => ctx.go(pc ? 'play/' + pc[0] : 'play')));
         auto = null;
         window.__cellResult = { id: cell.id, stars, ...r };
         return;
@@ -280,7 +281,8 @@ export default function mount(root, ctx) {
       if (stars === 0) {                            // 별 0개 — 주황(지금 누를 것)은 '한 번 더' · 다음은 흰 단추(평가 3차)
         ui.setBar(subBtn(nx && nx !== cell.id ? '다음 놀이' : '마을 지도', () => (nx && nx !== cell.id ? goNext() : ctx.go('map'))), goBtn('한 번 더', () => runPhase(2)));
       } else {
-        ui.setBar(again, nx && nx !== cell.id ? goBtn('다음 놀이', goNext) : goBtn('마을 지도', () => ctx.go('map')));
+        const pc = PLAY_CARD[cell.id];               // 별을 받았으면 흰 단추로 '곡에서 ○○ 바꿔 보기'(그 부탁이 바로 열림 · 11-10)
+        ui.setBar(again, ...(pc ? [subBtn('곡에서 ' + pc[1], () => ctx.go('play/' + pc[0]), 'toplay')] : []), nx && nx !== cell.id ? goBtn('다음 놀이', goNext) : goBtn('마을 지도', () => ctx.go('map')));
       }
       auto = null;
       window.__cellResult = { id: cell.id, stars, ...r };
