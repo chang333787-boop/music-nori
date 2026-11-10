@@ -23,7 +23,7 @@ const EXAMPLES = [
   { blocks: ['q', 'q', 'q', 'q'], title: '4분음표 넷', sub: '한 자리씩 네 번', msg: '4분음표 ‘따’ 하나 = 한 박·네 개로 4박' },
   { blocks: ['h', 'h'], title: '2분음표 둘', sub: '두 자리씩 두 번', msg: '2분음표 ‘따아’ 하나 = 두 박·두 개로 4박' },
   { blocks: ['w'], title: '온음표', sub: '혼자 네 자리', isNew: true, msg: '온음표 ‘따아아아’ = 네 박·혼자서 상자를 채워요' },
-  { blocks: ['ee', 'ee', 'h'], title: '8분음표 둘', sub: '둘이 합쳐 한 자리', isNew: true, msg: '8분음표 둘 ‘띠띠’ = 한 박·짧은 소리 둘이 한 자리' },
+  { blocks: ['ee', 'ee', 'h'], title: '8분음표 둘', sub: '둘이 합쳐 한 자리', msg: '8분음표 둘 ‘띠띠’ = 한 박·짧은 소리 둘이 한 자리' },
   { blocks: ['h', 'h', 'q'], title: '넘치면?', sub: '상자 밖으로 나와요' },
   { blocks: ['h', 'q'], title: '모자라면?', sub: '빈 자리는 쉬어요' },
 ];
