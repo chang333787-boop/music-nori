@@ -86,6 +86,10 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .star.pop svg{animation:starpop 420ms cubic-bezier(.3,1.5,.5,1) var(--d,0ms) both}
 @keyframes starpop{0%{transform:scale(.45);opacity:.3}60%{transform:scale(1.18);opacity:1}100%{transform:none;opacity:1}}
 .star .newstar{font-family:var(--head);font-size:18px;line-height:1;color:var(--ink);background:var(--great-t,#F7E3A8);border:2px solid var(--ink);border-radius:999px;padding:4px 10px;margin-left:-4px}
+/* '아까' 별(X2) — 같은 화면 바로 앞 판에 받은 별 · 점선 빈 별(채우지 않음 · 이번 별보다 작게) */
+.star .beforestar{display:inline-flex;align-items:center;gap:4px;font-weight:400;color:var(--ink-2)}
+.star .beforestar svg{width:26px;height:26px;animation:none}
+.star .beforestar em{font-style:normal;font-size:18px}
 .freshline{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-family:var(--head);font-size:20px;border-top:2px dashed rgba(59,42,30,.35);padding-top:10px}
 .freshline .pal{width:40px;height:40px;object-fit:contain}
 

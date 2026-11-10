@@ -10,37 +10,45 @@
 //  11-07 평가 3차: 다람쥐는 땅 위 승강장에서 기다림(하늘에 뜨지 않게) · 듣는 동안 답 묶음 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기'
 //   게임도 연습처럼 소리를 들어야 고를 수 있음(짧은 소리는 끝까지 · 긴 소리는 0.65초) · 막대는 transform으로 자람(_snd.js growBar)
 import { voice, exGroup, nowCard, pal, pose, growBar, slide, pop } from './_snd.js';
-import { factTip } from '../cellkit.js';
+import { factTip, stageCuts } from '../cellkit.js';
+import { tvsGame } from './_tvs.js';
 
 const MAXD = 1.5;                                     // 줄 끝까지 = 1.5초
 const LONG = 0.6;                                     // 이보다 길면 '긴 소리'
+const isLong = d => d >= LONG;
 const EXAMPLES = [
   { inst: 'flute', name: '플루트', p: 72, a: 0.25, b: 1.2 },
   { inst: 'recorder', name: '리코더', p: 67, a: 1.2, b: 0.25 },
   { inst: 'choir', name: '목소리', p: 64, a: 0.3, b: 1.2 },
   { inst: 'violin', name: '바이올린', p: 69, a: 1.2, b: 0.3 },
 ];
-// 확인 게임 판 [길이(초), 악기, 높이] — 긴 소리 여섯 · 짧은 소리 여섯(칸마다 자리 여섯)
+// 확인 게임 문항 표(X2 · 단계 꼬리표) — 줄 하나 = { stage, d(길이 초), inst, p(높이), right('long' | 'short') } · 긴 소리 여섯 · 짧은 소리 여섯(칸마다 자리 여섯)
+//  길이는 단계마다 정한 짝(LEN)에서만 — 뒤집으면 같은 단계의 반대 길이(차이 크기 · 악기 · 높이는 그대로)
+const LEN = { intro: [1.2, 0.25], grow: [0.8, 0.35], twist: [0.9, 0.3], end: [1.0, 0.3] };
+const row = (stage, long, inst, p) => { const d = LEN[stage][long ? 0 : 1]; return { stage, d, inst, p, right: isLong(d) ? 'long' : 'short' }; };
 export const PLAN = [
   // 소개 — 아주 긴 소리 ↔ 아주 짧은 소리(플루트 · 같은 솔)
-  [1.2, 'flute', 67], [0.25, 'flute', 67], [0.25, 'flute', 67], [1.2, 'flute', 67],
+  row('intro', true, 'flute', 67), row('intro', false, 'flute', 67), row('intro', false, 'flute', 67), row('intro', true, 'flute', 67),
   // 발전 — 차이를 줄임(0.8초 ↔ 0.35초) · 리코더
-  [0.35, 'flute', 67], [0.8, 'flute', 67], [0.8, 'recorder', 67], [0.35, 'recorder', 67],
+  row('grow', false, 'flute', 67), row('grow', true, 'flute', 67), row('grow', true, 'recorder', 67), row('grow', false, 'recorder', 67),
   // 비틀기 — 악기 · 높이가 바뀌어도 길이만(높고 긴 · 낮고 짧은 · 높고 짧은)
-  [0.9, 'violin', 79], [0.3, 'choir', 60], [0.3, 'violin', 81],
+  row('twist', true, 'violin', 79), row('twist', false, 'choir', 60), row('twist', false, 'violin', 81),
   // 마무리 — 낮고 긴 소리
-  [1.0, 'recorder', 60],
+  row('end', true, 'recorder', 60),
 ];
-const isLong = d => d >= LONG;
+export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 8, 11] — 섞어도 '9번째부터' 말이 그대로 맞게
+// 단계 안 섞기(N2) — 뒤집기 = 같은 단계 짝의 반대 길이(높고 긴 ↔ 높고 짧은) · 답 = 긴 소리인가
+export const SHUF = { flip: p => row(p.stage, p.right !== 'long', p.inst, p.p), answerOf: p => p.right };
+export const GUESS = plan => plan.map(() => 1 / 2);   // 찍기 바닥 — 긴 · 짧은 둘 중 하나
 // 답 단추는 짧은 소리든 긴 소리든 소리 시작 0.65초 뒤에 똑같이 열림 — 화면만 보고 길이를 알 수 없게(N2 · 소리 끈 봇이 찾은 틈)
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
 export function tipOf(plan, results) {
-  const miss = f => plan.filter((p, k) => results[k] === false && f(p, k)).length;
+  const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
   return factTip(results, [
-    { n: miss((p, k) => k >= 8), text: '악기와 높이가 바뀐 소리(9번째부터)에서 헷갈렸어요. 높이 말고 소리가 이어지는 동안만 들어 봐요.' },
-    { n: miss((p, k) => k >= 4 && k < 8), text: '길이 차이가 줄었을 때(5~8번째) 헷갈렸어요. 소리가 나는 동안 팔을 쭉 펴 보면 잘 느껴져요.' },
-    { n: miss(p => isLong(p[0])), text: '긴 소리를 짧은 칸에 더 많이 넣었어요. 소리가 끝날 때까지 기다렸다가 골라요.' },
-    { n: miss(p => !isLong(p[0])), text: '짧은 소리를 긴 칸에 더 많이 넣었어요. 톡 하고 바로 끝나면 짧은 소리예요.' },
+    { n: miss(p => p.stage === 'twist' || p.stage === 'end'), text: '악기와 높이가 바뀐 소리(9번째부터)에서 헷갈렸어요. 높이 말고 소리가 이어지는 동안만 들어 봐요.' },
+    { n: miss(p => p.stage === 'grow'), text: '길이 차이가 줄었을 때(5~8번째) 헷갈렸어요. 소리가 나는 동안 팔을 쭉 펴 보면 잘 느껴져요.' },
+    { n: miss(p => p.right === 'long'), text: '긴 소리를 짧은 칸에 더 많이 넣었어요. 소리가 끝날 때까지 기다렸다가 골라요.' },
+    { n: miss(p => p.right === 'short'), text: '짧은 소리를 긴 칸에 더 많이 넣었어요. 톡 하고 바로 끝나면 짧은 소리예요.' },
   ], '악기와 높이가 바뀌어도 길이만 듣고 골랐어요.');
 }
 const pct = d => Math.min(100, (d / MAXD) * 100);
@@ -88,6 +96,34 @@ function lanes(kit, n, { nums = false } = {}) {
     rows,
   };
 }
+
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 판마다 소리 하나(0.3초 뒤) · 답은 소리 시작 0.65초 뒤 · 가장 긴 소리(1.2초) 끝 + 3.5초에 닫힘
+//  긴 소리든 짧은 소리든 같은 시간표(답 열림 · 닫힘으로 길이가 새지 않게) · 소리가 나는 동안 TV 화면에도 길이를 그리지 않음(고른 뒤 막대로)
+export const TVS = true;
+const TVS_OPEN = 300 + (LONG + 0.05) * 1000, TVS_CLOSE = 300 + Math.max(...Object.values(LEN).flat()) * 1000 + 3500;
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF),
+  P: TVS_CLOSE + 800, OPEN: TVS_OPEN, CLOSE: TVS_CLOSE,
+  say: { kid: 'TV 소리를 듣고 — 긴 소리일까요, 짧은 소리일까요?', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+  items: [
+    { key: 'long', label: '긴 소리', chip: barIcon(kit, true) },
+    { key: 'short', label: '짧은 소리', chip: barIcon(kit, false) },
+  ],
+  rightOf: p => p.right,
+  view({ V, T, side }) {
+    const { h } = kit;
+    const ln = lanes(kit, 1);
+    const sq = h('div', { class: 'ln-pal' }, h('img', { src: SCENE + 'prop_squirrel.webp', alt: '', draggable: 'false' }));
+    return {
+      el: h('div', { class: 'ln-follow tvs3' }, sq, ln.el, side),
+      item: () => ln.ask(0),
+      play: (p, at) => V.play([{ p: p.p, d: p.d }], { inst: p.inst, at }),
+      close: p => ln.grow(0, p.d, 0.35, T),
+      done: () => { sq.hidden = true; },
+    };
+  },
+  tip: tipOf, chance: GUESS,
+});
 
 export default {
   // ── 보기: 예시 넷 ──
@@ -196,10 +232,12 @@ export default {
 
   // ── 확인 게임: 다람쥐 기차 — 긴 소리 손님은 긴 칸, 짧은 소리 손님은 짧은 칸 · 12판 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [], picks = [];
-    let i = -1, cur = null, open = false, gone = false, listen = 0, laneX = null, pps = 0;
+    let i = -1, cur = null, open = false, gone = false, listen = 0, laneX = null, pps = 0, plan = PLAN, sd = null;
     ui.say('들은 소리를 맞는 기차에 태워요');
     const img = (f, cls) => h('img', { src: SCENE + f + '.webp', alt: '', draggable: 'false', class: cls });
     // 자리 — 그림 속 창 자리(%) · 짧은 칸은 창 둘 + 지붕 위 넷
@@ -232,7 +270,8 @@ export default {
     const setP = p => pose(kit, bunny.firstChild, 'bunny', p);
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
     const again = h('button', { type: 'button' }, '다시 듣기');
-    onPress(startBtn, () => { start.remove(); ui.setBar(again); T.after(300, next); });
+    // 시작할 때 판 차례를 정함 — 단계(소개 0~3 · 발전 4~7 · 비틀기 8~10 · 마무리 11) 안에서만 섞고 반쯤 길이를 뒤집음(N2 · 씨앗은 기록에)
+    onPress(startBtn, () => { sd = kit.seed ? kit.seed() : 1; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF); start.remove(); ui.setBar(again); T.after(300, next); });
     onPress(again, () => { if (open) hear(); });       // 고르기 전이면 언제든 한 번 더(놓침 시계도 다시)
     ui.setBar(startBtn);
     kit.setAuto(() => { if (start.isConnected) press(startBtn); else if (open) answer(isLong(cur.d)); });
@@ -250,10 +289,10 @@ export default {
     function next() {
       if (gone) return;
       i++;
-      if (i >= PLAN.length) return end();
-      const [d, inst, p] = PLAN[i];
+      if (i >= plan.length) return end();
+      const { d, inst, p } = plan[i];
       cur = { d, inst, p };
-      ui.count(i + 1, PLAN.length);
+      ui.count(i + 1, plan.length);
       A.clear(); A.busy(true);
       lane.classList.remove('on');                    // 이름 글은 사라지는 동안 그대로(빈 말풍선이 비치지 않게)
       if (laneX == null) { laneX = train.offsetLeft + longCar.offsetLeft; pps = longCar.offsetWidth / 1.2; lane.style.transform = `translateX(${laneX}px)`; }
@@ -299,8 +338,8 @@ export default {
       train.classList.add('leave');                   // 다람쥐를 다 태우고 떠남 → 결과
       T.after(1500, () => {
         bunny.hidden = true; ui.count(null);          // 결과 옆 친구는 칸 화면이 붙임
-        const s = kit.scoreChoices(results, 5, { chance: PLAN.map(() => 1 / 2) }), tip = tipOf(PLAN, results);
-        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+        const s = kit.scoreChoices(results, 5, { chance: GUESS(plan) }), tip = tipOf(plan, results);
+        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd });
       });
     }
     // 기차 칸을 직접 눌러도 됨

@@ -6,6 +6,7 @@
 //  보기(예시 다섯) → 연습(어느 쪽이 세게? 세 번 이어서) → 확인 게임 '곰 깨우기' 12판(견주기 · 갑자기 세게 · 비틀기 · p/f 고르기)
 import { voice, exGroup, nowCard, pal, pose } from './_snd.js';
 import { factTip } from '../cellkit.js';
+import { tvsGame } from './_tvs.js';
 
 const BEAT = 0.42;                                  // 한 박(초) — 견주는 가락은 한 마디씩(확인 게임 1분 안쪽)
 const P = 0.2, F = 0.9;                             // 여리게 · 세게 세기(압축기를 지나도 귀로 또렷하게 차이)
@@ -74,9 +75,9 @@ function strip(kit) {
   };
 }
 // 조각들을 차례로 틀고 그림을 맞춤 → 끝 ms
-function playSegs(kit, V, T, S, segs) {
+function playSegs(kit, V, T, S, segs, at0 = 0.1) {
   const { engine } = kit;
-  let at = 0.1;
+  let at = at0;
   const ac = engine.ensure();
   segs.forEach((sg, k) => {
     const s = V.play(sg.notes, { at, art: null });
@@ -96,6 +97,42 @@ export function tipOf(plan, results) {
     { n: miss(p => p.kind === 'half'), text: '한 번 안에서 세기가 바뀌는 곳을 놓쳤어요. 앞과 뒤를 따로 떠올려 견줘 봐요.' },
   ], '높이 · 센박이 달라도 세기만 듣고 골랐어요.');
 }
+
+// 판마다 단추 이름 · 지시 · 조각 이름(1~2학년 판은 크게 · 작게)
+const labelOf = (kind, j, low) => (low ? LABELS[kind][j].replace('세게', '크게').replace('p 여리게', '작게').replace('f 크게', '크게') : LABELS[kind][j]);
+const sayOf = (kind, low) => (low ? SAY[kind].replace(/세게/g, '크게').replace(/여리게/g, '작게').replace(/\(p\)|\(f\)/g, '') : SAY[kind]);
+const namesOf = kind => (kind === 'half' ? ['앞', '뒤'] : kind === 'sym' ? ['이번 소리'] : ['첫째', '둘째']);
+
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 조각들(사이 0.5초)을 TV에서 다 들은 뒤 고를 수 있음 · 3초 뒤 닫힘(견주는 소리가 길어 한 판이 90초를 넘지 않게)
+//  판 꼴마다 소리 길이가 달라(왈츠 두 마디가 가장 김) 판마다 P가 다름 — 같은 씨앗이면 같은 차례라 시간표도 같음 · 같은 꼴 안에서는 답과 상관없이 길이가 같음(열리는 때로 답이 새지 않음)
+export const TVS = true;
+const segSec = segs => segs.reduce((t, sg, k) => t + sg.notes.reduce((a, n) => a + n.d + (n.gap ?? 0.12), 0) + (sg.join || k === segs.length - 1 ? 0 : 0.5), 0);
+export const tvsSpec = (ui, kit) => {
+  const low = kit.band === 'low', open = it => 300 + segSec(build(it)) * 1000;
+  return {
+    plan: sd => kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF),
+    OPEN: open, CLOSE: it => open(it) + 3000, P: it => open(it) + 3000 + 800,
+    say: { kid: low ? 'TV 소리를 듣고 — 어느 쪽이 크게였나요?' : 'TV 소리를 듣고 — 세게인 쪽을 골라요', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+    items: [{ key: 'A', label: '' }, { key: 'B', label: '' }],
+    setup: (it, A) => { ['A', 'B'].forEach((k, j) => { A.btn(k).querySelector('.lab').textContent = labelOf(it.kind, j, low); }); ui.say(sayOf(it.kind, low)); },
+    side: (it, k) => ({ label: labelOf(it.kind, k === 'A' ? 0 : 1, low) }),
+    rightOf: it => it.ans,
+    wrongText: () => (low ? '굵은 쪽이 크게예요' : '굵은 막대 쪽이 세게예요'),
+    view({ kidSide, V, T, side }) {
+      const { h } = kit;
+      const S = strip(kit);
+      const bear = h('div', { class: 'sm-bear' }, pal(kit, 'bear'), h('span', { class: 'sm-zz' }, '쿨쿨'));
+      return {
+        el: h('div', { class: 'sm sm-play' }, h('div', { class: 'sm-left' }, S.el, bear), side),
+        item: it => { S.set(build(it), namesOf(it.kind)); pose(kit, bear.firstChild, 'bear', 'idle'); bear.classList.remove('awake'); },
+        play: (it, at) => playSegs(kit, V, T, S, build(it), at),
+        close: (it, r) => { S.reveal(low); if (!kidSide || r) { pose(kit, bear.firstChild, 'bear', 'happy'); bear.classList.add('awake'); } else pose(kit, bear.firstChild, 'bear', r === false ? 'oops' : 'idle'); },
+        done: () => { bear.hidden = true; },
+      };
+    },
+    tip: tipOf, chance: plan => plan.map(() => 1 / 2),
+  };
+};
 
 export default {
   // ── 보기: 예시 다섯 ──
@@ -177,6 +214,8 @@ export default {
 
   // ── 확인 게임: 곰 깨우기 — 12판 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine), low = kit.band === 'low';
     ui.say(low ? '어느 쪽이 크게였나요?' : '세기만 듣고 골라요 — 높이 · 센박에 속지 않게');
@@ -195,7 +234,7 @@ export default {
     const go = h('button', { type: 'button', class: 'go huge' }, '시작');
     onPress(go, () => { sd = kit.seed ? kit.seed() : 1; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF); card.remove(); ui.setBar(again); next(); });
     ui.setBar(go);
-    const relabel = kind => ['A', 'B'].forEach((k, j) => { A.btn(k).querySelector('.lab').textContent = low ? LABELS[kind][j].replace('세게', '크게').replace('p 여리게', '작게').replace('f 크게', '크게') : LABELS[kind][j]; });
+    const relabel = kind => ['A', 'B'].forEach((k, j) => { A.btn(k).querySelector('.lab').textContent = labelOf(kind, j, low); });
     function hear() {
       const my = ++tok; open = false; A.busy(true); V.hush();
       const end = playSegs(kit, V, T, S, segs);
@@ -206,8 +245,8 @@ export default {
       i++;
       if (i >= plan.length) return end();
       cur = plan[i]; segs = build(cur);
-      ui.count(i + 1, plan.length); ui.say(low ? SAY[cur.kind].replace(/세게/g, '크게').replace(/여리게/g, '작게').replace(/\(p\)|\(f\)/g, '') : SAY[cur.kind]);
-      S.set(segs, cur.kind === 'half' ? ['앞', '뒤'] : cur.kind === 'sym' ? ['이번 소리'] : ['첫째', '둘째']);
+      ui.count(i + 1, plan.length); ui.say(sayOf(cur.kind, low));
+      S.set(segs, namesOf(cur.kind));
       relabel(cur.kind); A.clear();
       pose(kit, bear.firstChild, 'bear', 'idle'); bear.classList.remove('awake');
       T.after(250, hear);

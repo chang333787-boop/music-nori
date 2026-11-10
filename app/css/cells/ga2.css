@@ -33,3 +33,6 @@
 .e2-ans .m-dot{width:56px;height:56px}
 .e2-ans .ans.glow{box-shadow:0 4px 0 var(--ink),0 0 0 5px var(--paper),0 0 0 9px var(--ink)}
 .e2-ans .ans{transition:opacity 120ms ease-out,transform var(--up),box-shadow var(--up)}
+
+/* 소리는 TV 하나 · 답은 각자(_tvs.js) — TV 막대는 답 단추 자리(셋째 칸) */
+.e2-scene>.tvs-side{grid-column:3;align-self:center}

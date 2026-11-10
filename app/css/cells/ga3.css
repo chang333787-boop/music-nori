@@ -19,3 +19,8 @@
 /* 확인 게임 — 왼쪽 높이 판(참새가 고른 뒤 들은 가락대로 계단을 밟음) · 오른쪽 그림 답 넷 */
 .g3-scene{position:absolute;inset:0;display:grid;grid-template-columns:40% minmax(0,1fr);gap:28px;padding:14px 28px 16px 22px}
 .g3-scene .m-board{min-height:0}
+
+/* 소리는 TV 하나 · 답은 각자(_tvs.js) — TV 막대는 그림마다 한 줄 · 그림은 제 크기(공용 아이콘 48px 규칙을 풂) · 막대 판을 오른쪽 칸 너비로 */
+.g3-scene>.tvs-side{width:auto;min-width:0;max-width:640px}
+.g3-scene .tvs-row{grid-template-columns:190px minmax(0,1fr)}
+.g3-scene .tvs-row .tvs-chip svg{width:auto;height:auto}

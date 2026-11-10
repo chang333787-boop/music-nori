@@ -9,24 +9,48 @@
 //  11-07 평가 3차: 왼쪽 높이 판 40% · 오른쪽 그림 답을 크게 · 셋 고르는 판은 넷째를 빼고 셋을 세로 가운데 · 듣는 동안 A.busy('잘 들어요')
 //   · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 노래 그림 동전 26px
 import { DO, RE, MI, FA, SOL, LA, nameOf, heightBoard, heightPic, songNotes, voice, playBeats, startCard, press, exCard, hearHead, markPick, judge } from './_mel.js';
+import { factTip, stageCuts, shuffle } from '../cellkit.js';
+import { tvsGame } from './_tvs.js';
 
 const D = DO, M = MI, S = SOL, L = LA;
 const EXAMPLES = [
   { inst: 'xylo', name: '실로폰', ps: [D, M, S] },
   { inst: 'piano', name: '피아노', ps: [S, M, D] },
 ];
-const PLAN = [
-  { ps: [D, M, S], alt: [[S, M, D], [M, D, S]] },
-  { ps: [S, M, D], alt: [[D, M, S], [D, S, M]] },
-  { ps: [D, S, M], alt: [[D, M, S], [S, M, D]] },
-  { ps: [M, D, S], alt: [[M, S, D], [D, M, S]] },
-  { ps: [S, D, M], alt: [[S, M, D], [M, D, S]] },
-  { ps: [M, S, D], alt: [[M, D, S], [S, M, D]] },
-  { ps: [D, M, S], alt: [[M, S, L], [S, M, D], [D, S, M]], inst: 'piano' },
-  { ps: [S, M, D], alt: [[L, S, M], [D, M, S], [S, D, M]], inst: 'recorder' },
-  { ps: [D, S, M], alt: [[M, L, S], [D, M, S], [S, M, D]], inst: 'piano' },
-  { ps: [D, M, S, M, D], alt: [[D, M, S, L, S], [S, M, D, M, S], [M, S, L, S, M]] },
+// 확인 게임 문항 표(X2 · 단계 꼬리표) — 줄 하나 = { stage, ps(들려줄 가락 = 맞는 그림), alt(비슷한 그림들), inst }
+//  그림 차례(답 자리)는 판마다 씨앗으로 섞어 줄에 opts · right(맞는 그림의 자리 0~3)를 붙임 — arrange
+const row = (stage, ps, alt, inst = 'xylo') => ({ stage, ps, alt, inst });
+export const PLAN = [
+  // 소개 — 오르기 · 내리기(셋 중 하나)
+  row('intro', [D, M, S], [[S, M, D], [M, D, S]]),
+  row('intro', [S, M, D], [[D, M, S], [D, S, M]]),
+  // 발전 — 오르내림이 섞임
+  row('grow', [D, S, M], [[D, M, S], [S, M, D]]),
+  row('grow', [M, D, S], [[M, S, D], [D, M, S]]),
+  row('grow', [S, D, M], [[S, M, D], [M, D, S]]),
+  row('grow', [M, S, D], [[M, D, S], [S, M, D]]),
+  // 비틀기 — 넷 중 하나 · 비슷해 보이는 그림(미-솔-라처럼 마지막이 바로 위 계단) · 피아노 · 리코더
+  row('twist', [D, M, S], [[M, S, L], [S, M, D], [D, S, M]], 'piano'),
+  row('twist', [S, M, D], [[L, S, M], [D, M, S], [S, D, M]], 'recorder'),
+  row('twist', [D, S, M], [[M, L, S], [D, M, S], [S, M, D]], 'piano'),
+  // 마무리 — 다섯 음
+  row('end', [D, M, S, M, D], [[D, M, S, L, S], [S, M, D, M, S], [M, S, L, S, M]]),
 ];
+export const CUTS = stageCuts(PLAN);             // 단계 경계 [2, 6, 9]
+// 단계 안 섞기(N2) — 차례만(뒤집기 X · 답은 그림 자리라 arrange가 판마다 섞음)
+export const SHUF = {};
+// 그림 차례 — 같은 씨앗 흐름(r)으로 판마다 [맞는 그림, …비슷한 그림]을 섞음 → opts · right(맞는 그림 자리)
+export const arrange = (plan, r) => plan.map(p => { const opts = shuffle([p.ps, ...p.alt], r); return { ...p, opts, right: opts.indexOf(p.ps) }; });
+export const GUESS = plan => plan.map(p => 1 / (1 + p.alt.length));   // 찍기 바닥 — 그림 수만큼
+// 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+export function tipOf(plan, results) {
+  const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
+  return factTip(results, [
+    { n: miss(p => p.stage === 'twist' || p.stage === 'end'), text: '비슷해 보이는 그림(7번째부터)에서 헷갈렸어요. 미-솔-라는 솔에서 라로 바로 위 계단, 도-미-솔은 끝까지 한 칸씩 건너뛰어요.' },
+    { n: miss(p => p.stage === 'grow'), text: '올라갔다 내려오는 가락(3~6번째)에서 헷갈렸어요. 가장 낮은 도가 몇 번째에 나왔는지 먼저 찾아봐요.' },
+    { n: miss(p => p.stage === 'intro'), text: '오르기·내리기에서 헷갈렸어요. 도-미-솔은 위로, 솔-미-도는 아래로 건너뛰어요.' },
+  ], '마지막에 바로 위 계단으로 가는 비슷한 그림(미-솔-라)까지 모두 가려냈어요.');
+}
 const ROWS = [D, M, S, L], GHOSTS = [RE, FA];
 const names = ps => ps.map(nameOf).join('-');
 function shape(ps) {
@@ -37,6 +61,42 @@ function shape(ps) {
 }
 // 그림 — 같은 세로 자(도 · 미 · 솔 · 라)로 그려 높이를 견줄 수 있게
 const picOf = (ps, o) => heightPic(ps.map((p, t) => ({ p, t })), { rows: ROWS, join: true, ...o });
+
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 참새 노래(음 0.42초 + 틈 0.18초)를 TV에서 · 마지막 음이 나기 시작하면 고를 수 있음(음 수는 그림에 이미 보임)
+//  가장 긴 다섯 음 끝 + 3.5초에 닫힘 · 그림 차례도 씨앗으로 정해 모든 기기가 같음 · TV 막대 = 그림마다 한 줄
+export const TVS = true;
+const T3_NOTE = 600, T3_CLOSE = 300 + 5 * T3_NOTE - 180 + 3500;
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => { const r = kit.rng(sd); return arrange(kit.stageShuffle(PLAN, CUTS, r, SHUF), r); },
+  P: T3_CLOSE + 700, OPEN: p => 300 + (p.ps.length - 1) * T3_NOTE, CLOSE: T3_CLOSE,
+  say: { kid: 'TV 참새 노래와 같은 모양 그림을 골라요', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+  items: [0, 1, 2, 3].map(k => ({ key: k, label: '', locked: k === 3 })),
+  answersOpt: { cls: 'g3-ans four m-busy' },
+  setup: (p, A) => [0, 1, 2, 3].forEach(k => {
+    A.btn(k).querySelector('.lab').replaceChildren(...(p.opts[k] ? [picOf(p.opts[k], { height: 76, unit: p.opts[k].length > 3 ? 85 : 170, r: 12, pad: 2, label: false }).el] : []));
+    A.lock(k, k >= p.opts.length);
+  }),
+  side: (p, k) => ({ label: `${k + 1}`, chip: picOf(p.opts[k], { height: 56, unit: p.opts[k].length > 3 ? 26 : 48, r: 8, pad: 2, label: false }).el }),
+  rightOf: p => p.right,
+  wrongText: p => `이번엔 ${p.right + 1}번째 그림`,
+  intro: V => kit.playSeq(kit.engine, [D, M, S].map(p => ({ p, d: 0.42, gap: 0.16 })), { inst: 'xylo', out: V.out }),
+  view({ kidSide, V, T, side }) {
+    const board = heightBoard(kit, { notes: [D, M, S, L], ghosts: GHOSTS, rh: 44 });
+    return {
+      el: kit.h('div', { class: 'g3-scene' }, board.el, side),
+      item: () => { board.rest(); board.pose('idle'); },
+      play(p, at) {
+        board.pose('play');
+        const s = kit.playSeq(kit.engine, p.ps.map(q => ({ p: q, d: 0.42, gap: 0.18 })), { inst: p.inst, out: V.out, at });
+        p.ps.forEach((q, j) => T.after(kit.msUntil(s.ac, s.starts[j]), () => board.move(q)));
+        T.after(kit.msUntil(s.ac, s.end) + 100, () => board.pose('idle'));
+      },
+      close: (p, r) => { if (!kidSide || r) board.move(p.ps[p.ps.length - 1], 'happy'); else board.pose(r === false ? 'oops' : 'idle'); },
+      done: () => { board.el.hidden = true; },
+    };
+  },
+  tip: tipOf, chance: GUESS,
+});
 
 export default {
   // ── 보기 ──
@@ -142,10 +202,12 @@ export default {
 
   // ── 확인 게임: 건너뛰는 가락 그림 고르기 — 10판 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
-    const T = kit.timers(), V = voice(engine), r = kit.rng();
+    const T = kit.timers(), V = voice(engine);
     const results = [];
-    let i = -1, cur = null, gone = false;
+    let i = -1, cur = null, gone = false, plan = PLAN, sd = null;
     ui.say('참새 노래와 같은 모양 그림을 골라요');
     const board = heightBoard(kit, { notes: [D, M, S, L], ghosts: GHOSTS, rh: 44 });
     // 답 자리 넷 — 처음부터 깔고, 셋 고르는 판에서는 넷째를 잠가 둠(잠근 단추는 빼고 남은 셋을 세로 가운데 · 그림이 판마다 바뀌니 자리를 지킬 까닭이 없음)
@@ -156,7 +218,8 @@ export default {
     const sc = startCard(ui, kit, {
       title: '건너뛰는 가락 그림 고르기',
       lines: ['참새 노래를 듣고 같은 모양 그림을 눌러요', '10번'],
-      onStart: () => { ui.setBar(again); toneSet(); },
+      // 시작할 때 판 차례를 정함 — 단계(소개 0~1 · 발전 2~5 · 비틀기 6~8 · 마무리 9) 안에서만 섞고, 판마다 그림 자리도 같은 씨앗으로 섞음(N2)
+      onStart: () => { sd = kit.seed ? kit.seed() : 1; const r = kit.rng(sd); plan = arrange(kit.stageShuffle(PLAN, CUTS, r, SHUF), r); ui.setBar(again); toneSet(); },
     });
     ui.stage.append(sc.card);
     // 시작 — 도-미-솔(기준) 한 번 · 참새가 계단을 밟음
@@ -171,16 +234,15 @@ export default {
     function next() {
       if (gone) return;
       i++;
-      if (i >= PLAN.length) return end();
-      const pl = PLAN[i];
-      const order = kit.shuffle([pl.ps, ...pl.alt], r);
-      const mine = cur = { ps: pl.ps, inst: pl.inst || 'xylo', ans: order.indexOf(pl.ps), open: false, done: false, tok: 0 };
+      if (i >= plan.length) return end();
+      const pl = plan[i], order = pl.opts;
+      const mine = cur = { ps: pl.ps, inst: pl.inst, ans: pl.right, open: false, done: false, tok: 0 };
       mine.pics = order.map(q => picOf(q, { height: 76, unit: q.length > 3 ? 85 : 170, r: 12, pad: 2, label: false }));
       [0, 1, 2, 3].forEach(k => {
         A.btn(k).querySelector('.lab').replaceChildren(...(mine.pics[k] ? [mine.pics[k].el] : []));
         A.lock(k, k >= order.length);
       });
-      ui.count(i + 1, PLAN.length);
+      ui.count(i + 1, plan.length);
       A.clear();
       hear(mine);
     }
@@ -198,7 +260,7 @@ export default {
       if (!cur || !cur.open) return;
       cur.open = false; cur.done = true;
       const right = k === cur.ans, pic = cur.pics[cur.ans];
-      results.push(right);
+      results.push(k == null ? null : right);   // 시간 지남은 틀림과 따로(N1)
       markPick(A, cur.ans, k); A.busy(false);
       judge(ui, right, { missed: k == null });
       if (right) { kit.sfx.good(engine); board.move(cur.ps[cur.ps.length - 1], 'happy'); T.after(1000, next); return; }
@@ -213,16 +275,9 @@ export default {
       });
     }
     function end() {
-      const s = kit.scoreChoices(results, 5, { chance: PLAN.map(p => 1 / (1 + p.alt.length)) });   // 찍기 바닥 — 그림 수만큼
-      const wrongAt = results.map((ok, k) => (ok ? -1 : k)).filter(k => k >= 0);
-      const twist = wrongAt.filter(k => k >= 6 && k <= 8).length, mixed = wrongAt.filter(k => k >= 3 && k <= 5).length;
-      let tip;
-      if (!wrongAt.length) tip = '마지막에 바로 위 계단으로 가는 비슷한 그림(미-솔-라)까지 모두 가려냈어요.';
-      else if (twist >= wrongAt.length / 2) tip = '비슷해 보이는 그림(7번째부터)에서 헷갈렸어요. 미-솔-라는 솔에서 라로 바로 위 계단, 도-미-솔은 끝까지 한 칸씩 건너뛰어요.';
-      else if (mixed >= wrongAt.length / 2) tip = '올라갔다 내려오는 가락(4~6번째)에서 헷갈렸어요. 가장 낮은 도가 몇 번째에 나왔는지 먼저 찾아봐요.';
-      else tip = '오르기·내리기에서 헷갈렸어요. 도-미-솔은 위로, 솔-미-도는 아래로 건너뛰어요.';
+      const s = kit.scoreChoices(results, 5, { chance: GUESS(plan) }), tip = tipOf(plan, results);
       board.el.hidden = true; A.el.hidden = true; ui.count(null);   /* 결과 뒤에는 빈 무대(친구 그림은 칸 화면이 붙임) */
-      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip });
+      kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd });
     }
     kit.setAuto(() => { if (sc.waiting()) press(sc.btn); else if (cur && cur.open) choose(cur.ans); });
     const onKey = e => { const k = '1234'.indexOf(e.key); if (k >= 0 && cur && cur.pics[k]) choose(k); };

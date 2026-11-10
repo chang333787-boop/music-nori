@@ -1,8 +1,9 @@
 {
- "v": "386006cc311f",
+ "v": "b38df4302cc1",
  "files": [
   "app/css/app.css",
   "app/css/cells/_mel.css",
+  "app/css/cells/_tvs.css",
   "app/css/cells/ak1.css",
   "app/css/cells/ak2.css",
   "app/css/cells/ga1.css",
@@ -26,6 +27,7 @@
   "app/js/cells/_beat.js",
   "app/js/cells/_mel.js",
   "app/js/cells/_snd.js",
+  "app/js/cells/_tvs.js",
   "app/js/cells/ak1.js",
   "app/js/cells/ak2.js",
   "app/js/cells/ga1.js",

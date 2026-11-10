@@ -170,6 +170,132 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   delete globalThis.localStorage;
 }
+// ── 나머지 고르기 다섯 칸(X2) — 단계 꼬리표 문항 표 · 단계 안 섞기 · 씨앗 1000개 · 찍기 · 번갈아 · 같은 답 · 단계 꼴 봇 ──
+{
+  const mem = new Map();
+  globalThis.localStorage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)) };
+  const K = await import('../app/js/cellkit.js');
+  const M = {};
+  for (const id of ['so3', 'so5', 'ga2', 'ga3', 'ak2']) M[id] = await import(`../app/js/cells/${id}.js`);
+  const STAGES = ['intro', 'grow', 'twist', 'end'];
+  // 판마다 고를 수 있는 답(찍기 봇이 누를 수 있는 것) — 소5는 크기 단추가 비틀기부터 · 가3은 그림 수 · 악2는 비틀기부터 넷
+  const OPTS = {
+    so3: () => ['long', 'short'],
+    so5: (p, k) => (k < M.so5.CUTS[1] ? ['pitch', 'len'] : ['pitch', 'len', 'vol']),
+    ga2: () => [69, 67, 64],
+    ga3: p => p.opts.map((_, j) => j),
+    ak2: p => (p.twist ? [0, 1, 2, 3] : [0, 1]),
+  };
+  // 줄의 답이 문항 내용과 맞는지(표 하나가 정본 — 뒤집어도 맞아야 함)
+  const RIGHT = {
+    so3: p => p.right === (p.d >= 0.6 ? 'long' : 'short'),
+    so5: p => p.right === p.k && (p.k === 'pitch' ? p.a.p !== p.b.p && p.a.d === p.b.d && p.a.v === p.b.v : p.k === 'len' ? p.a.d !== p.b.d && p.a.p === p.b.p && p.a.v === p.b.v : p.a.v !== p.b.v && p.a.p === p.b.p && p.a.d === p.b.d),
+    ga2: p => p.right === p.ps[p.q],
+    ga3: p => p.opts[p.right] === p.ps && p.opts.length === 1 + p.alt.length,
+    ak2: p => p.right === (p.twist ? [3, 2, 0, -2].indexOf(p.pos) : p.pos % 2 === 0 ? 0 : 1),
+  };
+  // 섞어도 단계마다 같은 문항 묶음인지 견주는 열쇠(뒤집기는 같은 문항으로 봄)
+  const NORM = {
+    so3: p => `${p.stage}:${p.inst}:${p.p}`,
+    so5: p => `${p.k}:${p.inst}:${[JSON.stringify(p.a), JSON.stringify(p.b)].sort().join('|')}`,
+    ga2: p => `${p.ps.join(',')}:${p.q}:${p.inst}`,
+    ga3: p => `${p.ps.join(',')}:${p.inst}`,
+    ak2: p => `${p.pos}:${p.twist}`,
+  };
+  const allLate = Array(12).fill(null);
+  for (const [id, mod] of Object.entries(M)) {
+    const { PLAN, CUTS, SHUF } = mod;
+    assert.ok(PLAN.every(p => STAGES.includes(p.stage)), id + ' 줄마다 단계 꼬리표');
+    assert.deepEqual(PLAN.map(p => STAGES.indexOf(p.stage)), PLAN.map(p => STAGES.indexOf(p.stage)).slice().sort((a, b) => a - b), id + ' 단계는 소개 → 발전 → 비틀기 → 마무리 차례');
+    assert.deepEqual(CUTS, K.stageCuts(PLAN), id + ' CUTS = 표의 단계 경계');
+    const make = sd => { const r = K.rng(K.seedOf('t', sd)), plan = K.stageShuffle(PLAN, CUTS, r, SHUF); return mod.arrange ? mod.arrange(plan, r) : plan; };
+    if (id !== 'ga3') assert.ok(PLAN.every(RIGHT[id]), id + ' 원판 답이 문항 내용과 맞음');
+    if (SHUF.flip) assert.ok(PLAN.every(p => RIGHT[id](SHUF.flip(p))), id + ' 뒤집은 문항도 답이 내용과 맞음');
+    const tl = mod.tipOf(id === 'ga3' ? make(1) : PLAN, allLate.slice(0, PLAN.length), allLate);
+    assert.ok(!/헷갈렸어요|더 많이|고른 적이/.test(tl) && tl.includes(`시간이 지난 판이 ${PLAN.length}번`), id + ' 모두 시간 지남 → 갈래 말 X: ' + tl);
+    const bounds = [0, ...CUTS, PLAN.length];
+    const vals = [...new Set(PLAN.flatMap((p, k) => OPTS[id](id === 'ga3' ? { opts: [p.ps, ...p.alt] } : p, k)))];
+    // 단계 꼴 봇 — 원판 단계마다 가장 흔한 답만 누름
+    const common = {};
+    for (const st of STAGES) { const a = PLAN.filter(p => p.stage === st).map(p => p.right); common[st] = a.sort((x, y) => a.filter(z => z === y).length - a.filter(z => z === x).length)[0]; }
+    const bots = [['단계 꼴', (k, p) => common[p.stage]], ...vals.map(v => [`늘 ${v}`, () => v])];
+    for (let a = 0; a < vals.length; a++) for (let b = a + 1; b < vals.length; b++) bots.push([`번갈아 ${vals[a]}/${vals[b]}`, k => (k % 2 ? vals[b] : vals[a])], [`번갈아 ${vals[b]}/${vals[a]}`, k => (k % 2 ? vals[a] : vals[b])]);
+    const rr = K.rng(99);
+    bots.push(['찍기', (k, p, o) => o[Math.floor(rr() * o.length)]]);
+    const got = new Map(bots.map(([n]) => [n, 0]));
+    let same = 0, alt = 0, origin = 0;
+    for (let sd = 1; sd <= 1000; sd++) {
+      const plan = make(sd);
+      assert.equal(plan.length, PLAN.length, id + ' 판 수 그대로');
+      if (plan.every((p, k) => NORM[id](p) === NORM[id](PLAN[k]) && p.right === PLAN[k].right)) origin++;
+      for (let b = 0; b + 1 < bounds.length; b++) assert.deepEqual(plan.slice(bounds[b], bounds[b + 1]).map(NORM[id]).sort(), PLAN.slice(bounds[b], bounds[b + 1]).map(NORM[id]).sort(), `${id} 씨앗 ${sd} ${b + 1}단계 문항 묶음`);
+      assert.ok(plan.every(RIGHT[id]), `${id} 씨앗 ${sd} 답이 문항 내용과 맞음`);
+      if (SHUF.answerOf) {
+        const a = plan.map(SHUF.answerOf);
+        for (let i = 2; i < a.length; i++) if (a[i] === a[i - 1] && a[i] === a[i - 2]) same++;
+        if (a[0] === a[2] && a[1] === a[3] && a[0] !== a[1]) alt++;
+      }
+      if (id === 'so3') assert.deepEqual(['long', 'short'].map(v => plan.filter(p => p.right === v).length), [6, 6], `so3 씨앗 ${sd} 긴 6 · 짧은 6(기차 자리)`);
+      if (sd === 1) assert.deepEqual(make(1), plan, id + ' 같은 씨앗이면 같은 판');
+      const chance = mod.GUESS(plan);
+      for (const [name, bot] of bots) {
+        const res = plan.map((p, k) => { const o = OPTS[id](p, k), v = bot(k, p, o); return o.includes(v) ? v === p.right : null; });
+        if (K.scoreChoices(res, 5, { chance }).stars > 0) got.set(name, got.get(name) + 1);
+      }
+    }
+    assert.equal(same, 0, `${id} 같은 답 세 번 연속`);
+    assert.equal(alt, 0, `${id} 처음 네 판 번갈아`);
+    assert.ok(origin < 50, `${id} 원판 차례 그대로인 씨앗 ${origin}`);
+    if (process.env.X2LOG) console.log(id, { origin, floor: K.minKeepP(mod.GUESS(make(1))) }, [...got].map(([n, v]) => `${n} ${v / 10}%`).join(" · "));   // X2LOG=1 node tests/cells.test.mjs → 봇마다 별 비율
+    for (const [name, n] of got) assert.ok(n / 1000 < 0.10, `${id} ${name} 봇 별 비율 ${n / 10}%`);
+    // 완벽하게 맞히면 별 셋
+    assert.equal(K.scoreChoices(PLAN.map(() => true), 5, { chance: mod.GUESS(make(1)) }).stars, 3, id + ' 다 맞히면 별 셋');
+  }
+  // 가2 — '늘 라'가 7판을 맞혀도 별 X(찍기 바닥 = 단계마다 가장 흔한 답의 몫)
+  assert.ok(K.minKeepP(M.ga2.GUESS(M.ga2.PLAN)) > M.ga2.PLAN.filter(p => p.right === 69).length, '가2 바닥 > 늘 라 맞힌 수');
+  delete globalThis.localStorage;
+}
+// ── 소리는 TV 하나 · 답은 각자(X2 둘째 커밋) — TVS 칸 일곱의 시간표 · 답 글자(소리 · 화면 없이 표만) ──
+{
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const K = await import('../app/js/cellkit.js'), TV = await import('../app/js/cells/_tvs.js');
+  const fakeH = (tag, attrs, ...kids) => ({ tag, attrs, kids, nodeType: 1, cloneNode() { return this; } });
+  const kit = { h: fakeH, band: 'mid', stageShuffle: K.stageShuffle, rng: K.rng, engine: null, playSeq: () => ({}), friendImg: () => fakeH('img'), setPose: () => {} };
+  const num = (x, row) => (typeof x === 'function' ? x(row) : x);
+  for (const id of ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3']) {
+    const mod = await import(`../app/js/cells/${id}.js`);
+    assert.equal(mod.TVS, true, id + ' TVS = true');
+    const S = mod.tvsSpec({ tell() {}, say() {} }, kit);
+    const keys = S.items.map(it => it.key), codes = S.items.map((it, j) => it.code || 'ABCD'[j]);
+    assert.equal(new Set(codes).size, codes.length, id + ' 답 글자가 겹치지 않음');
+    assert.ok(codes.every(c => /^[A-Za-z0-9.]$/.test(c) && c !== 'x'), id + ' 답 글자 = DB 규칙 한 글자(x = 못 고름)');
+    let longest = 0;
+    for (let sd = 1; sd <= 300; sd++) {
+      const plan = S.plan(sd);
+      if (sd === 1) assert.deepEqual(S.plan(1), plan, id + ' 같은 씨앗이면 같은 판(TV · 아이 기기)');
+      for (const row of plan) {
+        const o = num(S.OPEN, row), c = num(S.CLOSE, row), P = num(S.P, row);
+        assert.ok(o >= 300 && c - o >= 2999 && P - c >= 400, `${id} 판 시간(열림 ${o} · 닫힘 ${c} · 판 ${P})`);
+        const r = S.rightOf(row);
+        if (S.seq) assert.ok(Array.isArray(r) && r.every(k => keys.includes(k)), id + ' 답 = 단추 차례');
+        else assert.ok(keys.includes(r), `${id} 답 ${r}이 단추에 있음`);
+        // 답 열림이 답에 따라 달라지면 소리 없는 아이 기기 화면으로 답이 샘 — 뒤집은 문항(답만 다름)도 같은 때에 열려야
+        if (mod.SHUF && mod.SHUF.flip) assert.equal(num(S.OPEN, mod.SHUF.flip(row)), o, `${id} 뒤집어도 답 열림이 같음`);
+      }
+      longest = Math.max(longest, TV.tvsTimes(plan, S.P)[plan.length]);
+    }
+    if (id === 'so3' || id === 'so5') assert.equal(new Set(mod.PLAN.map(row => num(S.OPEN, row))).size, 1, id + ' 답 열림은 판마다 같음(길이가 새지 않게)');
+    assert.ok(longest <= 100000, `${id} TV 소리 모드 한 판 ${Math.round(longest / 1000)}초(100초 안)`);
+  }
+  // 가1 메아리 답 글자 — 두 음 · 세 음 차례가 모두 다른 한 글자
+  const g1 = await import('../app/js/cells/ga1.js'), S1 = g1.tvsSpec({}, kit);
+  const seqs = [];
+  for (const n of [2, 3]) for (let b = 0; b < 1 << n; b++) seqs.push(Array.from({ length: n }, (_, j) => (b >> j & 1 ? 67 : 64)));
+  assert.equal(new Set(seqs.map(S1.seq.code)).size, seqs.length, '가1 메아리 차례마다 다른 글자');
+  assert.ok(seqs.every(q => /^[0-9a-f]$/.test(S1.seq.code(q))), '가1 메아리 글자 0~f');
+  assert.ok(!(await import('../app/js/cells/ak2.js')).TVS, '악2(오선을 보고 푸는 문제)는 TVS X');
+  delete globalThis.localStorage;
+}
 // ── 장1 장단보 채우기(11-08 · docs/gugak.md 표기 그대로) ──
 {
   globalThis.localStorage = { getItem: () => null, setItem: () => {} };
@@ -193,7 +319,6 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   assert.match(jd.tipOf(jd.PLAN, deokMiss), /덕\(채편\)/);
   delete globalThis.localStorage;
 }
-console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 장1 장단 표기`);
 
 // 칸 결과 → 곡 바꾸기 부탁(11-10): 첫 판 칸만 · 부탁 키는 play.js CARDS의 여덟 중 하나 · 단추 글은 '바꿔/넣어/고쳐/지어/늘여 보기'
 {
@@ -205,3 +330,4 @@ console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FI
   }
   console.log('✓ 칸 → 곡 바꾸기 부탁 ' + Object.keys(PLAY_CARD).length + '칸');
 }
+console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 다섯 칸 문항 표(X2) · TV 소리 모드 일곱 칸 · 장1 장단 표기`);

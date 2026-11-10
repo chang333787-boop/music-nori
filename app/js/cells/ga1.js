@@ -6,7 +6,8 @@
 //   소개(솔-미 · 미-솔: 오르내림만 들어도 됨) → 발전(솔-솔 · 미-미 섞임) → 비틀기(세 음 · 리코더 · 피아노) → 마무리(세 음)
 //  11-07 평가 2차: 지시 한 줄 · 번호 ui.count · 맞음 말 ui.tell · 연습 점 ui.practice · 답 단추 kit.answers(솔 위 · 미 아래 = 메아리 길 높이와 같은 줄)
 //  11-07 평가 3차: 듣는 동안 A.busy('잘 들어요') · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 틀린 판은 맞는 음을 초록 테두리 + ✓로(점선 X) · 노래 그림 동전 26px
-import { SOL, MI, nameOf, josa, colorOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge } from './_mel.js';
+import { SOL, MI, nameOf, josa, colorOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge, dot } from './_mel.js';
+import { tvsGame } from './_tvs.js';
 
 const S = SOL, M = MI;
 const EXAMPLES = [
@@ -27,6 +28,60 @@ export const SHUF = { flip: ([ps, inst]) => [ps.map(p => (p === S ? M : S)), ins
 // 두 번째 소리를 처음 소리에 견줘 말하기(까닭)
 const why = (a, b) => (a === b ? `처음과 같은 높이, ${josa(nameOf(b), '이에요/예요')}`
   : `${nameOf(a)}보다 ${b > a ? '높은' : '낮은'} 소리, ${josa(nameOf(b), '이에요/예요')}`);
+
+// 결과 한 줄 — 틀린 메아리 갈래(같은 음 두 번 · 세 음 · 솔미 오르내림)
+export function tipOf(plan, results) {
+  const bad = plan.map((p, k) => (results[k] ? null : p[0])).filter(Boolean);
+  const same = bad.filter(ps => ps.length === 2 && ps[0] === ps[1]).length;
+  const three = bad.filter(ps => ps.length === 3).length;
+  if (!bad.length) return '같은 음이 이어질 때도, 세 음일 때도 모두 메아리로 돌려줬어요.';
+  if (same >= three && same >= bad.length / 2) return '같은 음이 두 번(솔-솔·미-미) 나올 때 헷갈렸어요. 첫 소리가 높은 솔인지 낮은 미인지 먼저 떠올려 봐요.';
+  if (three >= bad.length / 2) return '세 음 메아리(9번째부터)에서 헷갈렸어요. 따라 부르며 손을 올리고 내리면 차례가 잘 남아요.';
+  return '솔-미, 미-솔 메아리에서 헷갈렸어요. 내려가면 솔 → 미, 올라가면 미 → 솔이에요.';
+}
+
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 참새가 부른 차례대로 솔 · 미를 각자 누름(다 누르면 '답했어요' · 누른 칸엔 회색 점만 — 옆 친구가 따라 하지 않게)
+//  판마다 음 0.42초 + 틈 0.2초 · 마지막 음이 나기 시작하면 누를 수 있음(음 수는 칸 수로 이미 보임) · 가장 긴 세 음 끝 + 3.8초에 닫힘
+//  답 글자 = 누른 차례 하나(두 음 4~7 · 세 음 8~f — 솔 = 1 비트) · TV 막대는 '같게 · 다르게' 둘
+export const TVS = true;
+const T1_NOTE = 620, T1_CLOSE = 300 + 3 * T1_NOTE - 200 + 3800;
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF),
+  P: T1_CLOSE + 700, OPEN: ([ps]) => 300 + (ps.length - 1) * T1_NOTE, CLOSE: T1_CLOSE,
+  say: { kid: 'TV 참새가 부른 차례대로 솔, 미를 눌러요', tv: '소리는 TV에서 — 아이들은 각자 기기로 메아리를 눌러요' },
+  items: [S, M].map(p => ({ key: p, label: nameOf(p), chip: dot(kit.h, p) })),
+  answersOpt: { cls: 'm-ans e1-ans' },
+  rightOf: p => p[0],
+  seq: { code: ps => '0123456789abcdef'[(1 << ps.length) | ps.reduce((a, p, j) => a | (p === S ? 1 << j : 0), 0)], text: ps => ps.map(nameOf).join('-') },
+  intro: V => kit.playSeq(kit.engine, [{ p: S, d: 0.5, gap: 0.25 }, { p: M, d: 0.5 }], { inst: 'xylo', out: V.out }),
+  view({ kidSide, V, T, side }) {
+    const { h } = kit;
+    const bird = h('div', { class: 'e1-bird' }, kit.friendImg('bird', 'idle', { label: false }));
+    const poseB = ps => kit.setPose(bird.firstChild, 'bird', ps);
+    const slot = () => h('div', { class: 'e1-slot' }, h('i', { class: 'e1-row hi', style: { '--c': colorOf(S) } }), h('i', { class: 'e1-row lo', style: { '--c': colorOf(M) } }));
+    const path = h('div', { class: 'e1-path' });
+    const axis = h('div', { class: 'e1-axis', 'aria-hidden': 'true' }, badge(h, S, 'hi'), badge(h, M, 'lo'));
+    const nowSlot = k => [...path.children].forEach((s, j) => s.classList.toggle('now', j === k));
+    return {
+      el: h('div', { class: 'e1-scene' }, h('img', { class: 'e1-hill', src: 'app/img/scene/prop_hill.webp', alt: '', draggable: 'false' }), bird, h('div', { class: 'e1-mid' }, axis, path), side),
+      item: ([ps]) => { path.replaceChildren(...ps.map(slot)); nowSlot(kidSide ? 0 : -1); poseB('idle'); },
+      play([ps, inst], at) {
+        poseB('play');
+        const s = kit.playSeq(kit.engine, ps.map(p => ({ p, d: 0.42, gap: 0.2 })), { inst, out: V.out, at });
+        ps.forEach((_, k) => T.after(kit.msUntil(s.ac, s.starts[k]), () => nowSlot(k)));
+        T.after(kit.msUntil(s.ac, s.end) + 120, () => { nowSlot(-1); poseB('idle'); });
+      },
+      tap: k => { path.children[k].append(h('span', { class: 'e1-put hid' })); nowSlot(k + 1); },
+      close([ps], r) {
+        nowSlot(-1); path.querySelectorAll('.e1-put').forEach(e => e.remove());
+        ps.forEach((p, k) => path.children[k].append(h('span', { class: 'e1-put ' + (p === S ? 'hi' : 'lo') + (kidSide && !r ? ' fix' : ''), style: { '--c': colorOf(p) } }, badge(h, p))));
+        poseB(!kidSide || r ? 'happy' : r === false ? 'oops' : 'idle');
+      },
+      done: () => { bird.hidden = true; path.hidden = true; axis.hidden = true; },
+    };
+  },
+  tip: tipOf, chance: GUESS,
+});
 
 export default {
   // ── 보기 ──
@@ -118,6 +173,8 @@ export default {
 
   // ── 확인 게임: 메아리 언덕 — 12판 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [];
@@ -211,15 +268,7 @@ export default {
       });
     }
     function end() {
-      const s = kit.scoreChoices(results, 5, { chance: GUESS(plan) });
-      const bad = plan.map((p, k) => (results[k] ? null : p[0])).filter(Boolean);
-      const same = bad.filter(ps => ps.length === 2 && ps[0] === ps[1]).length;
-      const three = bad.filter(ps => ps.length === 3).length;
-      let tip;
-      if (!bad.length) tip = '같은 음이 이어질 때도, 세 음일 때도 모두 메아리로 돌려줬어요.';
-      else if (same >= three && same >= bad.length / 2) tip = '같은 음이 두 번(솔-솔·미-미) 나올 때 헷갈렸어요. 첫 소리가 높은 솔인지 낮은 미인지 먼저 떠올려 봐요.';
-      else if (three >= bad.length / 2) tip = '세 음 메아리(9번째부터)에서 헷갈렸어요. 따라 부르며 손을 올리고 내리면 차례가 잘 남아요.';
-      else tip = '솔-미, 미-솔 메아리에서 헷갈렸어요. 내려가면 솔 → 미, 올라가면 미 → 솔이에요.';
+      const s = kit.scoreChoices(results, 5, { chance: GUESS(plan) }), tip = tipOf(plan, results);
       bird.hidden = true; A.el.hidden = true; path.hidden = true; axis.hidden = true; ui.count(null);   /* 결과 뒤에는 언덕만(친구 그림은 칸 화면이 붙임) */
       kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd });
     }

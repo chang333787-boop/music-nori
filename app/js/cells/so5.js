@@ -10,7 +10,8 @@
 //  11-07 평가 3차: 연습은 높이 · 길이 단추 둘만(쓰지 않는 크기 단추 X) · 게임의 크기 단추는 비틀기 판 전까지 보이지 않음(locked)
 //   넷째 카드 '높이만 바뀌어요' / 아랫줄 '크기는 그대로' · 듣는 동안 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기' · 소리 그림 막대는 transform으로 자람
 import { voice, exGroup, nowCard, pal, pose, growBar, slide } from './_snd.js';
-import { factTip } from '../cellkit.js';
+import { factTip, stageCuts } from '../cellkit.js';
+import { tvsGame } from './_tvs.js';
 
 const BASE = { p: 67, d: 0.6, v: 0.55 };
 const SOFT = 0.16, LOUD = 0.8;                       // 크기 짝 — 압축기에 눌리지 않게 크게도 0.8까지만
@@ -27,24 +28,31 @@ const EXAMPLES = [
   { title: '크기가 바뀌어요', sub: '바이올린·작게 → 크게', ...mk('vol', { v: SOFT }, { v: LOUD }, 'violin') },
   { title: '높이만 바뀌어요', sub: '크기는 그대로', ...mk('pitch', { p: 79 }, { p: 65 }) },
 ];
-// 확인 게임 판 — 높이 다섯 · 길이 넷 · 크기 셋
+// 확인 게임 문항 표(X2 · 단계 꼬리표) — 줄 하나 = { stage, k(바뀐 것 = 답), inst, a(첫 소리), b(둘째 소리), right(= k) } · 높이 다섯 · 길이 넷 · 크기 셋
+const q = (stage, ...x) => { const it = mk(...x); return { stage, ...it, right: it.k }; };
 export const PLAN = [
   // 소개 — 높이 ↔ 길이 · 차이 크게(옥타브 · 0.3 ↔ 1.1초)
-  mk('pitch', { p: 60 }, { p: 72 }), mk('len', { d: 0.3 }, { d: 1.1 }), mk('pitch', { p: 76 }, { p: 64 }), mk('len', { d: 1.1 }, { d: 0.3 }),
+  q('intro', 'pitch', { p: 60 }, { p: 72 }), q('intro', 'len', { d: 0.3 }, { d: 1.1 }), q('intro', 'pitch', { p: 76 }, { p: 64 }), q('intro', 'len', { d: 1.1 }, { d: 0.3 }),
   // 발전 — 차이를 줄이고 리코더로
-  mk('pitch', { p: 67 }, { p: 72 }, 'recorder'), mk('len', { d: 0.4 }, { d: 0.9 }, 'recorder'),
-  // 비틀기 — 크기 카드가 옴. 같은 높이인데 크게만(크게 = 높게 함정) → 낮아지는데 크기는 그대로 → 높이 그대로 작게만 …
-  mk('vol', { v: SOFT }, { v: LOUD }), mk('pitch', { p: 74 }, { p: 67 }, 'violin'), mk('vol', { p: 72, v: LOUD }, { p: 72, v: SOFT }, 'violin'),
-  mk('len', { d: 1.0 }, { d: 0.35 }, 'violin'), mk('pitch', { p: 62 }, { p: 69 }),
+  q('grow', 'pitch', { p: 67 }, { p: 72 }, 'recorder'), q('grow', 'len', { d: 0.4 }, { d: 0.9 }, 'recorder'),
+  // 비틀기 — 크기 단추가 옴. 같은 높이인데 크게만(크게 = 높게 함정) · 낮아지는데 크기는 그대로 · 높이 그대로 작게만 …
+  q('twist', 'vol', { v: SOFT }, { v: LOUD }), q('twist', 'pitch', { p: 74 }, { p: 67 }, 'violin'), q('twist', 'vol', { p: 72, v: LOUD }, { p: 72, v: SOFT }, 'violin'),
+  q('twist', 'len', { d: 1.0 }, { d: 0.35 }, 'violin'), q('twist', 'pitch', { p: 62 }, { p: 69 }),
   // 마무리 — 낮은 소리가 크게만
-  mk('vol', { p: 64, v: SOFT }, { p: 64, v: LOUD }, 'recorder'),
+  q('end', 'vol', { p: 64, v: SOFT }, { p: 64, v: LOUD }, 'recorder'),
 ];
-const VOL_AT = PLAN.findIndex(x => x.k === 'vol');
+export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 6, 11]
+const VOL_AT = CUTS[1];                          // 크기 단추가 열리는 판 = 비틀기 첫 판(섞어도 자리는 그대로 — 섞이면 '새 단추 = 답'으로 찍지 못함)
+// 단계 안 섞기(N2) — 뒤집기 = 두 소리 차례를 바꿈(바뀐 것 = 답은 그대로 · 올라가요 ↔ 내려가요) · 답 = 바뀐 것
+//  답 수가 높이 5 · 길이 4 · 크기 3이라 같게 맞추지는 않음(balance X) — 같은 답 세 번 연속 X · 처음 네 판 번갈아 X만
+export const SHUF = { flip: p => ({ ...p, a: p.b, b: p.a }), answerOf: p => p.right, balance: false };
+// 찍기 바닥 — 크기 단추가 나오기 전엔 둘 중 하나 · 나온 뒤엔 셋 중 하나
+export const GUESS = plan => plan.map((x, k) => (k < VOL_AT ? 1 / 2 : 1 / 3));
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
 export function tipOf(plan, results, picks) {
   const count = (want, got) => plan.filter((x, k) => results[k] === false && x.k === want && picks[k] === got).length;
   const volAsPitch = count('vol', 'pitch'), pitchAsVol = count('pitch', 'vol'), mixPL = count('pitch', 'len') + count('len', 'pitch');
-  const afterVol = plan.filter((x, k) => results[k] === false && k >= VOL_AT).length;
+  const afterVol = plan.filter((x, k) => results[k] === false && (x.stage === 'twist' || x.stage === 'end')).length;
   return factTip(results, [
     { n: volAsPitch, text: `크기만 바뀐 소리를 ‘높이’로 고른 적이 ${volAsPitch}번 있었어요. 크게 내도 높아지지는 않아요.` },
     { n: pitchAsVol, text: `높이만 바뀐 소리를 ‘크기’로 고른 적이 ${pitchAsVol}번 있었어요. 낮아져도 작아지지는 않아요.` },
@@ -117,6 +125,42 @@ const press = el => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: 
 // 짝 틀기(둘째 소리 시작 · 끝 시각을 돌려줌)
 const playPair = (V, x) => V.play([{ p: x.a.p, d: x.a.d, vel: x.a.v, gap: 0.4 }, { p: x.b.p, d: x.b.d, vel: x.b.v }], { inst: x.inst });
 
+
+// ── 소리는 TV 하나 · 답은 각자(_tvs.js) — 판마다 두 소리(0.3초 뒤 · 사이 0.4초) · 7판째부터 크기 단추
+//  답 열림은 가장 늦은 둘째 소리 시작(첫 소리가 가장 긴 1.1초인 판)에 맞춰 고정 — 열리는 때로 첫 소리 길이(= 길이 문항)가 새지 않게
+//  닫힘 = 가장 긴 짝(1.8초) 끝 + 3.5초
+export const TVS = true;
+const TVS_OPEN = 300 + (Math.max(...PLAN.flatMap(x => [x.a.d, x.b.d])) + 0.4) * 1000;
+const TVS_CLOSE = 300 + Math.max(...PLAN.map(x => x.a.d + 0.4 + x.b.d)) * 1000 + 3500;
+export const tvsSpec = (ui, kit) => ({
+  plan: sd => kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF),
+  P: TVS_CLOSE + 800, OPEN: TVS_OPEN, CLOSE: TVS_CLOSE,
+  say: { kid: 'TV 소리를 듣고 — 바뀐 것 하나를 골라요', tv: '소리는 TV에서 — 아이들은 각자 기기로 골라요' },
+  items: ['pitch', 'len', 'vol'].map(k => ({ key: k, label: NAME[k], chip: ICON[k], locked: k === 'vol' })),
+  setup(x, A, k) {
+    if (k < VOL_AT) return;
+    A.lock('vol', false);
+    if (k === VOL_AT) { A.btn('vol').animate([{ transform: 'scale(.7)' }, { transform: 'scale(1.05)', offset: 0.7 }, { transform: 'none' }], { duration: 360, easing: 'ease-out' }); ui.tell('크기 단추가 나왔어요', 'info', 1800); }
+  },
+  rightOf: x => x.right,
+  wrongText: x => '이번엔 ' + NAME[x.k],
+  view({ kidSide, V, T, side }) {
+    const P = pic(kit);
+    const bunny = kit.h('div', { class: 'g5-bunny' }, pal(kit, 'bunny'));
+    const setP = p => pose(kit, bunny.firstChild, 'bunny', p);
+    return {
+      el: kit.h('div', { class: 'g5-wrap' }, bunny, P.el, side),
+      item: () => { P.reset(); P.ask(); setP('idle'); },
+      play(x, at) {
+        const s = V.play([{ p: x.a.p, d: x.a.d, vel: x.a.v, gap: 0.4 }, { p: x.b.p, d: x.b.d, vel: x.b.v }], { inst: x.inst, at });
+        T.after(kit.msUntil(s.ac, s.starts[0]), () => P.blink(0, T)); T.after(kit.msUntil(s.ac, s.starts[1]), () => P.blink(1, T));
+      },
+      close: (x, r) => { P.grow(0, x.a, 0.3); P.grow(1, x.b, 0.3); P.mark(x); setP(!kidSide || r ? 'happy' : r === false ? 'oops' : 'idle'); },
+      done: () => { bunny.style.visibility = 'hidden'; },
+    };
+  },
+  tip: tipOf, chance: GUESS,
+});
 
 export default {
   // ── 보기: 세 성질을 한 번씩 ──
@@ -210,10 +254,12 @@ export default {
 
   // ── 확인 게임: 무엇이 바뀌었나 — 12판 · 7판째부터 크기 단추 ──
   game(ui, kit) {
+    const tvs = kit.tvs && kit.tvs();
+    if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));   // 방이 열린 TV 수업: 소리는 TV 하나 · 답은 각자(_tvs.js)
     const { h, onPress, engine } = kit;
     const T = kit.timers(), V = voice(engine);
     const results = [], picks = [];
-    let i = -1, cur = null, open = false, gone = false, volOpen = false, listen = 0;
+    let i = -1, cur = null, open = false, gone = false, volOpen = false, listen = 0, plan = PLAN, sd = null;
     ui.say('두 소리를 듣고, 바뀐 것 하나를 골라요');
     const P = pic(kit);
     const bunny = h('div', { class: 'g5-bunny' }, pal(kit, 'bunny'));
@@ -226,7 +272,8 @@ export default {
     const setP = p => pose(kit, bunny.firstChild, 'bunny', p);
     const startBtn = h('button', { type: 'button', class: 'go huge' }, '시작');
     const again = h('button', { type: 'button' }, '다시 듣기');
-    onPress(startBtn, () => { start.remove(); ui.setBar(again); T.after(300, next); });
+    // 시작할 때 판 차례를 정함 — 단계(소개 0~3 · 발전 4~5 · 비틀기 6~10 · 마무리 11) 안에서만 섞고 반쯤 두 소리 차례를 바꿈(N2 · 씨앗은 기록에)
+    onPress(startBtn, () => { sd = kit.seed ? kit.seed() : 1; plan = kit.stageShuffle(PLAN, CUTS, kit.rng(sd), SHUF); start.remove(); ui.setBar(again); T.after(300, next); });
     onPress(again, () => { if (open) hear(); });       // 고르기 전이면 언제든 한 번 더(놓침 시계도 다시)
     ui.setBar(startBtn);
     kit.setAuto(() => { if (start.isConnected) press(startBtn); else if (open) answer(cur.k); });
@@ -244,9 +291,9 @@ export default {
     function next() {
       if (gone) return;
       i++;
-      if (i >= PLAN.length) return end();
-      cur = PLAN[i];
-      ui.count(i + 1, PLAN.length);
+      if (i >= plan.length) return end();
+      cur = plan[i];
+      ui.count(i + 1, plan.length);
       A.clear(); setP('idle');
       P.reset(); P.ask();
       open = false; A.busy(true);
@@ -284,8 +331,8 @@ export default {
     }
     function end() {
       open = false; listen++; ui.tell(null); A.clear(); A.busy(false); ui.setBar(); setP('happy');
-      const s = kit.scoreChoices(results, 5, { chance: PLAN.map((x, k) => (k < VOL_AT ? 1 / 2 : 1 / 3)) }), tip = tipOf(PLAN, results, picks);   // 찍기 바닥 — 크기 단추가 나오면 셋 중 하나
-      T.after(600, () => { bunny.style.visibility = 'hidden'; ui.count(null); kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip }); });
+      const s = kit.scoreChoices(results, 5, { chance: GUESS(plan) }), tip = tipOf(plan, results, picks);
+      T.after(600, () => { bunny.style.visibility = 'hidden'; ui.count(null); kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd }); });
     }
     const onKey = e => { if (e.repeat) return; const k = { 1: 'pitch', 2: 'len', 3: 'vol' }[e.key]; if (k) answer(k); };
     window.addEventListener('keydown', onKey);

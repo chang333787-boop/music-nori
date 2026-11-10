@@ -36,6 +36,7 @@ export default {
 `{ title: '12번 중 10번 맞혔어요', replay: [true, false, …], facts: ['가장 길게 이어서 6번'], starOn: [①, ②, ③], rules: ['절반 넘게 맞혔어요', '5번 이어서 맞혔어요', '모두 맞혔어요'], tip: '사실 한 줄' }`
 - 별 셋은 기준 글과 함께. 받은 별만 채움. 칭찬은 기준을 넘었을 때만, 무엇을 잘했는지 사실로
 - tip = 틀린 곳에서 찾은 사실("높이 차이가 작을 때 헷갈렸어요") — 빈 칭찬 X
+- 같은 화면에서 결과 '한 번 더'로 다시 하면 결과 별 줄 끝에 앞 판에 받은 별을 점선 빈 별 + '아까'로(`resultCard` before · 칸 화면이 앞 판 starOn을 기억 · 화면을 떠나면 잊음 · 기기 기록끼리 견주지 않음 — X2)
 - 칸 화면이 결과를 기기에 남긴다(`cellkit.saveResult` — 날짜 · 별 · 맞힌 수/전체(replay에서) · tip, 칸마다 최근 10개) → 선생님 칸 '이 기기 기록 보기'(#/records). 그래서 tip은 '틀린 갈래' 한 줄로 읽혀야 한다
 
 ## 한 칸이 도는 순서(계획서)
@@ -68,4 +69,10 @@ export default {
 - **찍기 바닥**: 고르기 칸은 `kit.scoreChoices(results, 5, { chance: 판마다 찍어 맞힐 확률 })` — 별 ① = 찍어서는 10%도 안 나오는 수 이상(`minKeepP`), 별 ② = ①을 받은 뒤 이어서 n번. 문항 꼴을 아는 찍기(번갈아 누르기)가 더 잘 맞는 칸은 확률을 넉넉히(가1 `GUESS`). 박 칸은 chance 없이 예전 규칙.
 - **단계 안 섞기 · 씨앗**: `kit.stageShuffle(PLAN, CUTS, kit.rng(kit.seed()), SHUF)` — 단계 경계는 그대로, 단계 안에서만 섞고 반쯤 뒤집음(같은 답 세 번 연속 X · 처음 네 판 ABAB X · 답 수 같게). 씨앗은 `kit.seed()`(시험 `?seed=N` > 방 아이 기기 = 방 · 칸 · 알림 시각 > 방이 열린 TV > 혼자). `kit.finish({ …, sd })`로 기록에 남겨 같은 판을 다시 만든다. 지금 소4 · 가1 — 나머지 다섯 칸은 다음 차례(문항 표로 통일).
 - **두드림 어긋남 기록(X4)**: 박 칸은 `kit.finish({ …, t: tapStats(맞힌 두드림 어긋남들, 놓친 수, { lat, band, bpm }) })` — 기기 기록에만 남고 화면에는 안 나옴(`docs/measure.md` §6). 칸 화면이 기록에 `r`(solo · room · tvs)을 붙인다.
+- **단계 안 섞기 · 씨앗**: `kit.stageShuffle(PLAN, CUTS, kit.rng(kit.seed()), SHUF)` — 단계 경계는 그대로, 단계 안에서만 섞고 반쯤 뒤집음(같은 답 세 번 연속 X · 처음 네 판 ABAB X · 답 수 같게). 씨앗은 `kit.seed()`(시험 `?seed=N` > 방 아이 기기 = 방 · 칸 · 알림 시각 > 방이 열린 TV > 혼자). `kit.finish({ …, sd })`로 기록에 남겨 같은 판을 다시 만든다. 고르기 칸 여덟(소3 · 소4 · 소5 · 셈1 · 가1 · 가2 · 가3 · 악2) 모두.
+- **단계 꼬리표 문항 표(X2)**: 칸 파일이 `export const PLAN`(줄 하나 = `{ stage, …들려줄 것 · 보여 줄 것, right(답) }` · stage = `intro` 소개 · `grow` 발전 · `twist` 비틀기 · `end` 마무리) · `CUTS = kit.stageCuts(PLAN)`(표에서 경계를 읽음) · `SHUF`(flip · answerOf · 필요하면 balance: false) · `GUESS(plan)`(판마다 찍어 맞힐 확률) · `tipOf(plan, results, picks)`를 내보낸다. 섞어 듣기 · TV 소리 모드 · 새 칸은 이 표 하나만 읽는다. 소4 · 가1 · 셈1은 예전 꼴(배열 · ans) 그대로.
+  - 뒤집기는 뜻이 그대로일 때만: 소3 = 같은 단계 짝의 반대 길이 · 소5 = 두 소리 차례 바꿈. 가2(라 ↔ 미는 쉬운 문항이 됨) · 가3(답 = 그림 자리 · `arrange`가 같은 씨앗으로 그림 차례를 섞음) · 악2(줄 음 ↔ 칸 음은 다른 음)는 차례만.
+  - 찍기 바닥: 소3 1/2 · 소5 1/2 → 크기 단추 뒤 1/3 · 가3 그림 수 · 악2 1/2 → 비틀기 1/4 · **가2 = 단계마다 가장 흔한 답의 몫**(라가 12판 중 7판의 답이라 1/3이면 '늘 라'가 별 ①을 받음 → 바닥 10/12). `X2LOG=1 node tests/cells.test.mjs` = 봇마다 별 비율.
+  - 마지막 단계가 한 판뿐이고 뒤집기가 없는 칸(소5 크기 · 가2 라 · 악2 아래 덧줄)은 마지막 판 답이 늘 같다(찍기로 1점까지 — 바닥은 그대로 둠).
+- **TV 소리 모드(X2 둘째 커밋)**: 칸 모듈이 `export const TVS = true` + `export const tvsSpec = (ui, kit) => ({ plan(sd), P, OPEN, CLOSE, items, rightOf, view, tip, chance, … })`를 내보내고 확인 게임 첫 줄에서 `const tvs = kit.tvs && kit.tvs(); if (tvs) return tvsGame(ui, kit, tvs, tvsSpec(ui, kit));` — 공용 `_tvs.js`가 시간표 · 가림 · 답 글자 · TV 막대 · 결과를 맡음(docs/room.md v2). 칸 화면(cell.js)은 이 TVS 표시만 봄(칸 이름 목록 X).
 - 시험: `tests/cells.test.mjs`(찍기 · 번갈아 · 같은 답 봇 · 씨앗 1000개) · `tests/truth.browser.cjs`(시계 · 시간 지남 · TV 징검다리 기록 X · 소3 답 열림 시각 · 씨앗).
