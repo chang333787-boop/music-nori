@@ -17,14 +17,14 @@ export default function mount(root, ctx) {
   const rows = ROWS.map(lane => {
     const ids = ORDER.filter(id => cellById(id).lane === lane);
     const L = LANES[lane];
-    return h('div', { class: 'mrow', style: { '--a': `var(--${L.friend})`, '--a-t': `var(--${L.friend}-t)` } },
+    return h('div', { class: 'mrow' + (ids.length > 6 ? ' dense' : ''), style: { '--a': `var(--${L.friend})`, '--a-t': `var(--${L.friend}-t)` } },
       h('div', { class: 'mlane' }, friendImg(L.friend, 'face', { label: false }), h('b', {}, L.name)),
       h('div', { class: 'mpath' }, ...ids.map((id, k) => {
         const c = cellById(id), st = prog[id] ? prog[id].stars : 0, name = cellName(c, band);
         const btn = h('button', { type: 'button', class: 'mnode' + (st >= 1 ? ' done' : '') + (id === nx ? ' next' : '') + (fresh.has(id) ? ' fresh' : ''), 'aria-label': `${name}${st ? ` · 별 ${st}` : ''}${id === nx ? ' · 다음 칸' : ''}` },
           id === nx ? h('span', { class: 'mtag' }, '다음') : null,
           h('span', { class: 'mdot' }, String(k + 1)),
-          h('span', { class: 'mname' }, name),
+          h('span', { class: 'mname' }, ids.length > 6 ? name.replace(/·/g, '·\u200b') : name),   /* 좁은 줄은 가운뎃점 뒤에서 줄이 바뀌게 */
           h('span', { class: 'mstars', html: [0, 1, 2].map(i => STAR_SVG(i < st)).join('') }));
         onPress(btn, () => ctx.go(c.route || 'cell/' + id));
         return btn;

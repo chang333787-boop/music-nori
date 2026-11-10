@@ -20,8 +20,8 @@ const visit = (id, path = []) => {
 };
 for (const c of CELLS) visit(c.id);
 // 첫 판
-assert.equal(FIRST.length, 15);
-assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 15칸');
+assert.equal(FIRST.length, 16);
+assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 16칸');
 for (const id of FIRST) assert.ok(cellById(id).game, id + ' 확인 게임 설명');
 // 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다
 for (const [i, id] of ORDER.entries()) for (const p of cellById(id).pre) if (FIRST.includes(p)) assert.ok(ORDER.indexOf(p) < i, `${id}보다 ${p}가 먼저`);
@@ -255,6 +255,57 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   // 가2 — '늘 라'가 7판을 맞혀도 별 X(찍기 바닥 = 단계마다 가장 흔한 답의 몫)
   assert.ok(K.minKeepP(M.ga2.GUESS(M.ga2.PLAN)) > M.ga2.PLAN.filter(p => p.right === 69).length, '가2 바닥 > 늘 라 맞힌 수');
+  delete globalThis.localStorage;
+}
+// ── 리3 8분음표 둘(박 칸 · 11-10) — 단계 꼬리표 문항 표 · 단계 안 섞기 · 씨앗 1000개 · 두드림 봇(찍기 · 같은 답 · 번갈아 · 단계 꼴 · 화면 틈) ──
+//  봇 = 판마다 '칠 리듬' 하나를 정해 그 소리 자리에 딱 맞춰 두드림 → 맞는 리듬이 아니면 그 판은 틀림. 별은 박 칸 규칙(① 절반 넘게 ② 5번 이어서 ③ 모두)
+{
+  const mem = new Map();
+  globalThis.localStorage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)) };
+  const K = await import('../app/js/cellkit.js'), R3 = await import('../app/js/cells/ri3.js');
+  const { PLAN, CUTS, SHUF } = R3, STAGES = ['intro', 'grow', 'twist', 'end'];
+  assert.ok(PLAN.every(p => STAGES.includes(p.stage)), '리3 줄마다 단계 꼬리표');
+  assert.deepEqual(PLAN.map(p => STAGES.indexOf(p.stage)), PLAN.map(p => STAGES.indexOf(p.stage)).slice().sort((a, b) => a - b), '리3 단계 차례');
+  assert.deepEqual(CUTS, K.stageCuts(PLAN), '리3 CUTS = 표의 단계 경계');
+  assert.ok(PLAN.length >= 10 && PLAN.length <= 12, '리3 판 수 10~12');
+  // 그림 판 = 소개 · 발전(섞어도 'n번째 판부터 그림 없이'가 맞게) · 듣기만 판이 절반 넘게 — 악보만 읽고 치는 길로는 별 X
+  assert.ok(PLAN.every((p, k) => !!p.hidden === (k >= CUTS[1])), '리3 그림 판 = 소개 · 발전 단계');
+  assert.ok(PLAN.filter(p => !p.hidden).length * 2 < PLAN.length && PLAN.filter(p => !p.hidden).length < 5, '리3 그림 판 < 절반 · < 5(별 ② 이어서 5번)');
+  // 비틀기 = 앞 칸 헷갈림 거리(리2 쉼 · 길게 이어지는 소리) · 마무리 = 소개 리듬 그대로 빨라짐
+  const tw = PLAN.filter(p => p.stage === 'twist');
+  assert.ok(tw.some(p => p.pat.includes('qr')) && tw.some(p => p.pat.includes('h')), '리3 비틀기에 쉼 · 길게 이어지는 소리');
+  for (const p of PLAN.filter(q => q.fast)) assert.ok(PLAN.some(q => !q.fast && !q.hidden && q.pat.join() === p.pat.join()), '리3 빨라진 판은 그림 판 리듬 그대로: ' + p.pat.join(' '));
+  const H = 340, S = Array.from({ length: 8 }, (_, i) => i * H);
+  const tapsOf = bp => R3.slotsOf(bp).map((s, j) => (s.kind === 'hit' ? S[j] : null)).filter(x => x != null);
+  const okWith = (row, bp) => R3.judgeBar(row.pat, S, tapsOf(bp), { halfMs: H }).ok;
+  const common = {};
+  for (const st of STAGES) { const a = PLAN.filter(p => p.stage === st).map(p => p.pat.join(' ')); common[st] = a.slice().sort((x, y) => a.filter(z => z === y).length - a.filter(z => z === x).length)[0].split(' '); }
+  const rr = K.rng(11), KINDS = ['q', 'ee', 'qr'];
+  const bots = [
+    ['찍기', () => [0, 1, 2, 3].map(() => KINDS[Math.floor(rr() * 3)])],
+    ['늘 한 번(박마다 반짝만 보고)', () => ['q', 'q', 'q', 'q']],
+    ['늘 두 번(반 박마다)', () => ['ee', 'ee', 'ee', 'ee']],
+    ['번갈아 따/띠띠', () => ['q', 'ee', 'q', 'ee']],
+    ['번갈아 띠띠/따', () => ['ee', 'q', 'ee', 'q']],
+    ['판마다 번갈아 따 넷/띠띠 넷', (p, k) => (k % 2 ? ['ee', 'ee', 'ee', 'ee'] : ['q', 'q', 'q', 'q'])],
+    ['단계 꼴', p => common[p.stage]],
+    ['화면 틈(그림 판은 악보대로 · 그림 없는 판은 박마다 반짝만 보고)', p => (p.hidden ? ['q', 'q', 'q', 'q'] : p.pat)],
+  ];
+  const got = new Map(bots.map(([n]) => [n, 0]));
+  const bounds = [0, ...CUTS, PLAN.length];
+  let origin = 0;
+  for (let sd = 1; sd <= 1000; sd++) {
+    const plan = K.stageShuffle(PLAN, CUTS, K.rng(K.seedOf('t', sd)), SHUF);
+    assert.equal(plan.length, PLAN.length);
+    for (let b = 0; b + 1 < bounds.length; b++) assert.deepEqual(plan.slice(bounds[b], bounds[b + 1]).map(SHUF.answerOf).sort(), PLAN.slice(bounds[b], bounds[b + 1]).map(SHUF.answerOf).sort(), `리3 씨앗 ${sd} ${b + 1}단계 문항 묶음`);
+    if (plan.every((p, k) => p === PLAN[k])) origin++;
+    if (sd === 1) assert.deepEqual(K.stageShuffle(PLAN, CUTS, K.rng(K.seedOf('t', 1)), SHUF), plan, '리3 같은 씨앗이면 같은 판');
+    assert.equal(K.scoreChoices(plan.map(p => okWith(p, p.pat)), 5).stars, 3, '리3 그대로 치면 별 셋');
+    for (const [name, bot] of bots) if (K.scoreChoices(plan.map((p, k) => okWith(p, bot(p, k))), 5).stars > 0) got.set(name, got.get(name) + 1);
+  }
+  assert.ok(origin < 50, `리3 원판 차례 그대로인 씨앗 ${origin}`);
+  if (process.env.X2LOG) console.log('ri3', [...got].map(([n, v]) => `${n} ${v / 10}%`).join(' · '));
+  for (const [name, n] of got) assert.ok(n / 1000 < 0.10, `리3 ${name} 봇 별 비율 ${n / 10}%`);
   delete globalThis.localStorage;
 }
 // ── 소리는 TV 하나 · 답은 각자(X2 둘째 커밋) — TVS 칸 일곱의 시간표 · 답 글자(소리 · 화면 없이 표만) ──

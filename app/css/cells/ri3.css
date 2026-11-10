@@ -1,0 +1,70 @@
+/* 리3 8분음표 둘 — 박 카드 줄(고슴도치 · 나) · 따라 치기(리2와 같은 모양)
+   음표 하나 = 카드 하나(‘따아’는 두 칸 너비) · 음절은 소리마다 하나(반짝 = 고슴도치 갈래 색) · 박 점(걸음)은 박마다 하나
+   '지금' = 잉크 고리 + 작은 세모 · 지난 박 = 진한 점 · 남은 박 = 빈 동그라미 · 판정은 금 · 초록 · 점선(빨강 X) */
+.r3{position:relative;width:100%;min-height:0;display:grid;gap:12px}
+.r3-show{grid-template-rows:minmax(0,1fr) auto auto}
+.r3-echo{grid-template-rows:minmax(0,1fr) minmax(0,1fr) 40px}
+.r3-echo.r3-game{grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.r3-row{position:relative;display:grid;grid-template-columns:170px minmax(0,1fr);gap:14px;align-items:stretch;border-radius:22px;padding:14px 10px 8px;min-height:0;transition:background-color 120ms}
+.r3-row.active{background:var(--hog-t)}
+.r3-row.ghost .r3-cards{opacity:.6}
+.r3-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;min-height:0}
+.r3-lab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:0}
+.r3-hog{width:120px;height:120px}
+.r3-hog.big{width:150px;height:150px}
+.r3-hog img,.r3-hog svg{width:100%;height:100%;object-fit:contain}
+.r3-me{font-family:var(--head);font-weight:400;font-size:40px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:4px 30px}
+/* 박 카드 */
+.r3-beat{position:relative;background:var(--surface);border:3px solid var(--ink);border-radius:20px;display:grid;grid-template-rows:minmax(0,1fr) auto auto;justify-items:center;align-items:center;padding:6px 4px 10px;min-height:0;transition:background-color 120ms}
+.r3-beat.span2{grid-column:span 2}
+.r3-beat.gone{display:none}
+.r3-beat .sym{display:flex;align-items:center;justify-content:center;min-height:0;height:100%}
+.r3-beat .sym svg{max-height:100%;width:auto}
+.r3-beat .syl{display:flex;justify-content:center;gap:10px;min-height:39px}
+.r3-beat .syl i{font-style:normal;font-family:var(--head);font-weight:400;font-size:30px;line-height:1.1;padding:0 10px;border:3px solid transparent;border-radius:12px}
+.r3-beat .syl i.on{background:var(--hog);color:#fff}
+.r3-beat .syl i.great{background:#FBF0D2;border-color:#9A6E00}
+.r3-beat .syl i.ok{background:var(--ok-t);border-color:var(--good)}
+.r3-beat .syl i.miss{border-style:dashed;border-color:var(--oops)}
+/* 박 점 — 박마다 하나(‘따아’ 카드는 둘) · 남은 박 = 빈 동그라미 · 지난 박 = 진한 점 */
+.r3-beat .dots{display:flex;justify-content:space-around;width:100%;margin-top:4px}
+.r3-beat .dot{display:block;width:20px;height:20px;border-radius:50%;background:var(--surface);border:3px solid var(--ink)}
+.r3-beat .dot.past{background:var(--ink)}
+.r3-beat .pm{position:absolute;right:10px;top:8px}
+.r3-beat.rest .syl i{color:var(--ink-2)}
+.r3-beat.hid .sym .q{font-family:var(--head);font-size:60px;color:var(--ink-2)}
+.r3-beat.lit{background:var(--hog-t)}
+/* 지금 여기 — 잉크 고리 + 위 작은 세모(주황 X) */
+.r3-beat.now{box-shadow:0 0 0 3px var(--paper),0 0 0 7px var(--ink)}
+.r3-beat.now::before{content:'';position:absolute;left:50%;top:-22px;margin-left:-9px;border:9px solid transparent;border-top:11px solid var(--ink);border-bottom:0}
+/* 음표 결과(내 줄) — 딱 금 · 좋아 초록 · 놓침 점선 · 쉼 지킴 초록 · 소리보다 더 침 회갈 점선 */
+.r3-beat.t-great{background:#FBF0D2;border-color:#9A6E00}
+.r3-beat.t-ok,.r3-beat.t-rest{background:var(--ok-t)}
+.r3-beat.t-miss{border-style:dashed;border-color:var(--oops);background:var(--surface)}
+.r3-beat.t-extra{background:var(--miss-t);border-style:dashed}
+/* 보기 */
+.r3-legend{display:grid;grid-template-columns:auto auto auto auto auto auto;justify-content:start;align-items:center;gap:6px 14px;padding-left:194px;font-size:20px;font-weight:700}
+.r3-legend span:nth-child(3),.r3-legend .r3-ldot{margin-left:30px}
+.r3-ldot{display:block;width:20px;height:20px;border-radius:50%;background:var(--ink);border:3px solid var(--ink)}
+.r3-ex{min-height:100px;padding:10px 18px;gap:4px}
+.r3-ex b{font-size:24px;white-space:nowrap}
+.r3-mini{display:flex;gap:4px;align-items:flex-end}
+.r3-cardpair{display:flex;align-items:center;justify-content:center;gap:10px}
+.r3-cardpair span{margin-right:18px}
+/* 보기 카드 묶음(박·리듬 칸 같은 모양) — 위 "눌러서 들어 봐요" · 카드 오른쪽 위 스피커 */
+.bexgroup{display:flex;flex-direction:column;gap:6px;min-height:0}
+.bexhead{display:flex;align-items:center;gap:8px;margin:0;font-family:var(--head);font-size:18px;line-height:1.2;color:var(--ink)}
+.bexspk{line-height:0}
+.bexgrid .excard{padding-right:48px}
+.bexgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.bspk{position:absolute;right:14px;top:12px;line-height:0;pointer-events:none}
+/* 준비 박 세기 — 판 가운데 큰 숫자(세는 동안만) */
+.bcount{position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;width:150px;height:150px;border-radius:50%;background:var(--surface);border:4px solid var(--ink);box-shadow:0 6px 0 var(--ink);font-family:var(--head);font-size:120px;line-height:1;color:var(--ink);pointer-events:none}
+/* 연습 아래 줄(틀린 까닭) */
+.r3-info{display:flex;align-items:center;gap:22px;padding:0 12px 0 194px}
+.r3-info .fmsg{min-height:0}
+.r3-tag{font-family:var(--head);font-size:22px;line-height:1.2;white-space:nowrap;background:var(--surface);border:3px solid var(--ink);border-radius:999px;padding:2px 14px}
+.r3-tag:empty{display:none}
+.r3-row.call .r3-hog{width:110px;height:110px}
+.r3-lab.me .r3-tag{background:var(--ink);color:var(--paper)}
+.r3 .bcount{left:calc(50% + 92px)}

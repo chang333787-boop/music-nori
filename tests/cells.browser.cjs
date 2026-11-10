@@ -1,6 +1,6 @@
 // 칸 자동 시험(브라우저 하나) — 칸마다 보기 → 따라 하기 → 확인 게임 → 결과까지 자동으로(window.__cellAuto = 칸이 정한 '맞는 행동')
 //  확인: 결과 별 셋 · 콘솔 오류 0 · 1366×768 스크롤 0 · 확인 게임 길이 30~75초 안
-//  + 기기 기록(hist 마지막 줄): r = 'solo' · 박 칸(리1 · 리2 · 리4 · 리5 · 악1)은 두드림 어긋남 t { o, sp, m, lat, band, bpm } 정수 · 그 밖 칸은 t 없음(X4)
+//  + 기기 기록(hist 마지막 줄): r = 'solo' · 박 칸(리1 · 리2 · 리3 · 리4 · 리5 · 악1)은 두드림 어긋남 t { o, sp, m, lat, band, bpm } 정수 · 그 밖 칸은 t 없음(X4)
 //  쓰는 법: node tests/cells.browser.cjs [칸 …]  (없으면 첫 판 13칸 중 cells/ 파일이 있는 것 모두 + 리1 징검다리)
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 let pw;
@@ -14,10 +14,10 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' });
   fs.createReadStream(f).pipe(res);
 });
-const FIRST = ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3', 'ri2', 'ri4', 'ri5', 'ri6', 'jd1', 'ak1', 'ak2'];
+const FIRST = ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6', 'jd1', 'ak1', 'ak2'];
 const want = process.argv.slice(2).length ? process.argv.slice(2) : ['ri1', ...FIRST.filter(id => fs.existsSync(path.join(ROOT, 'app/js/cells', id + '.js')))];
 // 두드림을 판정하는 칸 — 기록에 t가 있어야 함(X4)
-const TAP = new Set(['ri1', 'ri2', 'ri4', 'ri5', 'ak1']);
+const TAP = new Set(['ri1', 'ri2', 'ri3', 'ri4', 'ri5', 'ak1']);
 const histBad = (id, row) => {
   if (!row) return ['기록 줄 없음'];
   const out = [];
