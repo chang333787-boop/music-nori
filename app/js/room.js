@@ -164,19 +164,26 @@ export const kid = {
     emit();
   },
   // 확인 게임 결과 보내기(덮어씀)
-  async send(cell, s, k, n, ans = null) {
+  //  t = 두 글자(X6 둘째 · X11) — 첫 글자: 틀린 갈래의 차례(0~9 · 갈래 말이 없으면 x) · 둘째 글자: 오늘 이 칸에서 별 0이 이어진 수(0~9)
+  //   글 · 이름 X(차례 숫자만) → TV가 칸의 TIPS_TV로 '틀린 갈래' 막대를 그리고, 별 0이 이어진 아이 수를 셈
+  async send(cell, s, k, n, ans = null, t = null) {
     const me = this.get();
     if (!me || !okCell(cell)) return false;
     const c = v => Math.max(0, Math.min(99, Math.round(Number(v) || 0)));
     const body = { a: me.a, no: me.no, c: cell, s: Math.max(0, Math.min(3, s | 0)), k: c(k), n: c(n), at: TS };
     if (typeof ans === 'string' && /^[A-Za-z0-9.]{0,24}$/.test(ans)) body.ans = ans;
+    if (typeof t === 'string' && /^[0-9x][0-9]$/.test(t)) body.t = t;
     let r = null;
     for (let i = 0; i < 3; i++) {                           // 인터넷이 잠깐 끊겼으면 조용히 다시(서버가 거절하면 그만)
       r = await call('PUT', `rooms/${me.room}/res/${me.dev}`, body);
       if (r.ok || r.net) break;
       await new Promise(z => setTimeout(z, 1500));
     }
-    window.__roomSent = { cell, s, k, n, ok: r.ok };        // 시험용
+    if (!r.ok && r.net && body.t) {                         // 서버 규칙이 t를 아직 모르면(옛 규칙) t만 빼고 한 번 더 — 결과는 꼭 닿게
+      delete body.t;
+      r = await call('PUT', `rooms/${me.room}/res/${me.dev}`, body);
+    }
+    window.__roomSent = { cell, s, k, n, t: body.t || null, ok: r.ok };   // 시험용
     return r.ok;
   },
   // 서버 시각 맞추기 — 내 결과 칸에 서버 시각만 덧씀(PATCH)을 세 번, 가장 빨리 돌아온 것으로 off = 서버 − 이 기기(ms)

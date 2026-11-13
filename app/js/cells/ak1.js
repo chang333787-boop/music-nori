@@ -143,6 +143,9 @@ function keyRow(e, n) {
 }
 const rowsFor = kit => (kit.band === 'high' ? 3 : 2);
 
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 확인 게임 끝(end)의 갈래 차례(bi)와 같게 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['위아래를 바꿔 누름', '긴 막대 다음에 놓침', '막대를 놓침'];
+
 export default {
   // ── 보기: 그림 악보를 소리와 함께 ──
   show(ui, kit) {
@@ -373,11 +376,11 @@ export default {
       const great = all.filter(x => x.st === 'great').length;
       const wrongRow = all.filter(x => x.st === 'wrong').length, missed = all.filter(x => x.st === 'miss').length;
       const missAfterLong = all.filter(x => x.st === 'miss' && x.afterLong).length;
-      let tip;
+      let tip, bi = -1;                              // bi = 고른 갈래의 차례(TIPS_TV · TV '틀린 갈래' 막대 · X6 둘째)
       if (!wrongRow && !missed) tip = '막대 높이를 읽고, 긴 막대는 기다렸다가 다음 막대를 제때 눌렀어요.';
-      else if (wrongRow >= missed) tip = `위아래를 바꿔 누른 막대가 ${wrongRow}개 있었어요. 막대가 위에 있으면 높은 소리예요.`;
-      else if (rushed || missAfterLong * 2 >= missed) tip = `긴 막대 다음에서 놓친 적이 ${missAfterLong}번 있었어요. 긴 막대는 거북이 막대 끝까지 갈 때까지 기다려요.`;
-      else tip = `놓친 막대가 ${missed}개 있었어요. 거북이 막대 앞 끝에 닿을 때 눌러요.`;
+      else if (wrongRow >= missed) { bi = 0; tip = `위아래를 바꿔 누른 막대가 ${wrongRow}개 있었어요. 막대가 위에 있으면 높은 소리예요.`; }
+      else if (rushed || missAfterLong * 2 >= missed) { bi = 1; tip = `긴 막대 다음에서 놓친 적이 ${missAfterLong}번 있었어요. 긴 막대는 거북이 막대 끝까지 갈 때까지 기다려요.`; }
+      else { bi = 2; tip = `놓친 막대가 ${missed}개 있었어요. 거북이 막대 앞 끝에 닿을 때 눌러요.`; }
       // 두드림 어긋남(X4 · 기기 기록만) — 판정 창 안에 누른 막대(높이가 틀린 것도 때는 잼) · 판정 창은 늘 넉넉하게(low)
       //  악보마다 빠르기가 달라 bpm = 막대마다 빠르기의 가운데 값
       const bpms = all.map(x => x.bpm).sort((a, z) => a - z);
@@ -385,7 +388,7 @@ export default {
       // 기준 둘 — 높이(맞는 단추를 제때 누름) · 박자(그중 '딱' 맞춘 것) — 둘 다 막대 수를 분모로
       T.after(700, () => {
         S.showHead(false); ui.count(null); ui.setBar();   // 결과 옆 친구는 칸 화면이 붙임
-        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`높이 ${s.total}개 중 ${s.kept}개,`, kit.band === 'low' ? `‘딱’은 ${s.total}개 중 ${great}개였어요` : `박자 ${s.total}개 중 ${great}개를 맞혔어요`, `이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, t });
+        kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, group: lines.map(L => L.notes.length), facts: [`높이 ${s.total}개 중 ${s.kept}개,`, kit.band === 'low' ? `‘딱’은 ${s.total}개 중 ${great}개였어요` : `박자 ${s.total}개 중 ${great}개를 맞혔어요`, `이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, t, b: bi });
       });
     }
 

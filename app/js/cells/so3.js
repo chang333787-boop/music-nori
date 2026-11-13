@@ -10,7 +10,7 @@
 //  11-07 평가 3차: 다람쥐는 땅 위 승강장에서 기다림(하늘에 뜨지 않게) · 듣는 동안 답 묶음 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기'
 //   게임도 연습처럼 소리를 들어야 고를 수 있음(짧은 소리는 끝까지 · 긴 소리는 0.65초) · 막대는 transform으로 자람(_snd.js growBar)
 import { voice, exGroup, nowCard, pal, pose, growBar, slide, pop } from './_snd.js';
-import { factTip, stageCuts } from '../cellkit.js';
+import { factTip, stageCuts, nearSeq } from '../cellkit.js';
 import { tvsGame } from './_tvs.js';
 
 const MAXD = 1.5;                                     // 줄 끝까지 = 1.5초
@@ -42,6 +42,13 @@ export const SHUF = { flip: p => row(p.stage, p.right !== 'long', p.inst, p.p), 
 export const GUESS = plan => plan.map(() => 1 / 2);   // 찍기 바닥 — 긴 · 짧은 둘 중 하나
 // 답 단추는 짧은 소리든 긴 소리든 소리 시작 0.65초 뒤에 똑같이 열림 — 화면만 보고 길이를 알 수 없게(N2 · 소리 끈 봇이 찾은 틈)
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['악기 · 높이가 바뀐 소리', '길이 차이가 줄었을 때', '긴 소리를 짧게', '짧은 소리를 길게'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 길이 차이가 가장 작은 짝(발전 단계)
+export const NEAR = [
+  { label: '긴 소리', play: nearSeq([{ p: 67, d: LEN.grow[0] }], { inst: 'flute' }) },
+  { label: '짧은 소리', play: nearSeq([{ p: 67, d: LEN.grow[1] }], { inst: 'flute' }) },
+];
 export function tipOf(plan, results) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
   return factTip(results, [

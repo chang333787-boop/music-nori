@@ -106,15 +106,16 @@
 /* 모인 결과 크게 보기(띠를 누르면 무대 위에) */
 .rsall{z-index:4;padding:18px}
 .rsall-card{width:100%;height:100%;display:flex;flex-direction:column;gap:16px;padding:18px 24px}
-.rsall-top{display:flex;align-items:center;justify-content:space-between;gap:20px}
-.rsall-top h2{font-size:32px}
+/* 머리 한 줄 — 제목 · 반 막대 · '아직 n명' · 단추(막대가 따로 한 줄이면 1366×768 무대에서 아래 칸이 카드 밖으로 밀림) */
+.rsall-top{display:flex;align-items:center;gap:20px}
+.rsall-top h2{flex:none;font-size:32px}
 .rsall-top button{min-height:56px;font-size:22px}
-.rsall-btns{display:flex;gap:12px}
-.rsall-done{display:flex;align-items:center;gap:18px}
-.rsall-done .rs-bar{flex:1;height:48px;border-radius:14px}
-.rsall-done .rs-left{min-width:130px;font-size:28px}
+.rsall-btns{flex:none;display:flex;gap:12px;margin-left:auto}
+.rsall-done{flex:1;min-width:0;display:flex;align-items:center;gap:16px}
+.rsall-done .rs-bar{flex:1;height:40px;border-radius:12px}
+.rsall-done .rs-left{flex:none;font-size:26px}
 /* 별 분포 — 칸마다 막대 + 몇 명(1~3명은 '조금' · 막대도 같은 짧은 토막이라 길이로 수를 읽지 않음) */
-.rsall-dist{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:980px;width:100%;margin:0 auto}
+.rsall-dist{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:safe center;gap:14px;max-width:980px;width:100%;margin:0 auto}
 .rsd-row{display:grid;grid-template-columns:auto 1fr 110px;align-items:center;gap:18px}
 .rsd-stars{display:inline-flex;gap:4px}.rsd-stars svg{width:40px;height:40px}
 .rsd-bar{display:block;height:40px;border:3px solid var(--ink);border-radius:12px;background:var(--paper);overflow:hidden}
@@ -122,6 +123,25 @@
 .rsd-bar i.few{width:28px;background:var(--leaf-l)}
 .rsd-row b{font-family:var(--head);font-weight:400;font-size:30px;text-align:right}
 .rsall-none{margin:auto;font-family:var(--head);font-size:28px;color:var(--ink-2)}
+/* 많이 틀린 갈래(X6 둘째) — 별 분포 오른쪽 칸 · 갈래 이름 한 줄 + 막대 + 몇 명(1~3명은 '조금') · 틀린 것이라 초록이 아닌 회갈
+   별 0이 이어진 아이는 수만(X11) — 누구인지는 '복사'한 표에만. 갈래가 하나도 없으면 이 칸은 안 생기고 별 분포가 가운데 그대로
+   높이 셈(1366×768 · 카드 안 379 − 머리 줄 72 = 307): 제목 29 + 갈래 셋 196 + 별 0 줄 42 + 틈 20 = 287 — 갈래는 셋까지(cell.js)
+   더 낮은 화면에서는 잘리지 않고 이 칸 안에서 굴러감(safe center · overflow-y) */
+.rsall-cols{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px;align-items:safe center;overflow-y:auto}
+.rsall-cols .rsall-dist{max-width:none;margin:0}
+.rsall-side{display:flex;flex-direction:column;justify-content:safe center;gap:10px;min-width:0;align-self:stretch;padding-left:36px;border-left:3px solid var(--line2)}
+.rsb-h{font-size:24px;line-height:1.2;color:var(--ink-2)}
+.rsb-list{display:flex;flex-direction:column;gap:10px}
+.rsb-row{display:grid;grid-template-columns:1fr 90px;align-items:center;gap:3px 18px}
+.rsb-name{grid-column:1/-1;font-size:23px;font-weight:700;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rsb-row .rsd-bar{height:28px;border-radius:10px}
+.rsb-row .rsd-bar i{background:var(--oops)}
+.rsb-row .rsd-bar i.few{width:28px;background:var(--line2)}
+.rsb-row b{font-family:var(--head);font-weight:400;font-size:24px;line-height:1.15;text-align:right}
+/* 별 0 줄 — 수와 '복사한 표' 안내를 한 줄에(좁으면 안내만 아래로) */
+.rsb-zero{margin:0;padding-top:10px;border-top:3px solid var(--line2);display:flex;flex-wrap:wrap;align-items:baseline;gap:0 14px}
+.rsb-zero b{font-family:var(--head);font-weight:400;font-size:24px;line-height:1.2}
+.rsb-zero span{font-size:19px;line-height:1.2;color:var(--ink-2)}
 
 /* 좁은 화면(세로 휴대폰) — 한 줄씩 */
 @media (max-width:900px){

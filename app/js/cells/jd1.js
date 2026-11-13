@@ -81,6 +81,18 @@ function playJang(kit, bus, def, { cycles = 2, T, onSub = null } = {}) {
 const hitAnswers = (kit, onPick) => kit.answers(['deong', 'kung', 'deok'].map(k => ({ key: k, label: SYL[k], chip: symSVG(k, 44) })), onPick, { cls: 'jd-ans' });
 
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 칸의 2/3를 넘고 3번 이상일 때만
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['덕 자리', '덩과 쿵', '세마치'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 덩 ↔ 쿵(둘 다 낮게 울림 · 덩은 두 손이라 더 꽉 참)
+const nearHit = hit => (kit, out) => {
+  const { engine } = kit, t = engine.ensure().currentTime + 0.1;
+  for (let j = 0; j < 2; j++) engine.drum(hit, t + j * 0.7, VEL[hit], out);
+  return 1.5;
+};
+export const NEAR = [
+  { label: '덩 — 두 손 함께', play: nearHit('deong') },
+  { label: '쿵 — 왼손', play: nearHit('kung') },
+];
 export function tipOf(plan, results) {
   const flat = plan.flatMap(p => p.blank.map(i => ({ def: p.def, hit: p.def.pat[i], head: i % p.def.sub === 0 })));
   const miss = f => flat.filter((x, k) => results[k] === false && f(x)).length;

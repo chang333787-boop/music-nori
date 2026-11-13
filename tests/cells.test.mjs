@@ -458,6 +458,82 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   delete globalThis.localStorage;
 }
 
+// ── 틀린 갈래 차례 · 별 0 이어짐 · 헷갈리는 두 소리(11-13 · X6 둘째 · X11) ──
+{
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const K = await import('../app/js/cellkit.js');
+  // 별 0이 이어진 수 — 기록 끝(가장 새 줄)에서부터 · since보다 앞선 줄에서 멈춤
+  assert.equal(K.zeroRun(undefined), 0); assert.equal(K.zeroRun([]), 0);
+  assert.equal(K.zeroRun([{ s: 0, at: 5 }, { s: 2, at: 6 }]), 0, '가장 새 줄이 별 0이 아니면 0');
+  assert.equal(K.zeroRun([{ s: 3, at: 1 }, { s: 0, at: 2 }, { s: 0, at: 3 }]), 2);
+  assert.equal(K.zeroRun([{ s: 0, at: 1 }, { s: 0, at: 2 }, { s: 0, at: 3 }], 2), 2, 'since 앞 줄은 세지 않음(오늘 것만)');
+  assert.equal(K.zeroRun([{ s: 0 }, { s: 0 }], 10), 0, '때가 없는 옛 줄은 since가 있으면 세지 않음');
+  assert.equal(K.zeroRun([{ s: 0 }, { s: 0 }]), 2, 'since가 없으면 옛 줄도 셈(기록 화면)');
+  // 갈래 차례(tipPick) — factTip이 갈래 말을 했을 때만 그 차례 · 아니면 -1
+  K.factTip([true, true], [{ n: 0, text: 'a' }], '완벽'); assert.deepEqual({ ...K.tipPick }, { b: -1, n: 1 });
+  K.factTip([false, false, false, true], [{ n: 0, text: 'a' }, { n: 3, text: 'b' }], '완벽'); assert.deepEqual({ ...K.tipPick }, { b: 1, n: 2 });
+  K.factTip([false, false, true, true], [{ n: 2, text: 'a' }], '완벽'); assert.equal(K.tipPick.b, -1, '틀린 판 셋 미만이면 갈래 X');
+  K.factTip([false, false, false, false, false, false], [{ n: 3, text: 'a' }], '완벽'); assert.equal(K.tipPick.b, -1, '갈래가 2/3를 못 넘으면 X');
+  // 칸마다 TIPS_TV(TV 막대 이름) — 열 개 안(t 첫 글자 0~9) · 짧게 · factTip을 쓰는 칸은 갈래 수와 같아야(차례가 밀리면 TV가 다른 이름을 그림)
+  const ALL = ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'jd1', 'ak1', 'ak2', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6'];
+  const M = {};
+  for (const id of ALL) M[id] = await import(`../app/js/cells/${id}.js`);
+  let viaTip = 0;
+  for (const id of ALL) {
+    const T = M[id].TIPS_TV;
+    assert.ok(Array.isArray(T) && T.length >= 1 && T.length <= 10, id + ' TIPS_TV 1~10개');
+    assert.ok(T.every(x => typeof x === 'string' && x.length >= 2 && x.length <= 20) && new Set(T).size === T.length, id + ' TIPS_TV 짧고 서로 다른 이름: ' + T.join(' | '));
+    assert.ok(!T.some(x => /소개|발전|비틀기|마무리|intro|grow|twist/.test(x)), id + ' TV 막대에 단계 이름(속말) X');
+    if (!M[id].tipOf || !M[id].PLAN) continue;
+    const mod = M[id], r = K.rng(K.seedOf('t', 1));
+    const plan = mod.CUTS && mod.SHUF ? (p => (mod.arrange ? mod.arrange(p, r) : p))(K.stageShuffle(mod.PLAN, mod.CUTS, r, mod.SHUF)) : mod.PLAN;
+    K.tipPick.n = -1;
+    mod.tipOf(plan, Array(40).fill(false), []);
+    if (K.tipPick.n < 0) continue;                  // 제 손으로 갈래를 고르는 칸(kit.finish({ b }))
+    assert.equal(K.tipPick.n, T.length, `${id} TIPS_TV ${T.length}개 = tipOf 갈래 ${K.tipPick.n}개`);
+    viaTip++;
+  }
+  assert.ok(viaTip >= 9, 'factTip 갈래 수를 견준 칸 ' + viaTip);
+  // 헷갈리는 두 소리(NEAR) — 듣는 칸 열 곳만 · 꼭 둘 · 받은 소리 길(out)로만 틀고(멈출 수 있게) 끝날 때까지 초를 돌려줌
+  const calls = [], OUT = { bus: 1 };
+  const eng = { ctx: { currentTime: 2 }, ensure() { return this.ctx; },
+    note: (inst, p, t, d, vel, out) => calls.push({ k: 'n', inst, p, t, d, vel, out }),
+    drum: (kind, t, vel, out) => calls.push({ k: 'd', kind, t, vel, out }) };
+  const run = it => { calls.length = 0; const sec = it.play({ engine: eng }, OUT); return { sec, c: calls.map(x => ({ ...x })) }; };
+  const HEAR = ['so3', 'so4', 'so5', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'jd1'];
+  const R = {};
+  for (const id of HEAR) {
+    const N = M[id].NEAR;
+    assert.ok(Array.isArray(N) && N.length === 2, id + ' NEAR = 둘');
+    assert.notEqual(N[0].label, N[1].label, id + ' 두 이름이 다름');
+    R[id] = N.map(it => {
+      assert.ok(typeof it.label === 'string' && it.label.length >= 2 && it.label.length <= 16, id + ' 이름: ' + it.label);
+      assert.ok(it.low == null || (typeof it.low === 'string' && it.low.length <= 16), id + ' 1~2학년 이름');
+      const x = run(it);
+      assert.ok(x.sec >= 0.5 && x.sec <= 6, `${id} ${it.label} ${x.sec}초(0.5~6초)`);
+      assert.ok(x.c.length >= 1 && x.c.every(c => c.out === OUT), id + ' 소리는 모두 받은 소리 길로');
+      assert.ok(x.c.every(c => c.t >= 2 && c.t <= 2 + x.sec && (c.k === 'd' || (c.d > 0 && c.vel > 0 && c.vel <= 1))), id + ' 음 때 · 길이 · 세기');
+      return x;
+    });
+    assert.notEqual(JSON.stringify(R[id][0].c), JSON.stringify(R[id][1].c), id + ' 두 소리가 서로 다름');
+  }
+  for (const id of ALL.filter(x => !HEAR.includes(x))) assert.ok(!M[id].NEAR, id + '(눈으로 풀거나 치는 칸)에는 NEAR X');
+  const notes = x => x.c.filter(c => c.k === 'n'), only = (a, b, key) => ['inst', 'p', 'd', 'vel'].filter(f => a[f] !== b[f]).join() === key;
+  // 짝마다 그 칸이 가르치는 한 가지만 다름
+  assert.ok(only(notes(R.so3[0])[0], notes(R.so3[1])[0], 'd'), '소3 — 길이만 다름');
+  assert.ok(notes(R.so4[0])[1].p > notes(R.so4[0])[0].p && notes(R.so4[1])[1].p < notes(R.so4[1])[0].p, '소4 — 높아짐 · 낮아짐');
+  assert.ok(only(notes(R.so5[0])[0], notes(R.so5[0])[1], 'vel') && only(notes(R.so5[1])[0], notes(R.so5[1])[1], 'p'), '소5 — 크기만 · 높이만');
+  { const [a, b] = R.sem1.map(notes), avg = (ns, f) => ns.reduce((s, n) => s + n[f], 0) / ns.length;
+    assert.ok(avg(a, 'p') > avg(b, 'p') && avg(a, 'vel') < avg(b, 'vel') && a.length === b.length, '셈1 — 높지만 여리게 · 낮지만 세게(같은 가락)'); }
+  for (const id of ['ga1', 'ga2', 'ga3', 'ga4']) { const [a, b] = R[id].map(notes); assert.ok(a.length === b.length && a.every((n, j) => n.d === b[j].d && n.inst === b[j].inst) && a.some((n, j) => n.p !== b[j].p), id + ' — 음 높이만 다름'); }
+  { const [a, b] = R.ppa1, kicks = x => x.c.filter(c => c.kind === 'kick').length;
+    assert.equal(a.sec, b.sec, '빠1 — 두 소리 길이가 같음(길이로 못 고르게)'); assert.ok(kicks(a) < kicks(b), '빠1 — 박 수만 다름(보통 < 빠르게)'); }
+  assert.deepEqual(R.jd1.map(x => [...new Set(x.c.map(c => c.kind))].join()), ['deong', 'kung'], '장1 — 덩 · 쿵');
+  assert.equal(typeof K.nearSeq([{ p: 60, d: 0.3 }]), 'function');
+  delete globalThis.localStorage;
+  console.log(`✓ 틀린 갈래 차례 · 별 0 이어짐 · 헷갈리는 두 소리 — TIPS_TV ${ALL.length}칸(갈래 수 견줌 ${viaTip}) · NEAR ${HEAR.length}칸`);
+}
+
 // 칸 결과 → 곡 바꾸기 부탁(11-10): 첫 판 칸만 · 부탁 키는 play.js CARDS의 여덟 중 하나 · 단추 글은 '바꿔/넣어/고쳐/지어/늘여 보기'
 {
   const KEYS = ['pitch', 'long', 'fix', 'rest', 'meter', 'tempo', 'dyn', 'make'];

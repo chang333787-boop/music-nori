@@ -41,6 +41,19 @@ let fail = 0; const check = (name, cond, info) => { if (cond) console.log('✓ '
   check('서버 시각 맞추기(PATCH at)가 시각을 돌려줌', r.ok && r.data && typeof r.data.at === 'number', r.data);
   r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 3, k: 12, n: 12, ans: 'UUDDUDUDUUDD', at: TS });
   check('끝 결과와 답 글자를 함께 보냄', r.ok, r);
+  // 틀린 갈래 차례 + 별 0 연속(11-13 · X6 둘째 · X11 — 교사 승인 '추천으로') — res.t = 두 글자(갈래 차례 0~9 또는 x · 이어진 수 0~9) · 글 · 이름은 못 들어감
+  r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 0, k: 5, n: 12, t: '02', at: TS });
+  check('틀린 갈래 차례와 별 0 연속(두 글자)을 함께 보냄', r.ok && r.data && r.data.t === '02', r);
+  r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 3, k: 12, n: 12, t: 'x0', at: TS });
+  check('갈래 말이 없으면 x', r.ok && r.data && r.data.t === 'x0', r);
+  r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 0, k: 5, n: 12, t: '철수', at: TS });
+  check('갈래 칸에 이름 같은 글은 거절', !r.ok, r.status);
+  r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 0, k: 5, n: 12, t: 'abc', at: TS });
+  check('갈래 칸에 세 글자는 거절', !r.ok, r.status);
+  r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 0, k: 5, n: 12, t: 2, at: TS });
+  check('갈래 칸에 숫자 값은 거절', !r.ok, r.status);
+  r = await call('PUT', `rooms/${room}/res/abcd1234`, { a: 2, no: 7, c: 'so4', s: 3, k: 12, n: 12, ans: 'UUDDUDUDUUDD', at: TS });
+  check('다시 끝 결과만 보내면 갈래 칸이 지워짐', r.ok && r.data && r.data.t === undefined, r);
   r = await call('GET', `rooms/${room}/res`);
   check('TV는 결과를 읽음', r.ok && r.data && r.data.abcd1234 && r.data.abcd1234.s === 3, r.data);
   r = await call('PUT', `rooms/9${room.slice(1)}x/own`, { tok, at: TS });

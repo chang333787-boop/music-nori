@@ -9,7 +9,7 @@
 //    그림 판은 두 그림의 높낮이 모양이 늘 같고(오르기 · 오르기) 어느 쪽을 들려줄지는 씨앗이 정함(뒤집기) · 그림 자리도 씨앗으로 섞음 — 모양 · 레가 든 그림 · 자리로는 반
 import { DO, RE, MI, FA, SOL, LA, nameOf, colorOf, posOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, markPick, judge, dot } from './_mel.js';
 import { tvsGame } from './_tvs.js';
-import { factTip, stageCuts, shuffle } from '../cellkit.js';
+import { factTip, stageCuts, shuffle, nearSeq } from '../cellkit.js';
 
 const D = DO, R = RE, M = MI, S = SOL, L = LA;
 const ROWS = [D, R, M, S, L], GHOSTS = [FA];
@@ -53,6 +53,14 @@ export const arrange = (plan, r) => plan.map(p => { if (p.fmt !== 'pic') return 
 const QN = PLAN.filter(p => p.fmt === 'q'), QTOP = Math.max(...[0, 1, 2].map(k => QN.filter(p => p.right === k).length)) / QN.length;
 export const GUESS = plan => plan.map(p => (p.fmt === 'q' ? Math.max(1 / 3, QTOP) : 1 / 2));
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['? 자리 소리(레)', '솔 · 라 · 네 음 가락', '차례가기를 뛰어가기로', '뛰어가기를 차례가기로'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 같은 도에서 시작하는 차례가기 ↔ 뛰어가기
+const nearMel = ps => nearSeq(ps.map(p => ({ p, d: 0.42, gap: 0.18 })), { inst: 'xylo' });
+export const NEAR = [
+  { label: WORD.step + '(도-레-미)', play: nearMel([D, R, M]) },
+  { label: WORD.skip + '(도-미-솔)', play: nearMel([D, M, S]) },
+];
 export function tipOf(plan, results) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
   return factTip(results, [

@@ -7,7 +7,7 @@
 //  11-07 평가 3차: 위 = 하늘 · 아래 = 풀밭(물 띠 안에 다시 연못 X) · 게임은 나무 왼쪽 1/3 · 연못 오른쪽 1/3 · 참새는 가운데 길만 오르내림(가지와 겹치지 않게)
 //   참새 움직임은 transform(top · bottom X) · 듣는 동안 답 묶음 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기'
 import { exGroup, nowCard, pal, pose, voice } from './_snd.js';
-import { factTip } from '../cellkit.js';
+import { factTip, nearSeq } from '../cellkit.js';
 import { tvsGame } from './_tvs.js';
 
 const REF = 72;                                       // 기준 = 높은 도(C5)
@@ -55,6 +55,14 @@ function ladder(kit) {
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
 export const CUTS = [4, 8, 11];                   // 단계 경계 — 소개 · 발전 · 비틀기 · 마무리(섞어도 '9번째부터' 말이 그대로 맞게)
 export const SHUF = { flip: ([d, inst]) => [-d, inst], answerOf: p => p[0] > 0 };   // 뒤집기 = 같은 간격을 반대로 · 답 = 높아지나
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['높이 차이가 작을 때', '낮아지는 소리', '높아지는 소리'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 높이 차이가 가장 작은 짝(비틀기 단계 3도)
+const nearPair = iv => nearSeq([{ p: REF, d: 0.42, gap: 0.2 }, { p: REF + iv, d: 0.5 }], { inst: 'piano' });
+export const NEAR = [
+  { label: '둘째 소리가 높아요', play: nearPair(4) },
+  { label: '둘째 소리가 낮아요', play: nearPair(-3) },
+];
 export function tipOf(plan, results) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
   return factTip(results, [
@@ -201,7 +209,7 @@ export default {
     onPress(startBtn, () => { begin(); start.remove(); ui.setBar(again); next(); });
     onPress(again, () => { if (open) hear(); });       // 고르기 전이면 언제든 한 번 더(놓침 시계도 다시)
     ui.setBar(startBtn);
-    kit.setAuto(() => { if (start.isConnected) press(startBtn); else if (open) answer(cur.b > REF); });
+    kit.setAuto(miss => { if (start.isConnected) press(startBtn); else if (open) answer((cur.b > REF) !== !!miss); });   // miss = 일부러 틀림(별 0 화면 시험)
 
     // 두 소리 듣기(처음 · 다시 듣기) — 두 번째 소리가 나오면 고를 수 있음
     function hear() {

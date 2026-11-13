@@ -38,6 +38,7 @@
             "n": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
             "at": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
             "ans": { ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9.]{0,24}$/)" },
+            "t": { ".validate": "newData.isString() && newData.val().matches(/^[0-9x][0-9]$/)" },
             "$other": { ".validate": false }
           }
         },

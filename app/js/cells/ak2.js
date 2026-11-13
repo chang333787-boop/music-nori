@@ -39,6 +39,8 @@ export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 8, 11] —
 export const SHUF = { answerOf: p => p.right, balance: false };
 export const GUESS = plan => plan.map(p => (p.twist ? 1 / 4 : 1 / 2));   // 찍기 바닥 — 앞 여덟 판 둘 중 하나 · 비틀기 넷 중 하나
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['몇째 줄 · 몇째 칸', '칸 음', '줄 음'];
 export function tipOf(plan, results) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
   return factTip(results, [
@@ -314,7 +316,8 @@ export default {
       turtle.hidden = true; A.el.hidden = true; st.clear(); ui.count(null); tall(false);   /* 결과 앞에 띠를 되돌림(결과 단추가 띠에 놓임) */
       kit.finish({ title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: results, facts: [`이어서 맞힌 최고 기록 ${s.streak}번`], starOn: s.starOn, rules: s.rules, tip, sd });
     }
-    kit.setAuto(() => { if (sc.waiting()) press(sc.btn); else if (cur && cur.open) choose(want(cur)); });
+    // miss = 일부러 틀림(별 0 화면 시험) — 잠기지 않은 다른 단추
+    kit.setAuto(miss => { if (sc.waiting()) press(sc.btn); else if (cur && cur.open) choose(miss ? [0, 1, 2, 3].find(j => j !== want(cur) && A.btn(j) && !A.btn(j).classList.contains('locked')) : want(cur)); });
     const onKey = e => { const k = '1234'.indexOf(e.key); if (k >= 0 && cur && !A.btn(k).classList.contains('locked')) choose(k); };
     window.addEventListener('keydown', onKey);
     return () => { gone = true; T.clear(); V.cut(); tall(false); window.removeEventListener('keydown', onKey); };

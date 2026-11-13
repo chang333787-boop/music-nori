@@ -5,7 +5,7 @@
 //  소리 그림: 세기 = 막대 굵기(소5 약속 · 높이는 세로 · 길이는 가로) — 고르기 전에는 굵기를 숨김(화면으로 답이 새지 않게)
 //  보기(예시 다섯) → 연습(어느 쪽이 세게? 세 번 이어서) → 확인 게임 '곰 깨우기' 12판(견주기 · 갑자기 세게 · 비틀기 · p/f 고르기)
 import { voice, exGroup, nowCard, pal, pose } from './_snd.js';
-import { factTip } from '../cellkit.js';
+import { factTip, nearSeq } from '../cellkit.js';
 import { tvsGame } from './_tvs.js';
 
 const BEAT = 0.42;                                  // 한 박(초) — 견주는 가락은 한 마디씩(확인 게임 1분 안쪽)
@@ -89,6 +89,13 @@ function playSegs(kit, V, T, S, segs, at0 = 0.1) {
   return endMs;
 }
 
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['높은 소리를 세게로', '센박을 세게로', '한 번 안에서 바뀌는 세기'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 높이와 세기를 헷갈리는 짝(같은 가락 · 높지만 여리게 ↔ 낮지만 세게)
+export const NEAR = [
+  { label: '높지만 여리게', low: '높지만 작게', play: nearSeq(notes(M1, P, 'piano', 12)) },
+  { label: '낮지만 세게', low: '낮지만 크게', play: nearSeq(notes(M1, F, 'piano', 0)) },
+];
 export function tipOf(plan, results) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
   return factTip(results, [

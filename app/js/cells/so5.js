@@ -10,7 +10,7 @@
 //  11-07 평가 3차: 연습은 높이 · 길이 단추 둘만(쓰지 않는 크기 단추 X) · 게임의 크기 단추는 비틀기 판 전까지 보이지 않음(locked)
 //   넷째 카드 '높이만 바뀌어요' / 아랫줄 '크기는 그대로' · 듣는 동안 '잘 들어요'(A.busy) · 게임 아래 띠에도 '다시 듣기' · 소리 그림 막대는 transform으로 자람
 import { voice, exGroup, nowCard, pal, pose, growBar, slide } from './_snd.js';
-import { factTip, stageCuts } from '../cellkit.js';
+import { factTip, stageCuts, nearSeq } from '../cellkit.js';
 import { tvsGame } from './_tvs.js';
 
 const BASE = { p: 67, d: 0.6, v: 0.55 };
@@ -49,6 +49,14 @@ export const SHUF = { flip: p => ({ ...p, a: p.b, b: p.a }), answerOf: p => p.ri
 // 찍기 바닥 — 크기 단추가 나오기 전엔 둘 중 하나 · 나온 뒤엔 셋 중 하나
 export const GUESS = plan => plan.map((x, k) => (k < VOL_AT ? 1 / 2 : 1 / 3));
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['크기를 높이로', '높이를 크기로', '높이와 길이를 바꿔', '크기 단추가 나온 뒤'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 가장 많이 바꿔 고르는 짝(크기 ↔ 높이)
+const nearOf = x => nearSeq([{ p: x.a.p, d: x.a.d, vel: x.a.v, gap: 0.4 }, { p: x.b.p, d: x.b.d, vel: x.b.v }], { inst: x.inst });
+export const NEAR = [
+  { label: '크기만 달라요', play: nearOf(mk('vol', { v: SOFT }, { v: LOUD })) },
+  { label: '높이만 달라요', play: nearOf(mk('pitch', { p: 67 }, { p: 72 })) },
+];
 export function tipOf(plan, results, picks) {
   const count = (want, got) => plan.filter((x, k) => results[k] === false && x.k === want && picks[k] === got).length;
   const volAsPitch = count('vol', 'pitch'), pitchAsVol = count('pitch', 'vol'), mixPL = count('pitch', 'len') + count('len', 'pitch');

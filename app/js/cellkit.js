@@ -97,16 +97,28 @@ export const stageCuts = plan => plan.map((p, k) => (k && p.stage !== plan[k - 1
 // 결과 한 줄(tip) — 사실만(N1 · 11-08 토론): 틀린 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만.
 //  그 밖에는 몇째 판을 틀렸는지만 · 시간이 지난 판은 따로 한 줄. branches = [{ n: 그 갈래 틀린 수, text }](앞에서부터 우선)
 export function factTip(results, branches, perfect) {
+  tipPick.b = -1; tipPick.n = branches.length;
   const late = results.filter(r => r === null).length;
   const wrongAt = results.map((r, k) => (r === false ? k + 1 : 0)).filter(Boolean), dir = wrongAt.length;
   if (!dir && !late) return perfect;
   const out = [];
   if (dir) {
-    const b = dir >= 3 ? branches.find(x => x.n > dir * 2 / 3) : null;
+    const bi = dir >= 3 ? branches.findIndex(x => x.n > dir * 2 / 3) : -1, b = bi >= 0 ? branches[bi] : null;
+    tipPick.b = bi;
     out.push(b ? b.text : `${wrongAt.slice(0, 4).join(' · ')}번째 판을 틀렸어요${dir > 4 ? `(그 밖에 ${dir - 4}판 더)` : ''}.`);
   }
   if (late) out.push(`고르기 전에 시간이 지난 판이 ${late}번 있었어요.`);
   return out.join(' ');
+}
+// 방금 고른 틀린 갈래의 자리(X6 둘째) — factTip이 채움: b = 갈래 차례(0부터 · 갈래 말을 하지 않았으면 -1) · n = 갈래 수.
+//  방에 든 아이 기기가 결과와 함께 이 '차례 숫자'만 TV로 보냄(글 X) → TV는 칸의 TIPS_TV[b] 짧은 이름으로 '틀린 갈래' 막대를 그림
+//  제 손으로 갈래를 고르는 칸(박 칸 · 가1)은 kit.finish({ …, b })로 직접 알림
+export const tipPick = { b: -1, n: 0 };
+// 별 0이 이어진 수(X11) — 기록 끝(가장 새 줄)에서부터 별 0인 줄 수 · since(ms)보다 앞선 줄에서 멈춤
+export function zeroRun(hist, since = 0) {
+  let n = 0;
+  for (let i = (hist || []).length - 1; i >= 0 && hist[i] && hist[i].s === 0 && (hist[i].at || 0) >= since; i--) n++;
+  return n;
 }
 
 // 결과 카드 — r = { title, replay:[true/false], group(다시 보기 묶음 크기 · 기본 4 · 배열이면 묶음마다 길이), facts:[…], starOn, rules, tip }
@@ -169,6 +181,9 @@ export function playSeq(engine, notes, { inst = 'xylo', vel = 0.8, at = 0.05, ou
 }
 // 오디오 시각 → 그때까지 남은 ms(그림 맞추기)
 export const msUntil = (ac, t) => Math.max(0, (t - ac.currentTime) * 1000);
+// '헷갈리는 두 소리'(X11 · 칸 모듈 NEAR = [{ label, low?, play }, { … }]) 한 쪽 — 음 차례를 out(cell.js가 준 소리 길)으로 틀고 끝날 때까지 남은 초를 돌려주는 함수를 만든다
+//  별 0일 때 결과 화면에서 번갈아 듣기만(점수 없음) · 눈으로 푸는 칸 · 톡 치는 칸은 NEAR를 두지 않는다
+export const nearSeq = (notes, opt = {}) => (kit, out) => { const s = playSeq(kit.engine, notes, { ...opt, out }); return s.end - s.ac.currentTime; };
 // 기다리기(정리 때 멈출 수 있게 타이머 목록에 넣는다)
 export function timers() {
   const list = new Set();

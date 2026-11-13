@@ -182,6 +182,9 @@ function playBox(kit, bus, blocks, { bpm = 112, onBeat, onEnd, T }) {
 const closeSound = (engine, bus) => { const t = engine.ensure().currentTime + 0.02; engine.drum('kung', t, 0.7, bus); engine.drum('deok', t + 0.16, 0.5, bus); engine.note('marimba', 72, t + 0.16, 0.3, 0.5, bus); engine.note('marimba', 79, t + 0.26, 0.4, 0.5, bus); };
 const lightOnly = (box, j) => [0, 1, 2, 3].forEach(x => box.lightCell(x, x === j));
 
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 확인 게임 끝(end)의 갈래 차례(bi)와 같게 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['넘침(박 수보다 많이)', '남은 자리 고르기', '조건(블록 수 · 박 수)'];
+
 export default {
   // ── 보기: 블록은 길이만큼 박 자리를 차지해요 — 예시 여섯 ──
   show(ui, kit) {
@@ -377,16 +380,16 @@ export default {
     function end() {
       const res = PLAN.map((_, k) => !!results[k]);
       const s = kit.scoreChoices(res, 4);
-      let tip;
+      let tip, bi = -1;                              // bi = 고른 갈래의 차례(TIPS_TV · TV '틀린 갈래' 막대 · X6 둘째)
       if (s.kept === s.total) tip = '블록 수가 아니라 박 자리로 세어서, 모든 상자를 한 번에 채웠어요.';
-      else if (kinds.over >= Math.max(kinds.need, kinds.pick)) tip = `넘친 적이 ${kinds.over}번 있었어요. 2분음표는 두 자리, 온음표는 네 자리 — 남은 자리 수를 먼저 세어 봐요.`;
-      else if (kinds.pick >= kinds.need) tip = `남은 자리 고르기에서 ${kinds.pick}번 모자랐어요. 빈 자리가 몇 개인지 세면 필요한 박 수가 보여요.`;
-      else tip = `조건을 놓친 상자가 ${kinds.need}번 있었어요. 블록 수와 박 수는 달라요 — 블록 셋으로도 4박이 돼요.`;
+      else if (kinds.over >= Math.max(kinds.need, kinds.pick)) { bi = 0; tip = `넘친 적이 ${kinds.over}번 있었어요. 2분음표는 두 자리, 온음표는 네 자리 — 남은 자리 수를 먼저 세어 봐요.`; }
+      else if (kinds.pick >= kinds.need) { bi = 1; tip = `남은 자리 고르기에서 ${kinds.pick}번 모자랐어요. 빈 자리가 몇 개인지 세면 필요한 박 수가 보여요.`; }
+      else { bi = 2; tip = `조건을 놓친 상자가 ${kinds.need}번 있었어요. 블록 수와 박 수는 달라요 — 블록 셋으로도 4박이 돼요.`; }
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: res,
         facts: [`상자 ${s.total}개 중 ${s.kept}개를 한 번에 채웠어요`, `이어서 맞힌 최고 기록 ${s.streak}번, 넘친 적은 ${kinds.over}번이에요`],
-        starOn: s.starOn, rules: s.rules, tip,
+        starOn: s.starOn, rules: s.rules, tip, b: bi,
       });
     }
     // 자동 시험: 판마다 정해 둔 답 블록을 하나씩 누름

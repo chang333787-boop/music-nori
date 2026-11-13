@@ -86,6 +86,16 @@ export default function mount(root, ctx) {
   let showTap = null, tvsReady = null, resSubs = new Set(), since = 0, gameAt = 0, resList = [], resultShown = false, sentP = null, stripSig = '';   // gameAt = 확인 게임 알림의 서버 시각(판 씨앗 · N2)       // since = 이번 판 시작(서버 시각) — 이 뒤에 온 이 칸 결과만 모음
   let prevOn = null;                                // 같은 화면 바로 앞 판의 별(결과 '한 번 더' 뒤 '아까' 별 · X2 — 화면 안 기억만)
   let tvsCell = false;                              // 이 칸 모듈이 TVS = true(소리는 TV 하나 · 답은 각자를 앎)
+  let tipsTv = [];                                  // 이 칸의 '틀린 갈래' 짧은 이름(칸 모듈 TIPS_TV · TV 크게 보기 막대 · X6 둘째)
+  let near = null;                                  // 이 칸의 '헷갈리는 두 소리'(칸 모듈 NEAR = [{ label, low?, play(kit, out) → 초 } × 2] · 별 0일 때 번갈아 듣기 · X11)
+  let nearBus = null, nearTm = 0;                   // 그 소리 길(끊을 수 있게 따로) · '듣는 중' 표시 끄는 타이머
+  const nearStop = () => {
+    clearTimeout(nearTm);
+    if (!nearBus) return;
+    const b = nearBus, ac = engine.ctx; nearBus = null;
+    if (ac) { const now = ac.currentTime; try { b.gain.cancelScheduledValues(now); b.gain.setValueAtTime(b.gain.value, now); b.gain.linearRampToValueAtTime(0, now + 0.05); } catch { /* 이미 끊김 */ } }
+    setTimeout(() => { try { b.disconnect(); } catch { /* */ } }, 250);
+  };
   const ui = {
     stage: body,
     bar: barSlot,
@@ -128,6 +138,7 @@ export default function mount(root, ctx) {
     resultShown = false;
     if (showTap) { body.removeEventListener('pointerdown', showTap, true); showTap = null; }
     phase = i; auto = null; K.sfx.reset(); music.stopFx();   // 이어 맞힘 사다리는 단계마다 처음부터 · 결과 팡파르는 멈춤
+    if (i === 2) K.tipPick.b = -1;                  // 새 판 — 앞 판에서 고른 틀린 갈래를 잊음(TV 막대 · X6 둘째)
     // 소리는 TV 하나 · 답은 각자(TVS 칸 · 방이 열린 TV의 확인 게임) — 판 씨앗을 함께 알리고, 알림 시각 + LEAD부터 모든 기기가 같은 판 시간표
     tvsReady = null;
     const tvsOn = troom && i === 2 && tvsCell;
@@ -140,6 +151,7 @@ export default function mount(root, ctx) {
       const p = room.kid.last;
       tvsReady = room.kid.clock().then(c => ({ sd: p.sd, start: perfAt(p.at + TVS_LEAD - (c ? c.off : 0)) }));
     }
+    nearStop();
     overlay.hidden = true; overlay.replaceChildren(); overlay.classList.remove('result');
     body.replaceChildren(); ui.say(''); ui.count(null); ui.tell(null); ui.practice(i === 1 && !tv ? 0 : null);
     setGuide(PHASES[i][0]);
@@ -174,7 +186,11 @@ export default function mount(root, ctx) {
     const done = resList.filter(r => r.c === cell.id && r.n > 0 && (r.at || 0) >= since);
     const m = resList.length, n = done.length, left = Math.max(0, m - n);
     const dist = [3, 2, 1, 0].map(s => done.filter(r => (r.s || 0) === s).length);
-    const sig = [showDone, allEl.hidden, m, n, dist.join(',')].join('|');
+    // 틀린 갈래(X6 둘째) — 결과의 t 첫 글자 = 갈래 차례(틀린 판 셋 이상일 때만 옴) → 많이 나온 차례로 셋까지(크게 보기 한 칸에 들어가는 만큼 — 1366×768 무대 높이) · 둘째 글자 = 오늘 별 0이 이어진 수(X11)
+    const tOf = r => (typeof r.t === 'string' && /^[0-9x][0-9]$/.test(r.t) ? r.t : 'x0');
+    const brs = tipsTv.map((name, j) => ({ name, c: done.filter(r => tOf(r)[0] === String(j)).length })).filter(x => x.c > 0).sort((a, b) => b.c - a.c).slice(0, 3);
+    const zero2 = done.filter(r => (r.s || 0) === 0 && +tOf(r)[1] >= 2).length;
+    const sig = [showDone, allEl.hidden, m, n, dist.join(','), brs.map(x => x.name + x.c).join(','), zero2].join('|');
     if (sig === stripSig) return;                   // 바뀐 것이 없으면 다시 그리지 않음(그림 깜빡임 X)
     stripSig = sig;
     const head = showDone ? `끝낸 아이 ${n} / ${m}` : `들어온 기기 ${m}대`;
@@ -193,18 +209,31 @@ export default function mount(root, ctx) {
           h('span', { class: 'rsd-bar' }, c ? h('i', { class: few ? 'few' : null, style: few ? null : { width: `${Math.round(100 * c / n)}%` } }) : null),
           h('b', {}, few ? '조금' : `${c}명`));
       }));
+      // 오른쪽 — 틀린 갈래 막대(다시 짚을 곳 · 갈래 이름과 몇 명만) + 별 0이 이어진 아이 수(누구인지는 TV에 0 — '복사'한 표에만)
+      const fewOf = c => c > 0 && c <= FEW;
+      const side = brs.length || zero2 ? h('div', { class: 'rsall-side' },
+        brs.length ? h('h3', { class: 'rsb-h' }, '많이 틀린 갈래') : null,
+        brs.length ? h('div', { class: 'rsb-list', role: 'list', 'aria-label': '많이 틀린 갈래' }, ...brs.map(x => h('div', { class: 'rsb-row', role: 'listitem' },
+          h('span', { class: 'rsb-name' }, x.name),
+          h('span', { class: 'rsd-bar' }, h('i', { class: fewOf(x.c) ? 'few' : null, style: fewOf(x.c) ? null : { width: `${Math.round(100 * x.c / n)}%` } })),
+          h('b', {}, fewOf(x.c) ? '조금' : `${x.c}명`)))) : null,
+        zero2 ? h('p', { class: 'rsb-zero' }, h('b', {}, `별 0이 이어진 아이 ${fewOf(zero2) ? '조금' : zero2 + '명'}`), h('span', {}, '누구인지는 ‘복사’한 표에 있어요')) : null) : null;
       allEl.replaceChildren(h('div', { class: 'panelcard rsall-card' },
-        h('div', { class: 'rsall-top' }, h('h2', {}, head), h('span', { class: 'rsall-btns' }, copy2, close)),
-        showDone ? h('div', { class: 'rsall-done' }, classBar(n, m), h('span', { class: 'rs-left' }, left ? `아직 ${left}명` : '')) : null,
-        showDone && n ? dist2 : h('p', { class: 'rsall-none' }, showDone ? '아직 끝낸 아이가 없어요' : '확인 게임이 끝나면 여기에 모여요')));
+        /* 머리 한 줄 = 제목 · 반 막대 · '아직 n명' · 단추(막대를 따로 한 줄 두면 아래 별 분포 · 갈래 칸이 카드 밖으로 밀림) */
+        h('div', { class: 'rsall-top' }, h('h2', {}, head),
+          showDone ? h('span', { class: 'rsall-done' }, classBar(n, m), left ? h('span', { class: 'rs-left' }, `아직 ${left}명`) : null) : null,
+          h('span', { class: 'rsall-btns' }, copy2, close)),
+        showDone && n ? (side ? h('div', { class: 'rsall-cols' }, dist2, side) : dist2) : h('p', { class: 'rsall-none' }, showDone ? '아직 끝낸 아이가 없어요' : '확인 게임이 끝나면 여기에 모여요')));
     }
   }
   // 모인 결과를 글로 — 지금 판(이 칸 · since 뒤)에 끝낸 아이, 번호 차례
   function stripCopyText() {
     const done = resList.filter(r => r.c === cell.id && r.n > 0 && (r.at || 0) >= since).sort((a, b) => (a.no || 0) - (b.no || 0));
     const d = new Date(), day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    return [`${cell.label} ${cell.name}\t${day}\t방 ${troom.room}`, '번호\t짝꿍\t별\t맞힌 수/전체',
-      ...done.map(r => `${r.no ?? ''}\t${(BAND[r.a] || BAND[0]).name}\t${r.s ?? 0}\t${r.k ?? ''}/${r.n ?? ''}`)].join('\n');
+    // 틀린 갈래 · 별 0 연속(오늘 이 칸)은 이 표에만 번호와 함께 — TV 화면에는 몇 명인지만
+    const tx = r => (typeof r.t === 'string' && /^[0-9x][0-9]$/.test(r.t) ? r.t : 'x0');
+    return [`${cell.label} ${cell.name}\t${day}\t방 ${troom.room}`, '번호\t짝꿍\t별\t맞힌 수/전체\t틀린 갈래\t별 0 연속',
+      ...done.map(r => `${r.no ?? ''}\t${(BAND[r.a] || BAND[0]).name}\t${r.s ?? 0}\t${r.k ?? ''}/${r.n ?? ''}\t${tipsTv[+tx(r)[0]] || ''}\t${(r.s || 0) === 0 && +tx(r)[1] >= 2 ? tx(r)[1] : ''}`)].join('\n');
   }
   const stripLoop = troom ? room.loop(async () => {
     const r = await room.teacher.res(troom);
@@ -247,7 +276,13 @@ export default function mount(root, ctx) {
       if (roomCell) {
         const m = /(\d+)번 중 (\d+)번/.exec(r.title || '');
         const n = m ? +m[1] : (r.replay || []).length, k = m ? +m[2] : (r.replay || []).filter(Boolean).length;
-        sentP = room.kid.send(cell.id, stars, k, n, r.ans || null);
+        // 두 글자 t(X6 둘째 · X11) — 틀린 갈래의 차례(틀린 판이 셋 이상이고 갈래 말을 했을 때만 · 아니면 x) + 오늘 이 칸에서 별 0이 이어진 수
+        //  갈래 = 칸이 kit.finish({ b })로 알린 것(박 칸) 또는 factTip이 방금 고른 것(tipPick) · 글 · 이름은 보내지 않음(차례 숫자만)
+        const bi = Number.isInteger(r.b) ? r.b : K.tipPick.b;
+        const day0 = new Date().setHours(0, 0, 0, 0);
+        const zr = Math.min(9, K.zeroRun((K.getProg()[cell.id] || {}).hist, day0));
+        const t = (n - k >= 3 && bi >= 0 && bi <= 9 && bi < tipsTv.length ? String(bi) : 'x') + zr;
+        sentP = room.kid.send(cell.id, stars, k, n, r.ans || null, t);
       }
       ui.tell(null); ui.say(''); ui.count(null); ui.practice(null);
       const pose = stars >= 3 ? 'happy' : stars >= 1 ? 'play' : 'idle';   /* 평가 3차: 점수와 상관없는 만세 X */
@@ -282,7 +317,41 @@ export default function mount(root, ctx) {
       const nx = nextCell(K.getProg(), cell.id);
       const goNext = () => { const c = cellById(nx); ctx.go(c.route || 'cell/' + nx); };
       if (stars === 0) {                            // 별 0개 — 주황(지금 누를 것)은 '한 번 더' · 다음은 흰 단추(평가 3차)
-        ui.setBar(subBtn(nx && nx !== cell.id ? '다음 놀이' : '마을 지도', () => (nx && nx !== cell.id ? goNext() : ctx.go('map'))), goBtn('한 번 더', () => runPhase(2)));
+        // 헷갈리는 두 소리 듣기(X11) — 듣는 칸이면 흰 단추 하나 더 · 결과 카드 자리에 소리 카드 둘(누르면 그 소리 · 점수 없음 · 연습으로 돌려보내지 않음)
+        const zeroBar = () => ui.setBar(
+          subBtn(nx && nx !== cell.id ? '다음 놀이' : '마을 지도', () => (nx && nx !== cell.id ? goNext() : ctx.go('map'))),
+          near ? subBtn('헷갈리는 두 소리 듣기', openNear, 'nearbtn') : null,
+          goBtn('한 번 더', () => runPhase(2)));
+        const openNear = () => {
+          music.stopFx();
+          const cards = near.map((it, j) => {
+            const b = h('button', { type: 'button', class: 'nearcard' },
+              h('span', { class: 'near-n' }, j ? '둘째 소리' : '첫째 소리'),
+              h('span', { class: 'near-l' }, low && it.low ? it.low : E(it.label)),
+              h('span', { class: 'near-s' }, '눌러서 듣기'));
+            onPress(b, () => hear(j));
+            return b;
+          });
+          const mark = j => cards.forEach((c, k) => { c.classList.toggle('now', k === j); c.lastChild.textContent = k === j ? '듣는 중' : '눌러서 듣기'; });
+          const hear = j => {
+            nearStop();
+            engine.ensure(); nearBus = engine.bus();
+            let sec = 1.5;
+            try { sec = near[j].play(kit, nearBus) || sec; } catch (e) { console.error(e); }
+            mark(j);
+            nearTm = setTimeout(() => mark(-1), sec * 1000 + 150);
+          };
+          overlay.replaceChildren(h('div', { class: 'panelcard nearpanel', role: 'dialog', 'aria-label': '헷갈리기 쉬운 두 소리' },
+            h('h2', {}, '헷갈리기 쉬운 두 소리'),
+            h('p', { class: 'sub' }, '번갈아 눌러서 들어 봐요. 어디가 다른지 찾으면 돼요'),
+            h('div', { class: 'nearrow' }, ...cards)));
+          ui.setBar(subBtn('결과 보기', () => {
+            nearStop();
+            overlay.replaceChildren(h('div', { class: 'resultwrap' }, K.resultCard({ ...shown, delays: null, fresh: [] }), friendImg(friend, pose, { label: false, cls: 'resultpal' })));
+            zeroBar();
+          }), goBtn('한 번 더', () => runPhase(2)));
+        };
+        zeroBar();
       } else {
         const pc = PLAY_CARD[cell.id];               // 별을 받았으면 흰 단추로 '곡에서 ○○ 바꿔 보기'(그 부탁이 바로 열림 · 11-10)
         ui.setBar(again, ...(pc ? [subBtn('곡에서 ' + pc[1], () => ctx.go('play/' + pc[0]), 'toplay')] : []), nx && nx !== cell.id ? goBtn('다음 놀이', goNext) : goBtn('마을 지도', () => ctx.go('map')));
@@ -310,11 +379,16 @@ export default function mount(root, ctx) {
     },
   };
   // 자동 시험용 — 지금 화면에서 맞는 행동 하나(칸 모듈이 정함). 화면에는 보이지 않는다
-  window.__cellAuto = () => (auto ? auto() : false);
+  //  miss가 참이면 일부러 틀린 답(별 0 결과 화면 시험용 — 그 길을 만든 칸만: so4 · ak2 · 다른 칸은 그대로 맞는 답)
+  window.__cellAuto = miss => (auto ? auto(miss) : false);
   window.__cellPhase = () => (overlay.hidden ? PHASES[phase] && PHASES[phase][0] : 'result');
 
   (async () => {
-    try { const ns = await import(`../cells/${cell.id}.js`); mod = ns.default; tvsCell = ns.TVS === true; }
+    try {
+      const ns = await import(`../cells/${cell.id}.js`); mod = ns.default; tvsCell = ns.TVS === true;
+      tipsTv = Array.isArray(ns.TIPS_TV) ? ns.TIPS_TV.slice(0, 10) : [];
+      near = Array.isArray(ns.NEAR) && ns.NEAR.length === 2 && ns.NEAR.every(x => x && typeof x.play === 'function') ? ns.NEAR : null;
+    }
     catch (e) {
       console.error(e);
       body.replaceChildren(h('div', { class: 'panelcard startcard', style: { margin: 'auto' } }, h('h2', {}, '이 놀이는 다음에 열려요'), h('p', { class: 'sub' }, '마을 지도에서 다른 놀이를 골라요')));
@@ -341,7 +415,7 @@ export default function mount(root, ctx) {
   })();
 
   return () => {
-    gone = true; clearTimeout(tellTimer); if (cleanup) try { cleanup(); } catch { /* */ }
+    gone = true; clearTimeout(tellTimer); nearStop(); if (cleanup) try { cleanup(); } catch { /* */ }
     window.__cellAuto = null; window.__cellPhase = null; css.remove();
     if (stripLoop) stripLoop.stop();
     if (room.here.cur && room.here.cur.cell === cell.id) room.here.cur = null;

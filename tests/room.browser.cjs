@@ -2,7 +2,8 @@
 //  선생님 방 열기 → 아이 들어가기(틀린 방 번호 → "다시 봐요" 먼저) → 선생님 높게·낮게 보기 → 아이 화면이 보기로(2.5초 안)
 //  → 연습 → 확인 게임 → 아이 자동으로 게임 끝 → TV 띠에 '끝낸 아이 1 / 1' 반 막대(번호 · 별 X · X6) · 아이 카드 'TV에 갔어요'
 //  → 선생님 결과 뒤에도 띠가 남음 · 크게 보기도 번호 X(별 분포 1~3명 = '조금') → 아이 나가기
-//  → 가1 솔·미도 TV 소리 모드(여러 번 누르는 답 · 같은 씨앗 · 막대) → 아이 나가기
+//  → 가1 솔·미도 TV 소리 모드(여러 번 누르는 답 · 같은 씨앗 · 막대)
+//  → 가짜 기기 여덟(두 글자 t) → 크게 보기 '많이 틀린 갈래' 막대 · '별 0이 이어진 아이 n명'(번호 X) · 복사한 표에만 번호(X6 둘째 · X11) → 아이 나가기
 //  시험 방은 0000~0999(?testroom=1 시험 고리 · 아이들 방 1000~9999와 안 섞임). npm run test:db
 //  사진: SHOTS=<폴더> node tests/room.browser.cjs
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
@@ -139,6 +140,7 @@ let kd2 = 0;                                       // 가1 TV 소리 모드 가�
     const sent = await until(() => K.evaluate(() => window.__roomSent), 8000);
     const sentAt = Date.now();
     check('아이 결과 보냄', sent && sent.ok && sent.cell === 'so4' && sent.s === 3 && sent.n > 0, sent);
+    check('아이 결과에 두 글자 t — 틀린 갈래 없음(x) · 별 0 이어짐 0', sent && sent.t === 'x0', sent && sent.t);
     const kbar = await K.locator('.cbarslot').innerText().catch(() => '');
     check('아이 결과 아래 "선생님을 기다려요"(다음 놀이 X)', kbar.includes('선생님을 기다려요') && !kbar.includes('다음 놀이'), kbar);
     const kcard = await until(() => K.evaluate(() => document.querySelector('.resultcard .rsent')?.textContent), 4000);
@@ -166,6 +168,16 @@ let kd2 = 0;                                       // 가1 TV 소리 모드 가�
     check('선생님 결과(done) 뒤 아이는 결과 화면 그대로', kStill === 'result', kStill);
     await shot(T, '7_tv_strip_result');
     // 크게 보기 — 같은 규칙(번호 · 아이별 별 X) · 별 분포는 1~3명인 칸을 '조금'으로
+    //  잘림 잣대: 줄마다 카드 안쪽 상자 안인지(카드가 화면 안인 것만으로는 아래 줄이 카드 밖으로 밀린 것을 못 봄 — 11-13)
+    const clipOf = () => T.evaluate(() => {
+      const a = document.querySelector('.rsall:not([hidden]) .rsall-card');
+      if (!a) return null;
+      const r = a.getBoundingClientRect(), cs = getComputedStyle(a), px = k => parseFloat(cs[k]) || 0;
+      const box = { t: r.top + px('paddingTop') - 1, b: r.bottom - px('paddingBottom') + 1, l: r.left + px('paddingLeft') - 1, rr: r.right - px('paddingRight') + 1 };
+      const out = [...a.querySelectorAll('.rsall-top > *, .rsd-row, .rsb-h, .rsb-row, .rsb-zero > *, .rsall-none')].filter(e => { const q = e.getBoundingClientRect(); return q.height < 1 || q.top < box.t || q.bottom > box.b || q.left < box.l || q.right > box.rr; }).map(e => (e.className || e.tagName) + ' ' + Math.round(e.getBoundingClientRect().bottom) + '>' + Math.round(box.b));
+      const c = a.querySelector('.rsall-cols');
+      return { out, over: c ? c.scrollHeight - c.clientHeight : 0, free: c ? Math.round(c.clientHeight - Math.max(...[...c.children].map(x => [...x.children].reduce((m, y) => Math.max(m, y.getBoundingClientRect().bottom), 0) - [...x.children].reduce((m, y) => Math.min(m, y.getBoundingClientRect().top), 1e9)))) : null };
+    });
     await tap(T, '.rstrip');
     const big = await until(() => T.evaluate(() => {
       const a = document.querySelector('.rsall:not([hidden]) .rsall-card');
@@ -175,6 +187,8 @@ let kd2 = 0;                                       // 가1 TV 소리 모드 가�
     }), 3000);
     check(`크게 보기 — 번호 X · 별 분포 ${big && big.rows.join(' · ')}`, !!big && /끝낸 아이 1 \/ 1/.test(big.head) && big.bar === '100%' && !big.chips && !/(^|\D)7(\D|$)/.test(big.txt.replace(/방 \d{4}/, '')) && big.rows.join('|') === '조금|0명|0명|0명' && !/null|undefined/.test(big.txt), big);
     check('크게 보기 화면 스크롤 0', (await scrollOf(T)) <= 1);
+    const clip1 = await clipOf();
+    check('크게 보기 — 머리 줄 · 별 분포 네 줄이 카드 안(잘림 0)', !!clip1 && !clip1.out.length, clip1);
     await shot(T, '7b_tv_strip_big');
     await T.locator('.rsall-btns button', { hasText: '닫기' }).click();
 
@@ -204,11 +218,68 @@ let kd2 = 0;                                       // 가1 TV 소리 모드 가�
       const kr = await K.evaluate(() => ({ bar: !!document.querySelector('.tvs-ratio'), r: JSON.parse(localStorage.getItem('mn.prog') || '{}').ga1?.hist?.slice(-1)[0]?.r }));
       check('가1 아이 기기엔 막대 X · 기록 r = tvs', !kr.bar && kr.r === 'tvs', kr);
       const sent2 = await until(() => K.evaluate(() => window.__roomSent), 8000);
-      check('가1 아이 결과 보냄', sent2 && sent2.ok && sent2.cell === 'ga1' && sent2.s === 3, sent2);
+      check('가1 아이 결과 보냄(t = x0)', sent2 && sent2.ok && sent2.cell === 'ga1' && sent2.s === 3 && sent2.t === 'x0', sent2);
       const tEnd = await until(() => T.evaluate(() => window.__cellResult && window.__cellResult.title), 30000);
       check('가1 TV 결과 = 반 전체', /반 전체/.test(tEnd || ''), tEnd);
       check('가1 TV · 아이 화면 스크롤 0', (await scrollOf(T)) <= 1 && (await scrollOf(K)) <= 1);
       await shot(T, '7d_tv_ga1_result');
+    }
+
+    // ── 5c. 틀린 갈래 막대 · 별 0이 이어진 아이(X6 둘째 · X11) — 가짜 기기 여덟이 가1 결과를 두 글자 t와 함께 보냄 ──
+    //  TV에는 갈래 이름과 몇 명만(번호 X · 1~3명은 '조금') · 누구인지는 '복사'한 표에만
+    {
+      const TS = { '.sv': 'timestamp' };
+      const put = (dev, body) => fetch(`${DB}/rooms/${room}/res/${dev}.json`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a: 1, c: 'ga1', n: 8, at: TS, ...body }) }).then(r => r.ok).catch(() => false);
+      const fakes = [
+        ...[31, 32, 33, 34, 35].map(no => ['zzfake' + no, { no, s: 0, k: 2, t: '12' }]),   // 갈래 1(세 음 메아리) · 오늘 별 0이 두 번 이어짐
+        ['zzfake36', { no: 36, s: 1, k: 4, t: '00' }],                                     // 갈래 0(같은 음 두 번)
+        ['zzfake37', { no: 37, s: 1, k: 4, t: '20' }],                                     // 갈래 2(솔-미 · 미-솔) — 갈래 세 줄 + 별 0 줄 = 가장 높은 꼴
+        ['zzfake38', { no: 38, s: 0, k: 3, t: 'x1' }],                                     // 갈래 말 없음 · 별 0은 처음
+      ];
+      const oks = await Promise.all(fakes.map(([d, b]) => put(d, b)));
+      check('가짜 기기 여덟의 결과(두 글자 t)가 서버에 닿음', oks.every(Boolean), oks);
+      const bad = await fetch(`${DB}/rooms/${room}/res/zzfake39.json`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a: 1, no: 39, c: 'ga1', s: 0, k: 1, n: 8, at: TS, t: '세 음' }) }).then(r => r.ok).catch(() => null);
+      check('t에 글(갈래 이름)을 넣은 결과는 서버가 막음', bad === false, bad);
+      await T.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { value: { writeText: async t => { window.__copied = t; } }, configurable: true }); });
+      const st9 = await until(async () => { const v = await stripOf(); return v && /끝낸 아이 9 \/ 9/.test(v.head) && v; }, 9000);
+      check(`TV 띠 '끝낸 아이 9 / 9' — 띠에는 번호 · 갈래 X`, !!st9 && !/3[1-8]/.test(st9.txt) && !/메아리|같은 음/.test(st9.txt) && !st9.chips, st9);
+      await tap(T, '.rstrip');
+      const side = await until(() => T.evaluate(() => {
+        const a = document.querySelector('.rsall:not([hidden]) .rsall-card'), s = a && a.querySelector('.rsall-side');
+        if (!s || !/9 \/ 9/.test(a.querySelector('h2').textContent)) return null;
+        const r = a.getBoundingClientRect(), small = [...s.querySelectorAll('*')].filter(e => e.children.length === 0 && e.textContent.trim() && parseFloat(getComputedStyle(e).fontSize) < 17.5).map(e => e.className + ' ' + getComputedStyle(e).fontSize);
+        const names = [...s.querySelectorAll('.rsb-name')];
+        return {
+          head: a.querySelector('h2').textContent, h3: s.querySelector('.rsb-h')?.textContent, txt: a.innerText.replace(/방 \d{4}/, ''),
+          stars: [...a.querySelectorAll('.rsd-row')].map(x => x.querySelector('b').textContent),
+          rows: [...s.querySelectorAll('.rsb-row')].map(x => x.querySelector('.rsb-name').textContent + '=' + x.querySelector('b').textContent),
+          bars: [...s.querySelectorAll('.rsb-row .rsd-bar i')].map(i => i.className || i.style.width),
+          zero: s.querySelector('.rsb-zero b')?.textContent, zs: s.querySelector('.rsb-zero span')?.textContent,
+          chips: a.querySelectorAll('.rs-chip,[data-no]').length, small,
+          fit: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+          cut: names.some(e => e.scrollWidth > e.clientWidth + 1),
+        };
+      }), 8000);
+      check(`크게 보기 — 많이 틀린 갈래 ${side && side.rows.join(' · ')}`, !!side && side.h3 === '많이 틀린 갈래' && side.rows.join('|') === '세 음 메아리=5명|같은 음 두 번(솔-솔 · 미-미)=조금|솔-미 · 미-솔=조금' && side.bars.join('|') === '56%|few|few', side);
+      check(`크게 보기 — "${side && side.zero}" · 별 분포 ${side && side.stars.join(' · ')}`, !!side && side.zero === '별 0이 이어진 아이 5명' && /복사/.test(side.zs || '') && side.stars.join('|') === '조금|0명|조금|6명', side);
+      check('크게 보기 — 아이 번호 · 짝꿍 이름 X · 화면 안 · 글자 17.5px 넘음 · 갈래 이름 안 잘림', !!side && !side.chips && !/(^|\D)(7|3[1-8])(\D|$)/.test(side.txt) && !/null|undefined/.test(side.txt) && side.fit && !side.small.length && !side.cut, side);
+      check('크게 보기(갈래 막대) 화면 스크롤 0', (await scrollOf(T)) <= 1);
+      const clip2 = await clipOf();
+      check(`크게 보기 — 갈래 세 줄 + 별 0 줄이 카드 안(잘림 0 · 굴림 0 · 남는 높이 ${clip2 && clip2.free}px)`, !!clip2 && !clip2.out.length && clip2.over <= 1, clip2);
+      await shot(T, '7e_tv_branch_big');
+      // 복사 — 번호와 함께 갈래 · 별 0 연속(이 표에만)
+      await T.locator('.rsall-btns button', { hasText: '복사' }).click();
+      const copied = await until(() => T.evaluate(() => window.__copied), 3000);
+      const lines = (copied || '').split('\n');
+      check('복사한 표 — 머리 줄 · 번호 차례 열 줄', lines[1] === '번호\t짝꿍\t별\t맞힌 수/전체\t틀린 갈래\t별 0 연속' && lines.length === 11 && lines.slice(2).map(l => +l.split('\t')[0]).join() === '7,31,32,33,34,35,36,37,38', lines.slice(0, 4));
+      check('복사한 표 — 31번 = 세 음 메아리 · 별 0 연속 2 / 36번 = 같은 음 두 번 / 38번 = 빈칸',
+        lines.some(l => /^31\t[^\t]+\t0\t2\/8\t세 음 메아리\t2$/.test(l)) && lines.some(l => /^36\t[^\t]+\t1\t4\/8\t같은 음 두 번\(솔-솔 · 미-미\)\t$/.test(l)) && lines.some(l => /^38\t[^\t]+\t0\t3\/8\t\t$/.test(l)) && lines.some(l => /^7\t[^\t]+\t3\t\d+\/\d+\t\t$/.test(l)), lines.slice(2));
+      check('복사 뒤 TV에 글 상자가 뜨지 않음', await T.evaluate(() => !document.querySelector('.copymodal')));
+      await T.locator('.rsall-btns button', { hasText: '닫기' }).click();
+      // 가짜 기기 치우기 — 띠가 다시 1 / 1
+      const dels = await Promise.all(fakes.map(([d]) => fetch(`${DB}/rooms/${room}/res/${d}.json`, { method: 'DELETE' }).then(r => r.ok).catch(() => false)));
+      const st1b = await until(async () => { const v = await stripOf(); return v && /끝낸 아이 1 \/ 1/.test(v.head) && v; }, 9000);
+      check('가짜 기기 치움 — 띠가 다시 끝낸 아이 1 / 1', dels.every(Boolean) && !!st1b, { dels, st1b });
     }
 
     // ── 6. 아이 나가기 ──

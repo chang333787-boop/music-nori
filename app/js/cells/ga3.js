@@ -9,7 +9,7 @@
 //  11-07 평가 3차: 왼쪽 높이 판 40% · 오른쪽 그림 답을 크게 · 셋 고르는 판은 넷째를 빼고 셋을 세로 가운데 · 듣는 동안 A.busy('잘 들어요')
 //   · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 노래 그림 동전 26px
 import { DO, RE, MI, FA, SOL, LA, nameOf, heightBoard, heightPic, songNotes, voice, playBeats, startCard, press, exCard, hearHead, markPick, judge } from './_mel.js';
-import { factTip, stageCuts, shuffle } from '../cellkit.js';
+import { factTip, stageCuts, shuffle, nearSeq } from '../cellkit.js';
 import { tvsGame } from './_tvs.js';
 
 const D = DO, M = MI, S = SOL, L = LA;
@@ -43,6 +43,14 @@ export const SHUF = {};
 export const arrange = (plan, r) => plan.map(p => { const opts = shuffle([p.ps, ...p.alt], r); return { ...p, opts, right: opts.indexOf(p.ps) }; });
 export const GUESS = plan => plan.map(p => 1 / (1 + p.alt.length));   // 찍기 바닥 — 그림 수만큼
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['비슷한 그림(미-솔-라)', '올라갔다 내려오는 가락', '오르기 · 내리기'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 비슷한 그림 짝(둘 다 올라가는 세 음)
+const nearMel = ps => nearSeq(ps.map(p => ({ p, d: 0.42, gap: 0.18 })), { inst: 'xylo' });
+export const NEAR = [
+  { label: '도-미-솔', play: nearMel([D, M, S]) },
+  { label: '미-솔-라', play: nearMel([M, S, L]) },
+];
 export function tipOf(plan, results) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
   return factTip(results, [

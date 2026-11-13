@@ -2,10 +2,11 @@
 //  칸마다 최근 10번: 날짜 · 별 · 맞힌 수/전체 · 늦게(고르기 전에 시간이 지난 판 · N1) · 틀린 갈래 한 줄(결과 카드의 tip) + 칸의 성취기준
 //  이름은 없음(기기 기록 — 여러 아이가 돌려 쓰면 섞임). '모두 복사' = 탭으로 나눈 글(표 프로그램에 붙여 넣기 좋게)
 //  기록은 cellkit.saveResult가 남긴 prog[칸].hist. 예전 모양 { stars, at }은 '별만' 한 줄로 보인다
+//  놀이 이름 아래 '별 0이 n번 이어졌어요'(X11) — 가장 새 기록부터 별 0이 두 번 넘게 이어질 때만(다시 가르칠 곳 찾기 · 기기 기록이라 여러 아이가 쓰면 섞임)
 //  접힌 '자세히'를 열면 '두드림' 열(박 칸 · X4): 맞힌 두드림 어긋남 가운데 값 · 퍼짐(사분위 범위) · 놓침 — 3월 판정 창을 다시 맞출 자료
 import { h, onPress, copyText } from '../util.js';
 import { ORDER, cellById, stdText, STD_NOTE, PLAY_STD } from '../../../engine/cells.js';
-import { getProg, STAR_SVG, stdEl } from '../cellkit.js';
+import { getProg, STAR_SVG, stdEl, zeroRun } from '../cellkit.js';
 
 const pad = n => String(n).padStart(2, '0');
 const shortDate = t => { const d = new Date(t); return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
@@ -35,9 +36,10 @@ export default function mount(root, ctx) {
     h('span', { class: 'rec-btns' }, more, copyBtn));
   const body = h('tbody');
   for (const id of ORDER) {
-    const c = cellById(id), rows = rowsOf(prog[id]);
+    const c = cellById(id), rows = rowsOf(prog[id]), zr = zeroRun(prog[id] && prog[id].hist);
     const first = h('th', { scope: 'rowgroup', rowspan: String(Math.max(1, rows.length)) },
-      h('b', {}, `${c.label} ${c.name}`), c.std ? stdEl(c.std, 'rec-std') : null);
+      h('b', {}, `${c.label} ${c.name}`), c.std ? stdEl(c.std, 'rec-std') : null,
+      zr >= 2 ? h('span', { class: 'rec-zero', title: '가장 새 기록부터 별 0이 이어진 수 — 여러 아이가 이 기기를 돌려 쓰면 섞여요' }, `별 0이 ${zr}번 이어졌어요`) : null);
     if (!rows.length) { body.append(h('tr', { class: 'rec-first' }, first, h('td', { class: 'rec-none', colspan: '6' }, '아직 기록이 없어요'))); continue; }
     rows.forEach((r, i) => body.append(h('tr', { class: i ? '' : 'rec-first' },
       i ? null : first,
@@ -62,13 +64,13 @@ export default function mount(root, ctx) {
 
   // 탭으로 나눈 글 — 칸 · 이름 · 성취기준 · 날짜 · 별 · 맞힌 수 · 전체 · 늦게 · 틀린 갈래 · 어디서 · 두드림 숫자(X4 — 표 프로그램에서 셈하게 따로따로)
   function tsv() {
-    const out = [['칸', '놀이', '성취기준', '날짜', '별', '맞힌 수', '전체', '늦게', '틀린 갈래', '어디서', '두드림 가운데(ms)', '퍼짐(ms)', '놓침', '지연 보정(ms)', '판정 창', 'BPM'].join('\t')];
+    const out = [['칸', '놀이', '성취기준', '날짜', '별', '맞힌 수', '전체', '늦게', '틀린 갈래', '어디서', '두드림 가운데(ms)', '퍼짐(ms)', '놓침', '지연 보정(ms)', '판정 창', 'BPM', '별 0 이어짐'].join('\t')];
     for (const id of ORDER) {
-      const c = cellById(id);
-      for (const r of rowsOf(prog[id])) {
+      const c = cellById(id), zr = zeroRun(prog[id] && prog[id].hist);
+      for (const [i, r] of rowsOf(prog[id]).entries()) {
         const t = r.t || {};
         out.push([c.label, c.name, stdText(c.std), r.at ? fullDate(r.at) : '', r.s, r.k ?? '', r.n ?? '', r.l ?? '', (r.tip || '').replace(/\s+/g, ' '),
-          WHERE[r.r] || '', t.o ?? '', t.sp ?? '', t.m ?? '', t.lat ?? '', t.band ? BAND_UI[t.band] || t.band : '', t.bpm ?? ''].join('\t'));
+          WHERE[r.r] || '', t.o ?? '', t.sp ?? '', t.m ?? '', t.lat ?? '', t.band ? BAND_UI[t.band] || t.band : '', t.bpm ?? '', !i && zr >= 2 ? zr : ''].join('\t'));   /* 별 0 이어짐 = 가장 새 줄에만 */
       }
     }
     return out.join('\n');

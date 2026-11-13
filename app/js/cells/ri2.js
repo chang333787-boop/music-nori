@@ -207,6 +207,9 @@ function why(j) {
   return j.beats[bad].got === 'resthit' ? `${ORD[bad]} 박은 ‘쉼’이었어요 — 손바닥을 펴요` : `${ORD[bad]} 박 ‘따’를 놓쳤어요`;
 }
 
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 확인 게임 끝(end)의 갈래 차례(bi)와 같게 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['쉼 박에 침', '쉼 다음 따를 놓침', '듣기만 한 판', '따를 놓침'];
+
 export default {
   // ── 보기: 따 · 쉼 — 예시 넷 ──
   show(ui, kit) {
@@ -356,12 +359,12 @@ export default {
         });
       });
       const hiddenWrong = PLAN.filter((p, i) => p.hidden && !res[i]).length;
-      let tip;
+      let tip, bi = -1;                              // bi = 고른 갈래의 차례(TIPS_TV · TV '틀린 갈래' 막대 · X6 둘째)
       if (s.kept === s.total) tip = '‘쉼’으로 시작하는 리듬과 그림 없이 듣기만 한 판까지 모두 그대로 쳤어요.';
-      else if (restHits >= misses) tip = `‘쉼’ 박에 친 적이 ${restHits}번 있었어요. ‘쉼’ 박에는 손바닥을 펴요.`;
-      else if (afterRest * 2 >= misses) tip = `‘쉼’ 바로 다음 ‘따’를 ${afterRest}번 놓쳤어요. 쉬는 동안에도 박은 계속 흘러요.`;
-      else if (hiddenWrong) tip = `그림 없이 듣기만 한 판(6·7번째)에서 ${hiddenWrong}번 헷갈렸어요.`;
-      else tip = `‘따’를 놓친 박이 ${misses}개 있었어요. 고슴도치 소리를 잘 듣고 그대로 쳐요.`;
+      else if (restHits >= misses) { bi = 0; tip = `‘쉼’ 박에 친 적이 ${restHits}번 있었어요. ‘쉼’ 박에는 손바닥을 펴요.`; }
+      else if (afterRest * 2 >= misses) { bi = 1; tip = `‘쉼’ 바로 다음 ‘따’를 ${afterRest}번 놓쳤어요. 쉬는 동안에도 박은 계속 흘러요.`; }
+      else if (hiddenWrong) { bi = 2; tip = `그림 없이 듣기만 한 판(6·7번째)에서 ${hiddenWrong}번 헷갈렸어요.`; }
+      else { bi = 3; tip = `‘따’를 놓친 박이 ${misses}개 있었어요. 고슴도치 소리를 잘 듣고 그대로 쳐요.`; }
       // 두드림 어긋남(X4 · 기기 기록만) — '따' 박에 붙은 두드림 · 놓침 = 안 친 '따'(쉼에 친 것은 따로 · tip)
       const offs = judged.flatMap(j => (j ? j.beats.filter(b => b.got === 'great' || b.got === 'ok').map(b => b.off) : []));
       const t = tapStats(offs, misses, { lat: kit.device.latencyMs, band: kit.band, bpm: bpmOf('echo', kit.band) });
@@ -369,7 +372,7 @@ export default {
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: res,
         facts: [`이어서 맞힌 최고 기록 ${s.streak}번`, `‘쉼’ 박 ${restAll}개 중 ${restKept}개를 지켰어요`],
-        starOn: s.starOn, rules: s.rules, tip, t,
+        starOn: s.starOn, rules: s.rules, tip, t, b: bi,
       });
     }
     return () => { T.clear(); run && run.stop(); input && input.off(); };

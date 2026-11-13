@@ -213,6 +213,9 @@ function choiceAnswers(kit, onPick) {
 // 아래 띠 '다시 듣기'(고르는 동안 — 지금 판 반주를 처음부터)
 function replayButton(kit, fn) { const b = kit.h('button', { type: 'button' }, '다시 듣기'); kit.onPress(b, fn); return b; }
 
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 확인 게임 끝(end)의 갈래 차례(bi)와 같게 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['빠르기가 바뀐 판', '묶음 고르기', '여린박에 침', '센박을 놓침'];
+
 export default {
   // ── 보기: 박을 몇 개씩 묶나 — 예시 넷 ──
   show(ui, kit) {
@@ -424,19 +427,19 @@ export default {
       const s = kit.scoreChoices(all, 5);
       const pickOk = results.filter(Boolean).length, barOk = barRes.filter(Boolean).length;
       const twistWrong = wrongs.filter(p => p.twist).length;
-      let tip;
+      let tip, bi = -1;                              // bi = 고른 갈래의 차례(TIPS_TV · TV '틀린 갈래' 막대 · X6 둘째)
       if (s.kept === s.total) tip = '빠르기가 바뀌어도 묶음을 가려냈고, 센박에만 톡 했어요.';
-      else if (twistWrong && twistWrong === wrongs.length) tip = '빠르기가 바뀐 판(7·8번째)에서 헷갈렸어요. 빠르기가 아니라 쿵(센박)이 몇 박마다 오는지 세어 봐요.';
-      else if (wrongs.length > meters.length - barOk) tip = `고르기에서 ${wrongs.length}번 헷갈렸어요. ‘쿵’에서 하나, 둘, (셋)을 세어 봐요.`;
-      else if (j.restHits) tip = `여린박(작은 점)에 친 적이 ${j.restHits}번 있었어요. 큰 점에서만 톡!`;
-      else tip = kit.band === 'low' ? `쿵을 놓친 묶음이 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!` : `센박을 놓친 마디가 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!`;
+      else if (twistWrong && twistWrong === wrongs.length) { bi = 0; tip = '빠르기가 바뀐 판(7·8번째)에서 헷갈렸어요. 빠르기가 아니라 쿵(센박)이 몇 박마다 오는지 세어 봐요.'; }
+      else if (wrongs.length > meters.length - barOk) { bi = 1; tip = `고르기에서 ${wrongs.length}번 헷갈렸어요. ‘쿵’에서 하나, 둘, (셋)을 세어 봐요.`; }
+      else if (j.restHits) { bi = 2; tip = `여린박(작은 점)에 친 적이 ${j.restHits}번 있었어요. 큰 점에서만 톡!`; }
+      else { bi = 3; tip = kit.band === 'low' ? `쿵을 놓친 묶음이 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!` : `센박을 놓친 마디가 ${meters.length - barOk}개 있었어요. 쿵 소리에 맞춰 톡!`; }
       // 두드림 어긋남(X4 · 기기 기록만) — 마무리 '센박에만 톡'에서 센박에 붙은 두드림 · 놓침 = 안 친 센박
       const t = tapStats(j.beats.filter(b => b.got === 'great' || b.got === 'ok').map(b => b.off), j.misses, { lat: kit.device.latencyMs, band: kit.band, bpm: FINAL.bpm });
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: all, group: [results.length, meters.length],
         facts: [`① 묶음 고르기 ${results.length}번 중 ${pickOk}번을 맞혔어요`, kit.band === 'low' ? `② 쿵에만 톡 ${meters.length}묶음 중 ${barOk}묶음을 맞혔어요` : `② 센박 마디 ${meters.length}개 중 ${barOk}개를 맞혔어요`],
-        starOn: s.starOn, rules: s.rules, tip, t,
+        starOn: s.starOn, rules: s.rules, tip, t, b: bi,
       });
     }
     const auto = autoScheduler(T);

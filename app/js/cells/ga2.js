@@ -10,7 +10,7 @@
 //  11-07 평가 3차: 듣는 동안 A.busy('잘 들어요') · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 노래 그림 동전 26px(라라 겹침)
 import { SOL, MI, LA, FA, nameOf, colorOf, posOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge, dot } from './_mel.js';
 import { tvsGame } from './_tvs.js';
-import { factTip, stageCuts } from '../cellkit.js';
+import { factTip, stageCuts, nearSeq } from '../cellkit.js';
 
 const S = SOL, M = MI, L = LA;
 const EXAMPLES = [
@@ -33,6 +33,14 @@ export const SHUF = { answerOf: p => p.right, balance: false };
 const TOP = Math.max(...[L, S, M].map(v => PLAN.filter(p => p.right === v).length)) / PLAN.length;
 export const GUESS = plan => plan.map(() => Math.max(1 / 3, TOP));
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['라와 솔', '물음표가 맨 앞', '네 음'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 라와 솔(한 계단 차이)
+const nearMel = ps => nearSeq(ps.map(p => ({ p, d: 0.42, gap: 0.2 })), { inst: 'xylo' });
+export const NEAR = [
+  { label: '미-솔', play: nearMel([M, S]) },
+  { label: '미-라', play: nearMel([M, L]) },
+];
 export function tipOf(plan, results, picks) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p, picks[k])).length;
   return factTip(results, [

@@ -76,6 +76,19 @@ export const SHUF = { flip, answerOf: p => p.right };
 // 찍기 바닥 — 소개는 둘 중 하나 · 보통 단추가 나온 뒤엔 셋 중 하나
 export const GUESS = plan => plan.map((x, k) => (k < MID_AT ? 1 / 2 : 1 / 3));
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['음 수 · 세기 · 높이에 속음', '보통과 헷갈림', '보통과 견주기'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 같은 가락 · 같은 길이, 박(걸음)만 다른 짝(보통 ↔ 빠르게)
+const nearClip = t => (kit, out) => {
+  const c = clip(t, 'plain', { inst: 'piano', acc: true }), { engine } = kit, at = engine.ensure().currentTime + 0.1;
+  for (const n of c.notes) engine.note(c.inst, n.p, at + n.at, n.d, n.vel, out);
+  for (const s of c.steps) { engine.drum('kick', at + s, 0.5, out); engine.drum('gi', at + s, 0.3, out); }
+  return 0.1 + c.win;
+};
+export const NEAR = [
+  { label: NAME.mid, play: nearClip('mid') },
+  { label: NAME.fast, play: nearClip('fast') },
+];
 export function tipOf(plan, results, picks = []) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p, picks[k])).length;
   const fool = { dens: miss(p => p.kind === 'dens'), dyn: miss(p => p.kind === 'dyn'), high: miss(p => p.kind === 'high') };

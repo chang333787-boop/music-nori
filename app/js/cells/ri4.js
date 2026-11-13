@@ -216,6 +216,9 @@ function holdScene(kit, bars) {
   return { view, lane, el: h('div', { class: 'r4 r4-play' }, view.sky, lane.lane) };
 }
 
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 확인 게임 끝(end)의 갈래 차례(bi)와 같게 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['2분음표를 일찍 뗌', '4분음표를 길게 누름', '2분음표를 너무 길게', '누르는 때를 놓침'];
+
 export default {
   // ── 보기: 4분음표(박 하나) 대 2분음표(박 둘) ──
   show(ui, kit) {
@@ -357,19 +360,19 @@ export default {
       const longQ = res.filter((x, i) => x.rel === 'long' && notes[i].kind === 'q').length;
       const longH = res.filter((x, i) => x.rel === 'long' && notes[i].kind === 'h').length;
       const miss = res.filter(x => x.press === 'miss').length;
-      let tip;
+      let tip, bi = -1;                              // bi = 고른 갈래의 차례(TIPS_TV · TV '틀린 갈래' 막대 · X6 둘째)
       if (s.kept === s.total) tip = '4분음표는 한 박, 2분음표는 두 박 — 길이를 모두 맞게 눌렀어요.';
-      else if (shortH >= Math.max(longQ, longH, miss)) tip = `2분음표를 일찍 뗀 적이 ${shortH}번 있었어요. 막대가 끝날 때까지 꾹 누르고 있어요.`;
-      else if (longQ >= Math.max(longH, miss)) tip = `4분음표를 길게 누른 적이 ${longQ}번 있었어요. ‘따’는 한 박만 — 짧게 눌렀다 떼요.`;
-      else if (longH >= miss) tip = `2분음표를 두 박보다 오래 누른 적이 ${longH}번 있었어요. 막대가 끝나면 떼요.`;
-      else tip = `누르는 때를 놓친 음이 ${miss}개 있었어요. 막대가 선에 닿을 때 눌러요.`;
+      else if (shortH >= Math.max(longQ, longH, miss)) { bi = 0; tip = `2분음표를 일찍 뗀 적이 ${shortH}번 있었어요. 막대가 끝날 때까지 꾹 누르고 있어요.`; }
+      else if (longQ >= Math.max(longH, miss)) { bi = 1; tip = `4분음표를 길게 누른 적이 ${longQ}번 있었어요. ‘따’는 한 박만 — 짧게 눌렀다 떼요.`; }
+      else if (longH >= miss) { bi = 2; tip = `2분음표를 두 박보다 오래 누른 적이 ${longH}번 있었어요. 막대가 끝나면 떼요.`; }
+      else { bi = 3; tip = `누르는 때를 놓친 음이 ${miss}개 있었어요. 막대가 선에 닿을 때 눌러요.`; }
       // 두드림 어긋남(X4 · 기기 기록만) — 누르기 시작의 어긋남(떼기 판정과 따로) · 놓침 = 창 안에 못 누른 음
       const t = tapStats(res.filter(x => x.press !== 'miss').map(x => x.off), miss, { lat: kit.device.latencyMs, band: kit.band, bpm: bpmOf('hold', kit.band) });
       ui.stage.replaceChildren(); ui.count(null);                // 결과 뒤에는 칸 그림 · 번호를 남기지 않음(친구 그림은 칸 화면이 붙임)
       kit.finish({
         title: `${s.total}번 중 ${s.kept}번 맞혔어요`, replay: ok, group: PLAN.map(b => b.filter(k => !k.endsWith('r')).length),   /* 다시 보기는 마디마다 끊음 */
         facts: [`이어서 맞힌 최고 기록 ${s.streak}번`, `2분음표 ${hAll}개 중 ${hOk}개를 두 박 동안 눌렀어요`],
-        starOn: s.starOn, rules: s.rules, tip, t,
+        starOn: s.starOn, rules: s.rules, tip, t, b: bi,
       });
     }
     return () => { T.clear(); run && run.stop(); input && input.off(); };

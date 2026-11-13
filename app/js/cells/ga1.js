@@ -8,6 +8,7 @@
 //  11-07 평가 3차: 듣는 동안 A.busy('잘 들어요') · 게임 아래 띠 '다시 듣기'(다시 들으면 기다리는 시간도 새로) · 틀린 판은 맞는 음을 초록 테두리 + ✓로(점선 X) · 노래 그림 동전 26px
 import { SOL, MI, nameOf, josa, colorOf, heightBoard, heightPic, songNotes, voice, playBeats, badge, startCard, press, exCard, hearHead, noteAnswers, markPick, judge, dot } from './_mel.js';
 import { tvsGame } from './_tvs.js';
+import { tipPick, nearSeq } from '../cellkit.js';
 
 const S = SOL, M = MI;
 const EXAMPLES = [
@@ -29,14 +30,24 @@ export const SHUF = { flip: ([ps, inst]) => [ps.map(p => (p === S ? M : S)), ins
 const why = (a, b) => (a === b ? `처음과 같은 높이, ${josa(nameOf(b), '이에요/예요')}`
   : `${nameOf(a)}보다 ${b > a ? '높은' : '낮은'} 소리, ${josa(nameOf(b), '이에요/예요')}`);
 
-// 결과 한 줄 — 틀린 메아리 갈래(같은 음 두 번 · 세 음 · 솔미 오르내림)
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['같은 음 두 번(솔-솔 · 미-미)', '세 음 메아리', '솔-미 · 미-솔'];
+// 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 둘째 음이 내려가나, 그대로인가
+const nearMel = ps => nearSeq(ps.map(p => ({ p, d: 0.42, gap: 0.2 })), { inst: 'xylo' });
+export const NEAR = [
+  { label: '솔-미', play: nearMel([S, M]) },
+  { label: '솔-솔', play: nearMel([S, S]) },
+];
+// 결과 한 줄 — 틀린 메아리 갈래(같은 음 두 번 · 세 음 · 솔미 오르내림) · 고른 갈래의 차례는 tipPick에(TV 막대)
 export function tipOf(plan, results) {
   const bad = plan.map((p, k) => (results[k] ? null : p[0])).filter(Boolean);
   const same = bad.filter(ps => ps.length === 2 && ps[0] === ps[1]).length;
   const three = bad.filter(ps => ps.length === 3).length;
+  tipPick.n = TIPS_TV.length; tipPick.b = -1;
   if (!bad.length) return '같은 음이 이어질 때도, 세 음일 때도 모두 메아리로 돌려줬어요.';
-  if (same >= three && same >= bad.length / 2) return '같은 음이 두 번(솔-솔·미-미) 나올 때 헷갈렸어요. 첫 소리가 높은 솔인지 낮은 미인지 먼저 떠올려 봐요.';
-  if (three >= bad.length / 2) return '세 음 메아리(9번째부터)에서 헷갈렸어요. 따라 부르며 손을 올리고 내리면 차례가 잘 남아요.';
+  if (same >= three && same >= bad.length / 2) { tipPick.b = 0; return '같은 음이 두 번(솔-솔·미-미) 나올 때 헷갈렸어요. 첫 소리가 높은 솔인지 낮은 미인지 먼저 떠올려 봐요.'; }
+  if (three >= bad.length / 2) { tipPick.b = 1; return '세 음 메아리(9번째부터)에서 헷갈렸어요. 따라 부르며 손을 올리고 내리면 차례가 잘 남아요.'; }
+  tipPick.b = 2;
   return '솔-미, 미-솔 메아리에서 헷갈렸어요. 내려가면 솔 → 미, 올라가면 미 → 솔이에요.';
 }
 

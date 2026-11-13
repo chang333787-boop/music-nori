@@ -121,6 +121,8 @@ export function judgeBar(pat, slotMs, taps, { band = 'mid', latency = 0, halfMs 
 }
 
 // ── 결과 한 줄(사실만 · N1 factTip) — 틀린 판의 갈래 ──
+// TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
+export const TIPS_TV = ['띠띠를 한 번만', '따 박에 두 번', '쉼 박에 침', '긴 소리 동안 또 침', '빨라진 판', '듣기만 한 판'];
 export function tipOf(plan, results, judged = []) {
   const wrongWith = f => plan.reduce((n, p, k) => n + (results[k] === false && judged[k] && f(judged[k], p) ? 1 : 0), 0);
   const eeHalf = (j, p) => p.pat.some((k, tok) => k === 'ee' && j.slots.filter(g => g.tok === tok && g.got === 'miss').length === 1);
