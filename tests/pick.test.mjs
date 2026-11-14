@@ -1,4 +1,4 @@
-// 듣고 고르기 세 칸(소6 · 형1 · 화1 — app/js/cells/_pick.js) — 문항 표가 스스로 한 말을 지키는지(소리 · 화면 없이 표만)
+// 듣고 고르기 네 칸(소6 · 형1 · 화1 · 셈2 — app/js/cells/_pick.js) — 문항 표가 스스로 한 말을 지키는지(소리 · 화면 없이 표만)
 //  ① 줄의 답 = 실제로 나는 소리(뒤집어도) ② 답과 상관없이 소리 길이가 같음(열리는 때로 답이 새지 않음)
 //  ③ 듣지 않고 누르는 봇(같은 답 · 번갈아 · 단계 꼴 · 찍기 · 소리 길이)이 별을 못 받음 ④ 같은 답 세 번 연속 X
 //  node tests/pick.test.mjs
@@ -8,7 +8,7 @@ globalThis.localStorage = { getItem: () => null, setItem: () => {} };
 const K = await import('../app/js/cellkit.js');
 const P = await import('../app/js/cells/_pick.js');
 const M = {};
-for (const id of ['so6', 'hy1', 'hwa1']) M[id] = await import(`../app/js/cells/${id}.js`);
+for (const id of ['so6', 'hy1', 'hwa1', 'sem2']) M[id] = await import(`../app/js/cells/${id}.js`);
 const STAGES = ['intro', 'grow', 'twist', 'end'];
 
 // TV 표(tvsSpec) — OPEN(row) = 300 + 소리 길이(ms) = 아이 기기에서 답이 열리는 때 · segs(row) = 그 판의 도막들
@@ -50,17 +50,34 @@ const RIGHT = {
   },
   // 화1 — 함께 = 어느 때든 두 음이 겹쳐 남 / 하나씩 = 겹치는 음이 없음
   hwa1(row, ns) { return ns.length === 1 && overlap(ns[0]) === (row.ans === 'many'); },
+  // 셈2 — 도막 하나 · 악기 하나 · 여덟 음 · 여덟 박. 점점 세게 = 음마다 세기가 오름 / 점점 여리게 = 내림 / 그대로 = 모두 같음(가장 여린 음도 0.25 이상)
+  //  꼴: rep 같은 음 · 같은 길이 / tune 높낮이가 오르내림 / slope 높낮이가 한쪽으로 / cross 높낮이가 세기와 거꾸로 / dense 같은 음 · 길이가 줄어듦
+  sem2(row, ns) {
+    if (ns.length !== 1 || ns[0].length !== 8 || new Set(ns[0].map(n => n.inst)).size !== 1) return false;
+    const a = ns[0], step = f => a.slice(1).map((n, k) => Math.sign(f(n) - f(a[k]))), all = (xs, v) => xs.every(x => x === v);
+    const vel = step(n => n.vel), pit = step(n => n.p), len = step(n => n.d);
+    const total = a[7].t + a[7].d / 0.92, loud = row.right === 'cresc' ? 1 : row.right === 'decresc' ? -1 : 0;
+    if (!all(vel, loud) || Math.min(...a.map(n => n.vel)) < 0.25 || Math.abs(total - 8 * P.BEAT) > 1e-3) return false;
+    if (loud && a[7].vel / a[0].vel < 2 && a[0].vel / a[7].vel < 2) return false;          // 변하는 판은 처음과 끝이 두 배 이상
+    if (row.kind === 'rep') return all(pit, 0) && all(len, 0);
+    if (row.kind === 'tune') return all(len, 0) && pit.includes(1) && pit.includes(-1);
+    if (row.kind === 'slope') return all(len, 0) && all(pit, row.dir === 'up' ? 1 : -1);
+    if (row.kind === 'cross') return all(len, 0) && loud !== 0 && all(pit, -loud);
+    return row.kind === 'dense' && all(pit, 0) && len.every(x => x <= 0) && len.includes(-1) && loud === 0;
+  },
 };
 const OPTS = {
   so6: () => ['same', 'diff'],
   hy1: (p, k) => (k < M.hy1.CUTS[0] ? ['same', 'diff'] : ['same', 'near', 'diff']),
   hwa1: () => ['one', 'many'],
+  sem2: (p, k) => (k < M.sem2.CUTS[0] ? ['cresc', 'decresc'] : ['cresc', 'decresc', 'same']),
 };
 // 섞어도 단계마다 같은 문항 묶음인지 견주는 열쇠(뒤집기는 같은 문항으로 봄)
 const NORM = {
   so6: p => `${p.kind}:${p.a}:${p.b}`,
   hy1: p => `${p.kind}:${p.a}:${p.b || ''}`,
   hwa1: p => `${p.kind}:${p.m}`,
+  sem2: p => `${p.kind}:${p.p || p.m}:${p.dir || ''}:${p.w || p.v || ''}`,
 };
 
 for (const [id, mod] of Object.entries(M)) {
@@ -97,6 +114,11 @@ for (const [id, mod] of Object.entries(M)) {
   }]);
   // 형1 — '비슷한' 단추가 새로 나온 판에 그 단추를 누르는 봇(단추가 나온 까닭을 읽음)
   if (id === 'hy1') bots.push(['새 단추', (k, p, o) => (k >= CUTS[0] ? 'near' : o[Math.floor(rr() * o.length)])]);
+  // 셈2 — '그대로' 단추가 나온 뒤로 그 단추만 누르는 봇 · 높낮이만 보는 봇(올라가면 점점 세게 · 내려가면 점점 여리게 · 그 밖에는 아무거나)
+  if (id === 'sem2') {
+    bots.push(['새 단추', (k, p, o) => (k >= CUTS[0] ? 'same' : o[Math.floor(rr() * o.length)])]);
+    bots.push(['높낮이', (k, p, o) => { const ps = notesOf(id, p)[0].map(n => n.p), d = Math.sign(ps[7] - ps[0]); return d > 0 ? 'cresc' : d < 0 ? 'decresc' : o[Math.floor(rr() * o.length)]; }]);
+  }
   const got = new Map(bots.map(([n]) => [n, 0]));
   let same = 0, alt = 0, origin = 0;
   for (let sd = 1; sd <= 1000; sd++) {
@@ -108,6 +130,7 @@ for (const [id, mod] of Object.entries(M)) {
     for (let i = 2; i < a.length; i++) if (a[i] === a[i - 1] && a[i] === a[i - 2]) same++;
     if (a[0] === a[2] && a[1] === a[3] && a[0] !== a[1]) alt++;
     if (id === 'hy1') assert.ok(plan.slice(0, CUTS[0]).every(p => ansOf(p) !== 'near'), '형1 비슷한 판은 단추가 나온 뒤에만');
+    if (id === 'sem2') assert.ok(plan.slice(0, CUTS[0]).every(p => ansOf(p) !== 'same'), '셈2 그대로 판은 단추가 나온 뒤에만');
     if (sd === 1) assert.deepEqual(make(1), plan, id + ' 같은 씨앗이면 같은 판');
     const chance = chanceOf(plan);
     for (const [name, bot] of bots) {
@@ -143,4 +166,28 @@ for (const [id, mod] of Object.entries(M)) {
   }
   for (const p of M.hwa1.PLAN.filter(q => q.kind === 'self' || q.kind === 'chord')) assert.equal(new Set(notesOf('hwa1', { ...p, ans: 'many' })[0].map(n => n.inst)).size, 1, '한 악기가 여러 음');
 }
-console.log('✓ 듣고 고르기 세 칸(소6 · 형1 · 화1) — 답 = 소리(뒤집어도) · 소리 길이 같음 · 듣지 않는 봇 별 10% 아래 · 같은 답 세 번 연속 0 · 1~2학년 글');
+// 셈2 — 1~2학년 판은 '크게 · 작게' · '그대로' 단추는 중간에 · 높낮이로는 답을 못 맞힘 · 그대로 판의 세기가 판마다 다름
+{
+  const low = M.sem2.tvsSpec({ tell() {}, say() {} }, kitOf('low'));
+  assert.deepEqual(low.items.map(it => it.label), ['점점 크게', '점점 작게', '그대로'], "셈2 1~2학년 '크게 · 작게'");
+  assert.ok(!/세게|여리게/.test(low.say.kid), '셈2 1~2학년 한 줄 말');
+  assert.deepEqual(SPEC.sem2.items.map(it => it.label), ['점점 세게', '점점 여리게', '그대로'], "셈2 3학년부터 '세게 · 여리게'");
+  assert.deepEqual(SPEC.sem2.items.map(it => it.locked), [false, false, true], "셈2 '그대로' 단추는 중간에 나옴");
+  const { PLAN } = M.sem2, dirOf = p => { const ps = notesOf('sem2', p)[0].map(n => n.p); return Math.sign(ps[7] - ps[0]); };
+  assert.ok(PLAN.slice(0, M.sem2.CUTS[0]).every(p => p.kind === 'rep' && p.w === 'wide'), '셈2 소개 판 = 같은 음 · 넓은 폭');
+  // 원판 · 뒤집은 판 어디에도 '올라가며 점점 세게' · '내려가며 점점 여리게'가 없다(높낮이를 따라 고르면 그 판은 꼭 틀림)
+  for (const p of PLAN) for (const q of [p, M.sem2.SHUF.flip(p)]) { const d = dirOf(q); assert.ok(!(d > 0 && q.right === 'cresc') && !(d < 0 && q.right === 'decresc'), '셈2 높낮이 ≠ 세기: ' + JSON.stringify(q)); }
+  const kinds = PLAN.map(p => `${p.kind}:${p.right}`);
+  assert.ok(kinds.includes('slope:same') && kinds.includes('dense:same') && kinds.includes('cross:cresc') && kinds.includes('cross:decresc'), '셈2 비틀기 셋');
+  assert.ok(PLAN.filter(p => p.stage === 'twist').every(p => ['slope', 'cross', 'dense'].includes(p.kind)), '셈2 비틀기 판은 한 가지씩만');
+  const flat = PLAN.filter(p => p.right === 'same').map(p => notesOf('sem2', p)[0][0].vel);
+  assert.ok(new Set(flat).size >= 3 && Math.min(...flat) <= 0.4 && Math.max(...flat) >= 0.8, '셈2 그대로 판의 세기가 여린 것부터 센 것까지');
+  // 틀린 갈래 — 고른 단추를 봄: 올라가는 그대로 판에 점점 세게 = 높낮이 갈래 · 점점 여리게면 그 갈래가 아님
+  const res = PLAN.map(p => !(p.kind === 'slope' || p.kind === 'cross')), follow = PLAN.map(p => (p.kind === 'cross' ? (p.right === 'cresc' ? 'decresc' : 'cresc') : p.kind === 'slope' ? (p.dir === 'up' ? 'cresc' : 'decresc') : p.right));
+  assert.ok(/높이와 세기는 달라요/.test(M.sem2.tipOf(PLAN, res, follow)), '셈2 높낮이를 따라 고른 판 넷 → 높낮이 갈래');
+  assert.ok(/높이와 세기는 달라요/.test(M.sem2.tipOf(PLAN, res, [])), '셈2 고른 단추를 몰라도 그 판이 틀렸으면 높낮이 갈래');
+  const small = PLAN.map(p => p.kind !== 'tune');
+  assert.ok(/조금씩 변하는 세기/.test(M.sem2.tipOf(PLAN, small, PLAN.map(p => (p.kind === 'tune' ? 'same' : p.right)))), '셈2 작은 변화를 그대로로');
+  assert.ok(!/조금씩 변하는 세기/.test(M.sem2.tipOf(PLAN, small, PLAN.map(p => (p.kind === 'tune' ? (p.right === 'cresc' ? 'decresc' : 'cresc') : p.right)))), '셈2 거꾸로 고른 것은 작은 변화 갈래가 아님');
+}
+console.log('✓ 듣고 고르기 네 칸(소6 · 형1 · 화1 · 셈2) — 답 = 소리(뒤집어도) · 소리 길이 같음 · 듣지 않는 봇 별 10% 아래 · 같은 답 세 번 연속 0 · 1~2학년 글');

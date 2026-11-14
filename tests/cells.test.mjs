@@ -361,7 +361,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   const fakeH = (tag, attrs, ...kids) => ({ tag, attrs, kids, nodeType: 1, cloneNode() { return this; } });
   const kit = { h: fakeH, band: 'mid', stageShuffle: K.stageShuffle, rng: K.rng, engine: null, playSeq: () => ({}), friendImg: () => fakeH('img'), setPose: () => {} };
   const num = (x, row) => (typeof x === 'function' ? x(row) : x);
-  for (const id of ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1']) {
+  for (const id of ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'sem2']) {
     const mod = await import(`../app/js/cells/${id}.js`);
     assert.equal(mod.TVS, true, id + ' TVS = true');
     const S = mod.tvsSpec({ tell() {}, say() {} }, kit);
@@ -475,7 +475,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   K.factTip([false, false, true, true], [{ n: 2, text: 'a' }], '완벽'); assert.equal(K.tipPick.b, -1, '틀린 판 셋 미만이면 갈래 X');
   K.factTip([false, false, false, false, false, false], [{ n: 3, text: 'a' }], '완벽'); assert.equal(K.tipPick.b, -1, '갈래가 2/3를 못 넘으면 X');
   // 칸마다 TIPS_TV(TV 막대 이름) — 열 개 안(t 첫 글자 0~9) · 짧게 · factTip을 쓰는 칸은 갈래 수와 같아야(차례가 밀리면 TV가 다른 이름을 그림)
-  const ALL = ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'jd1', 'ak1', 'ak2', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6'];
+  const ALL = ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'sem2', 'jd1', 'ak1', 'ak2', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6'];
   const M = {};
   for (const id of ALL) M[id] = await import(`../app/js/cells/${id}.js`);
   let viaTip = 0;
@@ -500,7 +500,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     note: (inst, p, t, d, vel, out) => calls.push({ k: 'n', inst, p, t, d, vel, out }),
     drum: (kind, t, vel, out) => calls.push({ k: 'd', kind, t, vel, out }) };
   const run = it => { calls.length = 0; const sec = it.play({ engine: eng }, OUT); return { sec, c: calls.map(x => ({ ...x })) }; };
-  const HEAR = ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'jd1'];
+  const HEAR = ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'sem2', 'jd1'];
   const R = {};
   for (const id of HEAR) {
     const N = M[id].NEAR;
@@ -528,6 +528,9 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   for (const id of ['ga1', 'ga2', 'ga3', 'ga4']) { const [a, b] = R[id].map(notes); assert.ok(a.length === b.length && a.every((n, j) => n.d === b[j].d && n.inst === b[j].inst) && a.some((n, j) => n.p !== b[j].p), id + ' — 음 높이만 다름'); }
   { const [a, b] = R.ppa1, kicks = x => x.c.filter(c => c.kind === 'kick').length;
     assert.equal(a.sec, b.sec, '빠1 — 두 소리 길이가 같음(길이로 못 고르게)'); assert.ok(kicks(a) < kicks(b), '빠1 — 박 수만 다름(보통 < 빠르게)'); }
+  { const [a, b] = R.sem2.map(notes);
+    assert.ok(a.length === b.length && a.every((n, j) => n.p === b[j].p && n.d === b[j].d && n.inst === b[j].inst && (!j || n.p > a[j - 1].p)), '셈2 — 둘 다 같은 올라가는 가락');
+    assert.ok(a.every(n => n.vel === a[0].vel) && b.every((n, j) => !j || n.vel > b[j - 1].vel), '셈2 — 세기만 다름(그대로 ↔ 점점 세게)'); }
   assert.deepEqual(R.jd1.map(x => [...new Set(x.c.map(c => c.kind))].join()), ['deong', 'kung'], '장1 — 덩 · 쿵');
   assert.equal(typeof K.nearSeq([{ p: 60, d: 0.3 }]), 'function');
   delete globalThis.localStorage;
@@ -544,4 +547,4 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   console.log('✓ 칸 → 곡 바꾸기 부탁 ' + Object.keys(PLAY_CARD).length + '칸');
 }
-console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 일곱 칸 문항 표(X2) · TV 소리 모드 열두 칸 · 장1 장단 표기`);
+console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 일곱 칸 문항 표(X2) · TV 소리 모드 열세 칸 · 장1 장단 표기`);

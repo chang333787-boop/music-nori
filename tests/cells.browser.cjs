@@ -14,7 +14,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store' });
   fs.createReadStream(f).pipe(res);
 });
-const FIRST = ['so3', 'so4', 'so5', 'so6', 'sem1', 'ppa1', 'ga1', 'ga2', 'ga3', 'ga4', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6', 'jd1', 'ak1', 'ak2', 'hy1', 'hwa1'];
+const FIRST = ['so3', 'so4', 'so5', 'so6', 'sem1', 'ppa1', 'ga1', 'ga2', 'ga3', 'ga4', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6', 'jd1', 'ak1', 'ak2', 'hy1', 'hwa1', 'sem2'];
 const want = process.argv.slice(2).length ? process.argv.slice(2) : ['ri1', ...FIRST.filter(id => fs.existsSync(path.join(ROOT, 'app/js/cells', id + '.js')))];
 // 두드림을 판정하는 칸 — 기록에 t가 있어야 함(X4)
 const TAP = new Set(['ri1', 'ri2', 'ri3', 'ri4', 'ri5', 'ak1']);

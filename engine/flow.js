@@ -187,7 +187,7 @@ export const ELEMENTS = [
         ['book', 'method'], ['lab:dyn:p', 'lab:dyn:f', 'cell:sem1'], '피아노 포르테'),
       S('d3', '조금 여리게 mp · 조금 세게 mf', '3학년(교과서)', [3, 4],
         '교과서 8종은 3학년에 p · mp · mf · f를 함께 낸다. 나라 밖 문서들은 가운데 세기를 더 뒤에 두기도 해서, 앞뒤를 굳게 정할 까닭은 없다.',
-        ['book', 'method'], ['lab:dyn:mp', 'lab:dyn:mf', 'cell:sem2'], '메조 피아노 메조 포르테'),
+        ['book', 'method'], ['lab:dyn:mp', 'lab:dyn:mf'], '메조 피아노 메조 포르테'),
       S('d4', '점점 세게 · 점점 여리게', '4학년(교과서 2종) · 5학년(6종)', [4, 6],
         '뚜렷한 대비를 먼저, 점점 바뀌는 것은 나중에 둔다. 교육과정도 3~4학년 「셈여림」, 5~6학년 「셈여림의 변화」 차례다.',
         ['curr', 'book'], ['lab:dyn:cresc', 'lab:dyn:decresc', 'cell:sem2'], '크레셴도 데크레셴도 셈여림의 변화'),
