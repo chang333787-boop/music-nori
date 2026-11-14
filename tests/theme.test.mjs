@@ -28,12 +28,14 @@ assert.equal(chordAt(7), 'C'); assert.equal(chordAt(6, 0), 'F'); assert.equal(ch
 
 // 계단 — 줄 다섯 · 첫 판 21칸 = 21계단(거북 줄 = 악보 갈래 + 형식·화음 갈래)
 assert.deepEqual(PARTS.map(p => p.key), ['bear', 'bunny', 'bird', 'hog', 'turtle']);
-assert.equal(PARTS.reduce((s, p) => s + (p.lane ? p.max - (p.base || 0) : 0), 0), FIRST.length, '계단 수 = 첫 판 칸 수');
+const STAIRS = PARTS.reduce((s, p) => s + (p.lane ? p.max - (p.base || 0) : 0), 0);
+assert.equal(STAIRS, 21, '계단 수 = 21 — 칸이 더 늘어도 그대로(줄마다 그 갈래 칸을 계단 수만큼 지나면 다 열림 · 11-14)');
+assert.ok(STAIRS <= FIRST.length, '계단 수 ≤ 만든 칸 수');
 for (const p of PARTS) if (p.lane) assert.equal(STEP_TEXT[p.key].length, p.max + 1, p.key + ' 계단 글');
 const L0 = levelsOf({});
 assert.deepEqual(L0, { bear: 1, bunny: 0, bird: 0, hog: 0, turtle: 0 });
 const ALL = levelsOf(Object.fromEntries(FIRST.map(id => [id, { stars: 1 }])));
-assert.equal(stepsOf(ALL), FIRST.length);
+assert.equal(stepsOf(ALL), STAIRS);
 assert.deepEqual(levelsOf({ so3: { stars: 2 }, ri1: { stars: 0 }, ri2: { stars: 3 } }), { bear: 1, bunny: 1, bird: 0, hog: 1, turtle: 0 });
 assert.deepEqual(newParts({ bunny: 1 }, { bear: 1, bunny: 2, bird: 1, hog: 0, turtle: 0 }), [{ key: 'bunny', from: 1, to: 2 }, { key: 'bird', from: 0, to: 1 }]);
 assert.equal(partOfCell('ri4').key, 'hog'); assert.equal(partOfCell('ak2').key, 'turtle'); assert.equal(partOfCell('so5').key, 'bunny');

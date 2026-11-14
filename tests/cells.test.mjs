@@ -20,7 +20,7 @@ const visit = (id, path = []) => {
 };
 for (const c of CELLS) visit(c.id);
 // 첫 판
-assert.equal(FIRST.length, 21);
+assert.ok(FIRST.length >= 21, '만든 칸 수(first) — 11-14 첫 판 21칸에서 더해 감');
 assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 칸 모두');
 for (const id of FIRST) assert.ok(cellById(id).game, id + ' 확인 게임 설명');
 // 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다

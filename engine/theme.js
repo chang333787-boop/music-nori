@@ -57,7 +57,7 @@ export function levelsOf(prog = {}) {
   }
   return lv;
 }
-export const stepsOf = lv => PARTS.reduce((s, p) => s + Math.max(0, (lv[p.key] || 0) - (p.base || 0)), 0);   // 0 ~ 첫 판 칸 수
+export const stepsOf = lv => PARTS.reduce((s, p) => s + Math.max(0, (lv[p.key] || 0) - (p.base || 0)), 0);   // 0 ~ 21(계단 수는 그대로 — 칸이 더 늘어도 줄마다 max까지)
 // 새로 생긴 줄(지난번 들은 계단 → 지금) [{ key, from, to }]
 export const newParts = (heard = {}, now = {}) => PARTS.filter(p => p.lane && (now[p.key] || 0) > (heard[p.key] ?? (p.base || 0))).map(p => ({ key: p.key, from: heard[p.key] ?? (p.base || 0), to: now[p.key] }));
 // 칸 하나가 몇째 줄 · 몇째 계단을 여는지(결과 화면 한 줄) — 그 칸의 갈래 줄
