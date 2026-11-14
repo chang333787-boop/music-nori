@@ -1,10 +1,10 @@
-// 듣고 고르기 칸 공용 틀(11-14) — 소6 같은 악기·다른 악기 · 형1 같은 가락·다른 가락 · 화1 하나씩·함께
-//  세 칸은 모양이 같다: 소리 도막(하나 또는 둘)을 듣고 → 단추 둘(셋) 가운데 하나를 고름 → 고른 뒤에 소리 그림이 열림.
+// 듣고 고르기 칸 공용 틀(11-14) — 소6 같은 악기·다른 악기 · 형1 같은 가락·다른 가락 · 화1 하나씩·함께 · 형2 메기고 받기
+//  이 칸들은 모양이 같다: 소리 도막(하나 · 둘 — 형2는 넷)을 듣고 → 단추 둘(셋) 가운데 하나를 고름 → 고른 뒤에 소리 그림이 열림.
 //  칸 파일은 '무엇을 들려주고 무엇이 답인가'(문항 표 · 도막 만들기 · 글)만 적고, 보기 · 연습 · 확인 게임 · TV 소리 모드는 여기서 만든다.
-//  소리 그림: 가로 = 시간 · 세로 = 높이 · 굵기 = 세기 · 무늬 = 악기(첫째 악기 = 채움 · 둘째 = 테두리만 · 셋째 = 회색).
+//  소리 그림: 가로 = 시간 · 세로 = 높이 · 굵기 = 세기 · 무늬 = 악기(첫째 악기 = 채움 · 둘째 = 테두리만 · 셋째 = 회색 · 넷째 = 옅은 바탕).
 //    듣는 동안에는 지나가는 띠만 보이고(그림으로 답을 읽지 못하게) 고른 뒤에 열린다. 보기 단계는 처음부터 열려 있다.
 //  한 도막 안의 줄(lines)은 같은 때에 함께 난다 — 화1 '함께'가 이것.
-//  모양은 app/css/cells/_pick.css(세 칸이 같이 씀 · 처음 불릴 때 한 번 붙임)
+//  모양은 app/css/cells/_pick.css(이 칸들이 같이 씀 · 처음 불릴 때 한 번 붙임)
 //
 //  pickCell(C) — C = {
 //    friend            친구 키(색 · 그림)
@@ -12,7 +12,7 @@
 //    label(key, lo)    단추 글(lo = 1~2학년 판)  ·  chip(key)? 단추 그림(svg 글)
 //    lock?             { key, at, tell(lo) } — 확인 게임에서 at번째 판부터 나타나는 단추(연습에서는 처음부터 보임)
 //    rightOf(row)      그 판의 답 키
-//    build(row, lo)    → [{ lines: [음 줄, …], cap }] 도막(둘이면 사이에 GAP초 쉼) · 화면 · 소리 없이 표만 만들어야 함(시험이 부름)
+//    build(row, lo)    → [{ lines: [음 줄, …], cap, gap? }] 도막(둘이면 사이에 GAP초 쉼 — 도막에 gap(초)을 적으면 그 도막 뒤 쉼은 그 값) · 화면 · 소리 없이 표만 만들어야 함(시험이 부름)
 //    names(row, lo)    도막 이름(['첫째', '둘째'])
 //    say               { show, follow, game, kid }(lo) → 맨 위 한 줄
 //    wrong(row, lo)    틀렸을 때 사실 한 줄
@@ -37,7 +37,9 @@ export const line = (mel, { inst = 'piano', vel = 0.6, shift = 0, beat = BEAT } 
   mel.map(([p, b]) => ({ p: p == null ? null : p + shift, d: b * beat * 0.92, gap: b * beat * 0.08, vel, inst }));
 export const lineSec = ln => ln.reduce((a, n) => a + n.d + (n.gap ?? 0.12), 0);
 export const segLen = sg => Math.max(...sg.lines.map(lineSec));
-export const segSec = segs => segs.reduce((t, sg, k) => t + segLen(sg) + (k === segs.length - 1 ? 0 : GAP), 0);
+// 도막 뒤 쉼 — 도막에 gap(초)이 적혀 있으면 그 값(형2: 네 도막이 박을 이어 가게 한 박만 쉼) · 없으면 GAP
+const gapOf = sg => sg.gap ?? GAP;
+export const segSec = segs => segs.reduce((t, sg, k) => t + segLen(sg) + (k === segs.length - 1 ? 0 : gapOf(sg)), 0);
 // 헷갈리는 두 소리(NEAR)용 — 도막들을 받은 소리 길로 틀고 끝날 때까지 초를 돌려줌(소리 엔진만 씀 · 화면 X)
 export const nearSegs = segs => (kit, out) => {
   const ac = kit.engine.ensure();
@@ -47,7 +49,7 @@ export const nearSegs = segs => (kit, out) => {
       let t = ac.currentTime + at;
       for (const n of ln) { if (n.p != null) kit.engine.note(n.inst, n.p, t, n.d, n.vel, out, null); t += n.d + (n.gap ?? 0.12); }
     }
-    at += segLen(sg) + (k === segs.length - 1 ? 0 : GAP);
+    at += segLen(sg) + (k === segs.length - 1 ? 0 : gapOf(sg));
   });
   return at;
 };
@@ -68,8 +70,9 @@ function strip(kit) {
       quiet(); gen++;
       const all = list.flatMap(sg => sg.lines.flat()).filter(n => n.p != null);
       const lo = Math.min(...all.map(n => n.p)), hi = Math.max(...all.map(n => n.p));
-      const insts = [...new Set(all.map(n => n.inst))], ix = inst => Math.min(insts.indexOf(inst), 2);
+      const insts = [...new Set(all.map(n => n.inst))], ix = inst => Math.min(insts.indexOf(inst), 3);
       longest = Math.max(...list.map(segLen));
+      el.classList.toggle('pk-four', list.length > 3);   // 도막이 넷(형2) — 상자가 좁아 아래 줄을 위아래로 쌓음(_pick.css)
       segs = list.map((sg, k) => {
         const head = h('i', { class: 'pk-head' }), pic = h('div', { class: 'pk-pic' }, head), mine = [];
         for (const ln of sg.lines) {
@@ -115,7 +118,7 @@ function playSegs(kit, V, T, S, segs, at0 = 0.1) {
     const len = segLen(sg), my = at;
     S.run(k, my, len);
     T.after(my * 1000, () => S.now(k, g));
-    at += len + (k === segs.length - 1 ? 0 : GAP);
+    at += len + (k === segs.length - 1 ? 0 : gapOf(sg));
   });
   T.after(at * 1000, () => S.now(-1, g));
   return at * 1000;

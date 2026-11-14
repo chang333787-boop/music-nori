@@ -68,6 +68,7 @@ assert.ok(lad.every(r => r.els.length), '빈 층');
 // 9. 만든 칸의 추천 차례(ORDER)는 난이도를 거스르지 않는다
 const lvs = ORDER.map(cellLevel);
 FIRST.forEach(id => assert.ok(cellLevel(id) != null, `${id}가 어느 흐름에도 없음`));
+assert.equal(cellLevel('hy2'), 3, '형2 메기고 받기 = 흐름 f2(난이도 3)');
 for (let i = 1; i < lvs.length; i++) assert.ok(lvs[i] >= lvs[i - 1], `칸 차례 ${ORDER[i - 1]}(${lvs[i - 1]}) → ${ORDER[i]}(${lvs[i]})`);
 // 미리 자리를 잡은 칸(ORDER_ALL · first 없음 포함)도 흐름에 들어 있으면 난이도가 내려가지 않는 자리에 — first를 붙였을 때 위 검사가 떨어지지 않게
 { const all = ORDER_ALL.map(id => [id, cellLevel(id)]).filter(([, v]) => v != null);
