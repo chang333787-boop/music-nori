@@ -1,6 +1,6 @@
 // 요소별 공부 흐름 시험 — 차례 자료가 앱에 있는 것만 가리키는지, 찾기가 선생님 말로 되는지
 import assert from 'node:assert/strict';
-import { ELEMENTS, EV, WALK, CLUSTERS, PLAY_KEYS, SAMPLES, actInfo, elementById, stepById, parseQuery, search } from '../engine/flow.js';
+import { ELEMENTS, EV, WALK, CLUSTERS, PLAY_KEYS, PLAY_ROUTE, SAMPLES, actInfo, elementById, stepById, parseQuery, search } from '../engine/flow.js';
 import { CELLS, FIRST } from '../engine/cells.js';
 import { GROUPS, SIGNS } from '../engine/marks.js';
 
@@ -58,7 +58,7 @@ ok('앱에서 쓸 것(acts)이 모두 실제로 있는 것을 가리킨다', () 
       if (i.sign) assert.equal(SIGNS.find(s => s.id === i.sign).group, i.ref, act);
       assert.ok(i.href.startsWith('#/lab/' + i.ref), act);
     }
-    if (i.kind === 'play') { assert.ok(PLAY_KEYS.includes(i.ref), act); assert.equal(i.href, '#/play/' + i.ref); }
+    if (i.kind === 'play') { assert.ok(PLAY_KEYS.includes(i.ref), act); assert.equal(i.href, PLAY_ROUTE[i.ref] || '#/play/' + i.ref); }   // 따로 선 화면(장단 판 #/jang 등)은 제 주소
   }
   assert.equal(actInfo('cell:ri1').href, '#/tap');
   assert.equal(actInfo('cell:ri1').tv, '#/tvtap');
@@ -66,6 +66,8 @@ ok('앱에서 쓸 것(acts)이 모두 실제로 있는 것을 가리킨다', () 
   assert.equal(actInfo('lab:dyn:p').label, '여리게 p');
   assert.equal(actInfo('lab:dyn:cresc').label, '점점 세게');
   assert.equal(actInfo('lab:len').label, '음의 길이');
+  assert.equal(actInfo('play:jang').href, '#/jang');
+  assert.equal(actInfo('play:jang').label, '장단 놓아 보기');
 });
 
 ok('없는 것은 null — 다른 묶음의 기호 · 없는 칸 · 없는 카드', () => {

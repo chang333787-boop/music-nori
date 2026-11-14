@@ -461,6 +461,8 @@ export class Engine {
       case 'kick': return this._thump(t, vel, out, 140, 46, 0.3);
       case 'snare': this._hiss(t, vel * 0.55, out, 'bandpass', 1900, 0.14, 0.7); return this._tone(t, vel * 0.3, out, 190, 0.08);
       case 'hat': return this._hiss(t, vel * 0.3, out, 'highpass', 7600, 0.045);
+      // 손뼉(장단 판 · D4) — 짧은 잡음 셋을 아주 가깝게 겹침(손바닥이 여러 군데에서 부딪는 소리) · 장구 덕(2300Hz)보다 낮은 띠
+      case 'clap': for (let i = 0; i < 3; i++) this._hiss(t + i * 0.009, vel * [0.5, 0.42, 0.58][i], out, 'bandpass', 1150, i < 2 ? 0.025 : 0.13, 1.1); return;
       case 'kung': this._thump(t, vel, out, 105, 72, 0.5); return this._hiss(t, vel * 0.18, out, 'lowpass', 420, 0.06);
       case 'deok': this._hiss(t, vel * 0.62, out, 'bandpass', 2300, 0.07, 1.3); return this._tone(t, vel * 0.22, out, 540, 0.06);
       case 'gi': this._hiss(t, vel * 0.4, out, 'bandpass', 2300, 0.05, 1.3); return this._tone(t, vel * 0.14, out, 540, 0.04);
