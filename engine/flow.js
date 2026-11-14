@@ -50,11 +50,11 @@ export const PLAY_NAME = {
 // 칸 결과 카드에 매이지 않고 따로 서는 놀이터 카드(11-14 묶음 D · docs/plan100_batchD.md) — 만든 팀이 제 줄의 주석을 푼다(그 전에는 흐름에 못 씀)
 //  줄마다 한 키 · 줄 사이를 띄워 둔 것은 여러 가지를 합칠 때 부딪히지 않게
 export const PLAY_SOLO = [
-  // 'rmake',   // D3 리듬 지어 보기(놀이터 부탁 카드)
+  'rmake',     // D3 리듬 지어 보기(놀이터 부탁 카드)
 
-  // 'dress',   // D3 내 곡 꾸며 보기(놀이터 부탁 카드)
+  'dress',     // D3 내 곡 꾸며 보기(놀이터 부탁 카드)
 
-  // 'chord',   // D3 반주 화음 붙여 보기(놀이터 부탁 카드)
+  'chord',     // D3 반주 화음 붙여 보기(놀이터 부탁 카드)
 
   'jang',      // D4 장단 판(#/jang)
 
@@ -83,7 +83,7 @@ export const ELEMENTS = [
         ['method', 'book'], ['cell:ri5', 'lab:meter', 'play:meter'], '마디 마디줄 2박자 3박자 4박자 2/4 3/4 4/4 4분의 2박자 4분의 3박자 4분의 4박자'),
       S('b4', '한 마디를 박 수에 맞게 채우기', '3학년', [3, 4],
         '박자표의 뜻을 알아야 한 마디에 음표가 얼마나 들어가는지 셀 수 있다.',
-        ['logic'], ['cell:ri6', 'play:fix', 'cell:ri11'], '마디 채우기'),
+        ['logic'], ['cell:ri6', 'play:fix', 'cell:ri11', 'play:rmake'], '마디 채우기'),
       S('b5', '6/8박자', '4학년(교과서 8종 가운데 6종)', [4, 6],
         '한 박을 셋으로 나누는 느낌은 3학년 자진모리장단에서 먼저 겪는다. 교육과정은 박자의 종류를 학년별로 정해 두지 않았다.',
         ['book'], ['cell:ri13'], '8분의 6박자'),
@@ -108,16 +108,16 @@ export const ELEMENTS = [
         ['mid', 'curr'], ['cell:so3', 'play:long'], '긴 소리 짧은 소리'),
       S('r2', '4분음표 · 4분쉼표', '3학년(교과서)', [1, 3],
         '한 박짜리 음표와 한 박 쉼표부터 읽는다. 일정박에 맞출 수 있어야 한다.',
-        ['book', 'logic'], ['cell:ri2', 'lab:len:rest', 'play:rest', 'cell:ri11']),
+        ['book', 'logic'], ['cell:ri2', 'lab:len:rest', 'play:rest', 'cell:ri11', 'play:rmake']),
       S('r3', '8분음표 둘', '3학년(교과서)', [1, 3],
         '한 박을 둘로 나눈다. 4분음표와 견주어 듣는다.',
-        ['book', 'logic'], ['cell:ri3', 'cell:ri11']),
+        ['book', 'logic'], ['cell:ri3', 'cell:ri11', 'play:rmake']),
       S('r4', '2분음표', '3학년(교과서)', [2, 3],
         '두 박 동안 이어지는 소리. 길게 · 짧게를 가려 들을 수 있어야 한다.',
-        ['book', 'logic'], ['cell:ri4', 'play:long', 'cell:ri11']),
+        ['book', 'logic'], ['cell:ri4', 'play:long', 'cell:ri11', 'play:rmake']),
       S('r5', '간단한 리듬꼴 — 한 마디 채우기', '3~4학년', [3, 4],
         '배운 음표를 한 마디 안에서 섞어 쓴다. 교육과정 3~4학년 요소가 「간단한 리듬꼴」이다.',
-        ['curr', 'logic'], ['cell:ri6', 'play:fix', 'cell:ri11']),
+        ['curr', 'logic'], ['cell:ri6', 'play:fix', 'cell:ri11', 'play:rmake']),
       S('r6', '점음표', '3~4학년(교과서 · 점4분음표와 점2분음표)', [3, 4],
         '음표에 그 반을 더한 길이. 앞의 음표들을 읽을 수 있어야 한다.',
         ['book'], ['cell:ri9'], '점4분음표 점2분음표'),
@@ -197,7 +197,7 @@ export const ELEMENTS = [
     [
       S('d1', '크게·작게 — 큰 차이 듣기', '1~3학년', [1, 3],
         '셈여림의 큰 차이는 어린 아이도 잘 가려낸다는 연구가 있다. 가장 먼저 다루기 좋은 요소다.',
-        ['mid', 'curr'], ['cell:sem1', 'play:dyn', 'cell:so1'], '큰 소리 작은 소리'),
+        ['mid', 'curr'], ['cell:sem1', 'play:dyn', 'cell:so1', 'play:dress'], '큰 소리 작은 소리'),
       S('d2', '여리게 p · 세게 f', '3학년(교과서)', [3, 4],
         '귀로 가려낸 뒤에 이름과 기호를 붙인다. 악보 판에서 p와 f를 넣었다 빼며 듣는다.',
         ['book', 'method'], ['lab:dyn:p', 'lab:dyn:f', 'cell:sem1', 'cell:sem3'], '피아노 포르테'),
@@ -225,7 +225,7 @@ export const ELEMENTS = [
     [
       S('t1', '빠르게·느리게 — 큰 차이 듣기', '1~3학년', [1, 3],
         '빠르기의 큰 차이는 어린 아이도 잘 가려낸다는 연구가 있다. 교과서는 3학년에 「빠르게 · 느리게」를 둔다.',
-        ['mid', 'book'], ['cell:ppa1', 'cell:ri1', 'play:tempo', 'lab:tempo:slow', 'lab:tempo:fast', 'cell:so2'], '빠른 느린'),
+        ['mid', 'book'], ['cell:ppa1', 'cell:ri1', 'play:tempo', 'lab:tempo:slow', 'lab:tempo:fast', 'cell:so2', 'play:dress'], '빠른 느린'),
       S('t2', '빠르기만 떼어 듣기', '3~4학년', [3, 4],
         '빠르기는 셈여림이나 음이 잘게 많은 것과 섞이기 쉽다. 같은 가락에서 빠르기만 바꿔 듣는다.',
         ['mid', 'design'], ['lab:tempo', 'cell:ppa1', 'play:tempo']),
@@ -249,7 +249,7 @@ export const ELEMENTS = [
     [
       S('e1', '무슨 소리일까 — 서로 다른 소리 듣기', '1~2학년', [1, 2],
         '소리가 서로 다르다는 것은 일찍부터 듣는다는 연구가 있다. 악기 이름을 대는 것은 그 뒤다.',
-        ['mid'], ['cell:so6', 'lab:inst']),
+        ['mid'], ['cell:so6', 'lab:inst', 'play:dress']),
       S('e2', '목소리 · 물체 소리 · 타악기', '3~4학년(교육과정)', [3, 4],
         '교육과정 3~4학년 요소 그대로다.',
         ['curr', 'book'], ['cell:eum1']),
@@ -301,13 +301,13 @@ export const ELEMENTS = [
     [
       S('h1', '소리의 어울림 — 돌림노래 · 2중주', '3~4학년(교육과정 · 교과서)', [3, 4],
         '화음 이름 없이, 여러 소리가 함께 울리는 것을 먼저 겪는다.',
-        ['curr', 'book'], ['cell:hwa1'], '돌림노래 2중주 합창'),
+        ['curr', 'book'], ['cell:hwa1', 'play:chord'], '돌림노래 2중주 합창'),
       S('h2', '다장조 주요 3화음', '5학년(교과서)', [5, 6],
         '가락만 듣고 어울리는 화음을 느끼는 것은 아홉 살쯤부터라는 연구가 있어, 화음은 뒤에 둔다.',
-        ['book', 'strong'], ['cell:hwa2'], '3화음 으뜸화음 딸림화음 버금딸림화음'),
+        ['book', 'strong'], ['cell:hwa2', 'play:chord'], '3화음 으뜸화음 딸림화음 버금딸림화음'),
       S('h3', '바장조 · 사장조 주요 3화음', '6학년(교과서)', [6, 6],
         '교과서 8종이 6학년에 둔다.',
-        ['book'], ['cell:hwa3'], '3화음'),
+        ['book'], ['cell:hwa3', 'play:chord'], '3화음'),
     ],
     [
       X('가락이 얹히면 화음이 바뀐 것을 못 듣는다(5세 자료).', 'Costa-Giomi(1994)', 'mid'),

@@ -1,6 +1,6 @@
 // 놀이터 편집 엔진 시험 — engine/edit.js. node만으로 돈다(의존성 X): node tests/edit.test.mjs
 import assert from 'node:assert/strict';
-import { makeSong, sounding, toStaffSong } from '../engine/song.js';
+import { makeSong, sounding, toStaffSong, toEvents } from '../engine/song.js';
 import { barTicks } from '../engine/theory.js';
 import { SONGS, songById } from '../engine/songs/index.js';
 import * as E from '../engine/edit.js';
@@ -375,6 +375,137 @@ ok('무작위 편집 4000번 — 왕복 · 적는 법 오류 0 · 틱 합 · 붙
     const cap = barTicks(s.meter);
     assert.equal(E.bars(s).every(b => b.cap === cap), true);
     if (k % 20 === 0) roundTrip(s);
+  }
+});
+
+// ════ 묶음 D3 — 리듬 지어 보기 · 내 곡 꾸며 보기 · 반주 화음 붙여 보기 ════
+ok('리듬 판 — 빈 두 마디 · 차례대로 채움 · 다 차면 더 안 놓음', () => {
+  let s = E.rhythmBoard();
+  assert.equal(s.board, 'rhythm'); assert.equal(s.ev.length, 0); assert.equal(E.toMel(s), '');
+  assert.deepEqual(E.rhythmBars(s).map(b => [b.ticks, b.left]), [[0, 48], [0, 48]]);
+  assert.deepEqual(E.rhythmNext(s), { k: 0, left: 48 });
+  assert.equal(E.rhythmFull(s), false);
+  for (const [d, r] of [[12, false], [6, false], [6, false], [12, true], [12, false]]) s = E.rhythmAdd(s, d, r);
+  assert.equal(E.toMel(s), 'G4q G4e G4e Rq G4q');
+  assert.ok(s.ev.every(e => e.p == null || e.p === 67), '높이는 솔 하나');
+  assert.deepEqual(E.rhythmNext(s), { k: 1, left: 48 });
+  for (const d of [24, 12, 12]) s = E.rhythmAdd(s, d);
+  assert.equal(E.toMel(s), 'G4q G4e G4e Rq G4q | G4h G4q G4q');
+  assert.equal(E.rhythmFull(s), true); assert.equal(E.rhythmNext(s), null);
+  assert.equal(E.rhythmAdd(s, 6), s, '다 찼으면 그대로');
+  assert.equal(E.problems(s).length, 0); noParseErr(s); roundTrip(s);
+  assert.equal(E.rhythmAdd(s, 7), s, '적을 수 없는 길이는 그대로');
+  // 넘침: 3박 + 2분 → 첫 마디 1박 넘침 · 다음 음은 둘째 마디로
+  let o = E.rhythmBoard();
+  for (const d of [12, 12, 12, 24, 12]) o = E.rhythmAdd(o, d);
+  assert.deepEqual(E.rhythmBars(o).map(b => [b.ticks, b.over, b.left]), [[60, 12, 0], [12, 0, 36]]);
+  assert.equal(E.rhythmFull(o), false);
+  assert.equal(o.pickup, 0, '넘친 첫 마디를 못갖춘마디로 보지 않음');
+  // 빼기 · 비우기
+  o = E.rhythmPop(o);
+  assert.deepEqual(E.rhythmBars(o).map(b => b.ticks), [60, 0]);
+  o = E.rhythmPop(o);
+  assert.equal(E.toMel(o), 'G4q G4q G4q');
+  assert.equal(E.rhythmClear(o).ev.length, 0);
+  assert.equal(E.rhythmClear(o).board, 'rhythm', '비워도 리듬 판');
+  assert.equal(E.rhythmPop(E.rhythmBoard()).ev.length, 0);
+});
+
+ok('리듬 판 — 박자표 바꾸기는 놓은 차례 그대로 다시 담음(쉼표를 덧붙이지 않음)', () => {
+  let s = E.rhythmBoard();
+  for (const d of [12, 12, 12, 12, 24, 24]) s = E.rhythmAdd(s, d);
+  assert.equal(E.rhythmFull(s), true);
+  const t = E.rhythmMeter(s, [3, 4]);
+  assert.deepEqual(t.meter, [3, 4]);
+  assert.equal(E.toMel(t), 'G4q G4q G4q | G4q G4h G4h');
+  assert.deepEqual(E.rhythmBars(t).map(b => b.over), [0, 24]);
+  assert.equal(E.rhythmMeter(t, [4, 4]).ev.length, s.ev.length);
+  assert.equal(E.toMel(E.rhythmMeter(t, [4, 4])), E.toMel(s));
+  assert.equal(E.rhythmMeter(s, [4, 4]), s);
+  const two = E.rhythmMeter(E.rhythmBoard(), [2, 4]);
+  assert.deepEqual(E.rhythmBars(two).map(b => b.left), [24, 24]);
+});
+
+ok('도막 꾸미기 — 도막마다 셈여림 · 빠르기 · 악기 · 가락은 그대로', () => {
+  const s = S(INSA);
+  assert.deepEqual(E.sections(s).map(x => [x.b0, x.b1, x.t0, x.t1]), [[0, 1, 0, 96], [2, 3, 96, 192]]);
+  assert.deepEqual(E.sections(S('C4w | D4w | E4w')).map(x => [x.b0, x.b1]), [[0, 1], [2, 2]], '끝 도막은 한 마디일 수 있음');
+  let d = E.setSecDyn(s, 0, 'p');
+  assert.deepEqual(E.secDyns(d), ['p', 'mf']);
+  assert.ok(E.toMel(d).startsWith('!p G4h'));
+  assert.ok(E.toMel(d).includes('| !mf E4q'));
+  assert.deepEqual(pitches(d), pitches(s)); assert.deepEqual(durs(d), durs(s));
+  roundTrip(d);
+  assert.equal(E.setSecDyn(d, 0, 'p'), d);
+  assert.equal(E.setSecDyn(d, 5, 'f'), d, '없는 도막');
+  assert.equal(E.setSecDyn(d, 1, 'zz'), d, '모르는 셈여림');
+  d = E.setSecTempo(d, 1, 138);
+  assert.deepEqual(E.secTempos(d), [100, 138]);
+  assert.equal(d.tempo, 100, '곡 빠르기는 그대로');
+  assert.equal(E.setSecTempo(d, 1, 138), d);
+  assert.equal(E.setSecTempo(d, 0, 100), d, '곡 빠르기와 같으면 그대로');
+  d = E.setSecInst(d, 0, 'recorder', 'piano');
+  assert.deepEqual(E.secInsts(d, 'piano'), ['recorder', 'piano']);
+  assert.deepEqual(E.secInsts(d, 'xylo'), ['recorder', 'xylo'], '안 고른 도막은 화면 악기');
+  assert.deepEqual(d.ev.map(e => [e.t, e.d, e.p]), s.ev.map(e => [e.t, e.d, e.p]));
+  // 소리: 도막 1은 리코더 · 여리게, 도막 2는 화면 악기 · 빠르게(초가 짧아짐)
+  const { events, total } = E.playEvents(d, { inst: 'xylo' });
+  const n1 = events.filter(e => e.tick < 96), n2 = events.filter(e => e.tick >= 96);
+  assert.ok(n1.every(e => e.inst === 'recorder' && e.vel === 0.5) && n2.every(e => e.inst === 'xylo' && e.vel === 0.75));
+  const k1 = 60 / 100 / 12, k2 = 60 / 138 / 12;
+  assert.ok(Math.abs(total - (96 * k1 + 96 * k2)) < 1e-9);
+  assert.ok(Math.abs(n2[0].t - 96 * k1) < 1e-9);
+  const tm = E.timeMap(d);
+  for (const t of [0, 50, 96, 150, 191]) assert.ok(Math.abs(tm.tick(tm.sec(t)) - t) < 1e-9);
+  // 떼어 내기 — 다른 부탁으로 넘어갈 때
+  const p = E.plain(d);
+  assert.equal(p.secTempo, undefined); assert.equal(p.secInst, undefined);
+  assert.deepEqual(E.secDyns(p), ['p', 'mf'], '셈여림은 음에 적힌 것이라 남음');
+  assert.equal(E.plain(s), s);
+});
+
+ok('반주 화음 — 마디마다 고름 · 맞고 틀림 없이 화음 음인지만 · 화음 줄 · 소리', () => {
+  const s = S(INSA);
+  assert.deepEqual(E.chordBars(s), [null, null, null, null]);
+  let c = E.setChord(s, 0, 'I');
+  c = E.setChord(c, 1, 'V');
+  c = E.setChord(c, 2, 'none');
+  assert.deepEqual(E.chordBars(c), ['I', 'V', 'none', null]);
+  assert.equal(E.setChord(c, 0, 'I'), c);
+  assert.equal(E.setChord(c, 9, 'I'), c, '없는 마디');
+  assert.equal(E.setChord(c, 0, 'ii'), c, '모르는 화음');
+  assert.deepEqual(c.ev, s.ev, '가락은 그대로');
+  // 솔미 인사: 1마디 솔 미(도미솔 안) · 2마디 솔 솔 미(솔시레 — 솔만 안) · 3마디 없음 · 4마디 안 고름
+  assert.deepEqual(E.chordFit(c).map(x => x.in), [true, true, true, true, false, null, null, null, null, null]);
+  assert.deepEqual(E.chordPcsOf('IV'), [5, 9, 0]);
+  const H = E.chordHarm(c);
+  assert.equal(H.length, 2 * 4 * 3, '박마다 세 음');
+  assert.deepEqual(H.filter(x => x.down).map(x => [x.t, x.d, x.p]), [[0, 12, 60], [0, 12, 64], [0, 12, 67], [48, 12, 67], [48, 12, 71], [48, 12, 74]]);
+  assert.deepEqual([...new Set(H.map(x => x.t))], [0, 12, 24, 36, 48, 60, 72, 84]);
+  assert.deepEqual(E.chordHarm(E.setChord(S('C4h. | E4h.', [3, 4]), 1, 'IV')).map(x => x.t).filter((t, i, a) => a.indexOf(t) === i), [36, 48, 60], '3/4는 세 박');
+  const ev = E.playEvents(c, { inst: 'piano' }).events, ch = ev.filter(e => e.chord);
+  assert.equal(ch.length, 2 * 4 * 3, '두 마디 × 네 박 × 세 음');
+  assert.ok(ch.every(e => e.inst === 'keys' && e.tick < 96));
+  assert.deepEqual(ch.filter(e => e.tick === 48).map(e => e.p), [67, 71, 74]);
+  assert.ok(ch.filter(e => e.tick === 0)[0].vel > ch.filter(e => e.tick === 12)[0].vel, '마디 첫 박을 조금 세게');
+  assert.equal(ev.filter(e => !e.chord).length, sounding(s).length);
+  // 북: 박마다 · 센박 큰북
+  const dr = E.playEvents(s, { drums: true, from: 0, to: 96 }).events.filter(e => e.kind === 'drum');
+  assert.deepEqual(dr.map(e => e.drum), ['kick', 'hat', 'hat', 'hat', 'kick', 'hat', 'hat', 'hat']);
+  // 떼어 내기 · 왕복(화음은 글 한 줄 밖이라 makeSong이 들고 다님)
+  assert.equal(E.plain(c).chordBars, undefined);
+  assert.deepEqual(E.chordBars(makeSong({ ...c })), E.chordBars(c));
+});
+
+ok('소리 사건 — 꾸밈 · 화음이 없으면 예전 toEvents와 같은 수(앱 곡 모두)', () => {
+  for (const def of SONGS) {
+    const s = makeSong(def);
+    for (const [f, t] of [[0, s.total], [12, Math.min(s.total, 60)]]) {
+      const a = E.playEvents(s, { inst: 'xylo', from: f, to: t }), b = toEvents(s, { inst: 'xylo', startTick: f });
+      const bb = b.events.filter(e => e.tick < t).map(e => ({ ...e, d: Math.min(e.d, (t - e.tick) * b.sec) }));
+      assert.deepEqual(a.events, bb, def.id);
+      assert.equal(a.total, (t - f) * b.sec);
+    }
   }
 });
 
