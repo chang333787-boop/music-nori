@@ -295,6 +295,9 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .tvrow .mlane.two b{font-size:22px;line-height:1.2}   /* 거북 줄 = 갈래 둘(악보 · 형식·화음) */
 .tvcell.gap{margin-left:14px}
 .tvcells.dense .tvcell{flex:1 1 0;padding-left:12px;padding-right:12px}   /* 칸이 일곱인 줄 — 너비를 똑같이 나눠 성취기준 글이 칸 밖으로 안 나가게(11-14) */
+.tvcells.crowd{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:4px}   /* 여덟 칸 넘는 줄 — 칸 너비를 그대로 두고 옆으로 밀어 봄(높이가 늘지 않게 · 11-14) */
+.tvcells.crowd .tvcell{flex:0 0 auto}
+.tvcells.crowd .tvcell .tvstd{max-width:none;white-space:nowrap}   /* 성취기준을 한 줄로 — 줄 높이가 늘지 않게 */
 .tvcell .tvstd{max-width:214px;font-family:var(--body);font-size:18px;font-weight:700;line-height:1.25;color:var(--ink-2);text-align:left;white-space:normal}
 .sc{white-space:nowrap}
 .tvhead p.tvstd-note{font-size:18px;font-weight:700}
