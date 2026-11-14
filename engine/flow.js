@@ -307,7 +307,7 @@ export const ELEMENTS = [
         ['book', 'strong'], ['cell:hwa2', 'lab:chord:I', 'lab:chord:IV', 'lab:chord:V'], '3화음 으뜸화음 딸림화음 버금딸림화음'),
       S('h3', '바장조 · 사장조 주요 3화음', '6학년(교과서)', [6, 6],
         '교과서 8종이 6학년에 둔다.',
-        ['book'], ['cell:hwa3'], '3화음'),
+        ['book'], ['cell:hwa3', 'lab:chord:I', 'lab:chord:IV', 'lab:chord:V'], '3화음'),
     ],
     [
       X('가락이 얹히면 화음이 바뀐 것을 못 듣는다(5세 자료).', 'Costa-Giomi(1994)', 'mid'),

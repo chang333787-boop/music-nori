@@ -7,7 +7,7 @@ import { h, svg, onPress, josa } from '../util.js';
 import { Player } from '../audio.js';
 import { friendImg, setPose, preload } from '../band.js';
 import { renderScore, staffPos } from '../notation.js';
-import { GROUPS, groupById, signById, signsOf, PHRASES, phraseById, emptyMarks, countMarks, places, has, hasMeter, toggle, perform, scoreOf, factOf, orderOf } from '../../../engine/marks.js';
+import { GROUPS, SIGNS, groupById, signById, signsOf, PHRASES, phraseById, emptyMarks, countMarks, places, has, hasMeter, toggle, perform, scoreOf, factOf, orderOf } from '../../../engine/marks.js';
 import { solfege } from '../../../engine/theory.js';
 
 const INTRO = {
@@ -25,7 +25,7 @@ const PICK = {
   inst: '악기를 골라요 — 같은 가락을 다른 악기 소리로 들어요 · 북 반주도 넣어 봐요',
   meter: '박자표를 골라요 — 마디줄 자리와 센박이 달라져요',
   key: '[조 옮기기]를 누르거나, 올림표 · 내림표를 골라 음을 눌러요',
-  chord: '[둘째 줄]을 누르거나, 화음을 골라 마디를 눌러요',
+  chord: '[둘째 줄] · [조 옮기기]를 누르거나, 화음을 골라 마디를 눌러요',
 };
 const ORDER_KINDS = new Set(['repeat', 'volta', 'dc', 'fine']);     // 연주 차례를 바꾸는 기호 — 저절로 들려주지 않고 [듣기]로 처음부터
 const VW = 760, VH = 180;                      // 악보 그림의 크기(그림 단위) — 화면에서는 틀에 맞춰 커진다
@@ -132,7 +132,7 @@ export default function lab(root, ctx) {
   }
 
   function buildTray() {
-    const list = signsOf(group);
+    const list = [...signsOf(group), ...SIGNS.filter(s => s.group !== group && (s.also || []).includes(group))].sort((a, b) => (a.where === 'start' ? 0 : 1) - (b.where === 'start' ? 0 : 1));   // 다른 묶음 기호를 함께 둘 때(화음 묶음의 조 옮기기) · 곡 전체 기호가 앞
     let seenStart = false, gapDone = false;
     tray.replaceChildren(...list.map(s => {
       const b = press(h('button', { type: 'button', class: 'sl-chip', 'data-sign': s.id, 'aria-pressed': 'false' }, ...chipKids(s, phrase)), () => tapChip(s.id));
@@ -155,7 +155,6 @@ export default function lab(root, ctx) {
       const s = signById(sign);
       if (!places(phrase, marks, sign).length) {
         if (s.kind === 'volta') return '도돌이표를 가운데 마디로 옮기면 1 · 2번 괄호를 넣을 수 있어요';
-        if (s.kind === 'chord' && marks.keyup) return '조를 옮긴 가락이에요 · [조] 묶음에서 [조 옮기기]를 빼면 화음을 넣을 수 있어요';
         return '지금은 넣을 자리가 없어요 · [다른 가락]을 눌러 보세요';
       }
       if (s.kind === 'volta') return marks.repeat ? '도돌이표가 있는 마디를 눌러 1 · 2번 괄호를 넣고 빼요 — 그 마디가 1번, 다음 마디가 2번' : '악보에서 1번 괄호를 넣을 마디를 눌러요 · 그 마디 끝에 도돌이표도 함께 들어가요';

@@ -1,6 +1,6 @@
 // 악보 판 규칙 시험 — 기호를 넣었다 빼면 소리(사건)와 악보가 말한 대로 달라지는가
 import assert from 'node:assert/strict';
-import { GROUPS, SIGNS, PHRASES, LV, LV0, phraseById, signById, signsOf, emptyMarks, countMarks, fitsMeter, meterNow, build, places, has, hasMeter, toggle, perform, scoreOf, factOf, orderOf, keyShift, CHORD } from '../engine/marks.js';
+import { GROUPS, SIGNS, PHRASES, LV, LV0, phraseById, signById, signsOf, emptyMarks, countMarks, fitsMeter, meterNow, build, places, has, hasMeter, toggle, perform, scoreOf, factOf, orderOf, keyShift, CHORD, CHORD_G } from '../engine/marks.js';
 import { songById } from '../engine/songs/index.js';
 import { makeSong, sounding } from '../engine/song.js';
 import { chordPcs, pc } from '../engine/theory.js';
@@ -327,6 +327,7 @@ ok('D2 — 묶음 · 기호 · 도막', () => {
   for (const ph of PHRASES) assert.ok(ph.N.every(n => [0, 2, 4, 5, 7, 9, 11].includes(pc(n.p))), ph.id + ' 다장조 음만');
   // 화음은 다장조 주요 3화음 그대로(화2 칸과 같은 자리)
   for (const id of ['I', 'IV', 'V']) assert.deepEqual(CHORD[id].map(pc), chordPcs(id, 0));
+  for (const id of ['I', 'IV', 'V']) assert.deepEqual(CHORD_G[id].map(pc).sort((a, b) => a - b), chordPcs(id, 7).sort((a, b) => a - b), '사장조 ' + id);
 });
 
 ok('D2 — 기호마다 넣으면 소리가 달라지고 · 한 번 더 누르면 원래 소리와 같음', () => {
@@ -408,22 +409,45 @@ ok('올림표 · 내림표 — 그 음 + 같은 마디 뒤의 같은 자리 음 
   assert.ok(factOf('sharp', true).includes('같은 마디') && factOf('flat', true).includes('다음 마디'));
 });
 
-ok('조 옮기기 + 임시표 · 화음 — 사장조에서 쓰지 않는 것은 쉬었다가 돌아옴', () => {
+ok('조 옮기기 + 임시표 · 화음 — 임시표는 사장조에서 쓰지 않는 자리만 쉬고, 화음은 사장조 Ⅰ · Ⅳ · Ⅴ로 따라감', () => {
   const m0 = put(ode, E(), 'up');
   assert.deepEqual(places(ode, m0, 'sharp'), [2, 3, 4, 5, 7, 8, 9, 10, 13, 14], '시(미에서 옮긴 음) X');
   assert.deepEqual(places(ode, m0, 'flat'), [0, 1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14], '도(파에서 옮긴 음) X');
   // 작은 별 라(넷째 · 다섯째 음)에 올림표 → 사장조에서는 미가 되어 올림표를 쓰지 않음
-  let m = put(tw, put(tw, E(), 'sharp', 4), 'I', 0);
+  let m = put(tw, put(tw, put(tw, put(tw, E(), 'sharp', 4), 'I', 0), 'IV', 2), 'V', 6);
   const r = toggle(tw, m, 'up');
-  assert.ok(r.on && /다장조 화음/.test(r.note) && /임시표/.test(r.note), r.note);
+  assert.ok(r.on && /임시표/.test(r.note) && !/화음/.test(r.note), r.note);
   const b = build(tw, r.marks);
   assert.equal(b.notes[4].mark, null); assert.equal(b.notes[4].p, 69 + 7);
-  assert.deepEqual(part(perform(tw, r.marks), 'chord'), [], '조를 옮기는 동안 다장조 화음은 쉼');
-  assert.deepEqual(places(tw, r.marks, 'I'), [], '사장조 화음은 넣지 않음');
+  // 사장조 주요 3화음 — 솔시레 · 도미솔 · 레파#라(화3 칸과 같은 자리) · 이름(Ⅰ · Ⅳ · Ⅴ)과 계이름(도미솔 …)은 그대로
+  const ch = part(perform(tw, r.marks), 'chord');
+  assert.deepEqual(ch.map(e => e.p), [67, 71, 74, 60, 64, 67, 62, 66, 69]);
+  assert.deepEqual(part(perform(tw, m), 'chord').map(e => e.p), [60, 64, 67, 65, 69, 72, 67, 71, 74], '다장조일 때');
+  assert.deepEqual(ch.map(e => e.t), part(perform(tw, m), 'chord').map(e => e.t), '때는 같음');
+  assert.deepEqual(places(tw, r.marks, 'I'), [0, 1, 2, 3, 4, 5, 6, 7], '사장조에서도 마디마다 넣을 수 있음');
+  const sc = scoreOf(tw, r.marks);
+  assert.deepEqual(sc.model.chords.map(c => c.sym + c.ko), ['Ⅰ도미솔', 'Ⅳ파라도', 'Ⅴ솔시레'], '화음 이름 · 계이름 그대로');
+  const low = sc.score.staves[1].voices[0].events;
+  assert.deepEqual(low[2].ps, [62, 66, 69]); assert.deepEqual(low[2].sp.map(x => x.pos), [-1, 1, 3], '레 · 파 · 라 자리');
+  assert.ok(low.every(e => e.sp.every(x => x.acc === '')), '파#은 조표가 맡아 따로 ♯을 붙이지 않음');
+  assert.deepEqual(sc.score.ksig, [8]);
+  // 사장조에서 넣어도 됨 · 사실 줄은 사장조 화음
+  const g = put(tw, put(tw, E(), 'up'), 'V', 6);
+  assert.deepEqual(part(perform(tw, g), 'chord').map(e => e.p), [62, 66, 69]);
+  assert.ok(factOf('V', true, { marks: g }).includes('사장조') && factOf('V', true, { marks: g }).includes('올림바'));
+  assert.ok(!factOf('V', true, { marks: put(tw, E(), 'V', 6) }).includes('사장조'));
+  // 둘째 줄도 사장조 음계 안 3도
+  const s2 = part(perform(tw, put(tw, put(tw, E(), 'up'), 'second')), 'second').map(e => e.p);
+  assert.deepEqual(s2, [57, 57, 64, 64, 65, 65, 64, 62, 62, 60, 60, 59, 59, 57].map(p => p + 7).map(p => (pc(p) === 5 ? p + 1 : p)), '다장조 둘째 줄을 5도 위로 · 파는 파#');
   assert.ok(factOf('up', true, { note: r.note }).includes('돌아와요'));
+  assert.ok(factOf('up', true).includes('계이름은 그대로') && factOf('up', true).includes('사장조만'));
+  // 조 옮기기를 빼면 다장조 화음 · 임시표가 그대로 돌아옴
   const back = toggle(tw, r.marks, 'up');
   assert.deepEqual(back.marks, m);
-  assert.deepEqual(perform(tw, back.marks), perform(tw, m), '조 옮기기를 빼면 임시표 · 화음이 돌아옴');
+  assert.deepEqual(perform(tw, back.marks), perform(tw, m), '조 옮기기를 빼면 다장조 화음 · 임시표가 돌아옴');
+  assert.deepEqual(scoreOf(tw, back.marks).score, scoreOf(tw, m).score);
+  // 사장조에서 화음을 빼면 화음 없는 사장조로
+  assert.deepEqual(perform(tw, put(tw, g, 'V', 6)), perform(tw, put(tw, E(), 'up')));
 });
 
 ok('둘째 줄 — 3도 아래 · 같은 리듬 · 아래 오선', () => {

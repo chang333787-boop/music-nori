@@ -29,7 +29,9 @@ const ACCENT = 1.6, DOWN = 1.3, WEAK = 0.85;       // 악센트 · 센박 · 여
 const RIT = 0.5, ACCEL = 1.7;                      // 끝에서의 빠르기 비율
 const STACC = 0.4, GAP = 0.92;
 const SECOND = 0.75, CHORD_V = 0.42;               // 둘째 줄 · 화음 한 음의 크기(가락에 견줘) — 가락이 앞에 들리게
-export const CHORD = { I: [60, 64, 67], IV: [65, 69, 72], V: [67, 71, 74] };   // 도미솔 · 파라도 · 솔시레(화2 칸과 같은 자리)
+export const CHORD = { I: [60, 64, 67], IV: [65, 69, 72], V: [67, 71, 74] };   // 다장조 도미솔 · 파라도 · 솔시레(화2 칸과 같은 자리)
+export const CHORD_G = { I: [67, 71, 74], IV: [60, 64, 67], V: [62, 66, 69] };  // 사장조 — 음이름 사나라 · 다마사 · 라올림바가(화3 칸과 같은 자리)
+export const chordsIn = key => (key === 7 ? CHORD_G : CHORD);
 
 const L = (id, name) => ({ id, group: 'dyn', name, sym: id, where: 'note', kind: 'letter' });
 const T = (id, name, bpm) => ({ id, group: 'tempo', name, sym: name, where: 'start', kind: 'tempo', ...(bpm ? { bpm } : { base: true }) });
@@ -62,7 +64,7 @@ export const SIGNS = [
 
   M('m24', '4분의 2박자', [2, 4]), M('m34', '4분의 3박자', [3, 4]), M('m44', '4분의 4박자', [4, 4]),
 
-  { id: 'up', group: 'key', name: '조 옮기기', sym: '♯', where: 'start', kind: 'keyup' },
+  { id: 'up', group: 'key', name: '조 옮기기', sym: '♯', where: 'start', kind: 'keyup', also: ['chord'] },   // 화음 묶음 단추 줄에도(사장조 화음을 듣게)
   { id: 'sharp', group: 'key', name: '올림표', sym: '♯', where: 'note', kind: 'acc' },
   { id: 'flat', group: 'key', name: '내림표', sym: '♭', where: 'note', kind: 'acc' },
 
@@ -136,6 +138,8 @@ export function keyShift(ph) {
   const cost = sh => ph.N.reduce((c, n) => c + Math.max(0, 62 - (n.p + sh)) + Math.max(0, n.p + sh - 79), 0);
   return cost(-5) < cost(7) ? -5 : 7;
 }
+// 그 조의 음계 음 → 음이름 자리(사장조의 파# = 파 자리 · 조표가 맡으니 따로 기호를 붙이지 않음)
+const stepIn = (p, key) => { const L = LET.findIndex((v, i) => (v + KALT[key][i]) % 12 === pc(p)); return Math.floor((p - KALT[key][L]) / 12) * 7 + L; };
 const accOk = (a, L, kalt) => kalt[L] === 0 && (a === 'sharp' ? L !== 2 && L !== 6 : L !== 0 && L !== 3);
 // notes(새로 만든 것)에 조 · 임시표를 입힌다 — 소리 높이(p) · 음이름 자리(step) · 붙은 기호(mark) · 둘째 줄 높이(p2)
 function spell(marks, notes, shift) {
@@ -193,7 +197,7 @@ export function build(ph, marks) {
   for (const [b, kind] of Object.entries(marks.hair)) if (+b < bars && notes.some(n => n.bar === +b && !n.rest)) hair[b] = kind;
   const r = repeat ? repeat.to : -1, volta = !!marks.volta && r >= 1 && r <= bars - 2;
   const chord = {};
-  if (!shift) for (const [b, id] of Object.entries(marks.chord || {})) if (+b < bars) chord[b] = id;      // 조를 옮기는 동안 다장조 화음은 쉰다
+  for (const [b, id] of Object.entries(marks.chord || {})) if (+b < bars) chord[b] = id;      // 조를 옮기면 화음도 그 조의 Ⅰ · Ⅳ · Ⅴ로 따라간다
   const dc = marks.dc != null && marks.dc === bars - 1;
   const fine = marks.fine != null && marks.fine < bars - 1 && !(volta && marks.fine === r) ? marks.fine : null;
   return { meter, cap, bars, notes, tieOk, ties, tieSet: new Set(ties), bpm, tempoWord: (tw || signById('mid')).name, inst: marks.inst || 'piano', tchange, repeat, hair,
@@ -213,7 +217,7 @@ export function places(ph, marks, signId) {
   if (s.where === 'note') return act.map(n => n.k);
   const all = Array.from({ length: m.bars }, (_, b) => b);
   if (s.kind === 'hair') return all.filter(b => act.some(n => n.bar === b));
-  if (s.kind === 'chord') return m.shift ? [] : all;
+  if (s.kind === 'chord') return all;
   if (s.kind === 'volta') return marks.repeat ? (m.repeat && m.repeat.to >= 1 && m.repeat.to <= m.bars - 2 ? [m.repeat.to] : []) : all.filter(b => b >= 1 && b <= m.bars - 2);
   if (s.kind === 'dc') return [m.bars - 1];
   if (s.kind === 'fine') return all.filter(b => b < m.bars - 1 && !(m.volta && b === m.repeat.to));
@@ -281,7 +285,6 @@ export function toggle(ph, marks, signId, at = null) {
     const v = !marks[s.kind], m2 = { ...marks, [s.kind]: v };
     if (s.kind !== 'keyup' || !v) return { marks: m2, on: v };
     const rest = [];
-    if (Object.keys(marks.chord || {}).length) rest.push('다장조 화음');
     const b = build(ph, m2);
     if (Object.keys(marks.acc || {}).some(k => b.notes[k] && !b.notes[k].mark && !b.notes[k].rest)) rest.push('사장조에서 쓰지 않는 자리의 임시표');
     return { marks: m2, on: v, ...(rest.length ? { note: `조를 옮기는 동안 ${josa(rest.join(' · '), '은/는')} 쉬어요. 조 옮기기를 빼면 돌아와요.` } : {}) };
@@ -376,7 +379,7 @@ export function perform(ph, marks, { beat = false } = {}) {
       const id = m.chord[x / cap];
       if (!id) continue;
       const t0 = at(x), d = (at(x + cap) - t0) * GAP, vel = clamp(lvAt(x) * CHORD_V, 0.06, 0.6);
-      for (const p of CHORD[id]) events.push({ t: t0, kind: 'note', inst: m.inst, p, d, vel, k: null, ks: [], tick: x, pass, seg, len: d, part: 'chord', chord: id });
+      for (const p of chordsIn(m.key)[id]) events.push({ t: t0, kind: 'note', inst: m.inst, p, d, vel, k: null, ks: [], tick: x, pass, seg, len: d, part: 'chord', chord: id });
     }
     if (m.drum) {                                   // 북 반주 — 센박(4분의 4박자는 셋째 박도) 큰북 · 여린박 작은북
       const bt = beatTicks(m.meter), acc = accents(m.meter);
@@ -419,7 +422,7 @@ export function scoreOf(ph, marks) {
   if (m.key) score.ksig = [8];                      // 사장조 조표 — 오선 맨 윗줄(파) ♯
   const low = [];                                   // 아래 오선 — 둘째 줄(3도 아래 · 같은 리듬)과 화음(마디마다 하나). 같은 마디에 둘이 겹치지 않는다
   if (m.second) for (const n of m.notes) if (!n.rest && n.p2 != null && !m.chord[n.bar]) low.push({ s: n.t / STEP, d: n.d / STEP, ps: [n.p2], i: n.k, sp: [{ pos: n.step - 2 - 37, acc: '' }] });
-  for (const [b, id] of Object.entries(m.chord)) low.push({ s: b * m.cap / STEP, d: m.cap / STEP, ps: CHORD[id], i: 'c' + b });
+  for (const [b, id] of Object.entries(m.chord)) { const ps = chordsIn(m.key)[id]; low.push({ s: b * m.cap / STEP, d: m.cap / STEP, ps, i: 'c' + b, sp: ps.map(p => ({ pos: stepIn(p, m.key) - 37, acc: '' })) }); }
   if (low.length) score.staves.push({ id: 'h', clef: 'treble', words: false, minAbove: m.second ? 42 : 24, voices: [{ events: low }] });
   if (m.drum) {                                     // 북 반주 줄(한 줄 오선) — 큰북은 줄 아래 '쿵' · 작은북은 줄 위 '짝'
     const bt = beatTicks(m.meter), w = accents(m.meter), drum = [];
@@ -481,13 +484,16 @@ const FACT = {
 };
 // 묶음 D2(조 · 화음 · 되풀이 더 · 북 반주)의 말
 const FACT2 = {
-  up: '조 옮기기 — 다장조 가락을 사장조로 옮겼어요. 모든 음이 같은 만큼 옮겨져 가락 모양은 그대로예요. 맨 앞의 ♯ 하나가 사장조 조표예요(파 자리를 늘 반음 올려요). 계이름은 솔 자리가 도가 되어 그대로 불러요.',
+  up: '조 옮기기 — 다장조 가락을 사장조로 옮겼어요(이 판은 사장조만). 조를 옮기면 계이름은 그대로, 음 높이만 달라져요(솔 자리가 도). 맨 앞의 ♯ 하나가 조표 — 파 자리를 늘 반음 올려요.',
   sharp: '올림표(♯) — 이 음을 반음 올려요. 같은 마디에서 뒤에 오는 같은 자리 음도 함께 올라가고, 다음 마디에서는 제자리로 돌아와요.',
   flat: '내림표(♭) — 이 음을 반음 내려요. 같은 마디에서 뒤에 오는 같은 자리 음도 함께 내려가고, 다음 마디에서는 제자리로 돌아와요.',
   second: '둘째 줄 — 가락의 음마다 3도 아래 음(미 아래 도, 솔 아래 미)이 같은 리듬으로 함께 나요. 두 소리가 겹쳐 어울려요.',
   I: '으뜸화음(I) — 이 마디 동안 도 · 미 · 솔이 함께 길게 울려요.',
   IV: '버금딸림화음(IV) — 이 마디 동안 파 · 라 · 도가 함께 길게 울려요.',
   V: '딸림화음(V) — 이 마디 동안 솔 · 시 · 레가 함께 길게 울려요.',
+  gI: '사장조 으뜸화음(I) — 계이름 도 · 미 · 솔(음이름 사 · 나 · 라)이 이 마디 동안 함께 울려요.',
+  gIV: '사장조 버금딸림화음(IV) — 계이름 파 · 라 · 도(음이름 다 · 마 · 사)가 이 마디 동안 함께 울려요.',
+  gV: '사장조 딸림화음(V) — 계이름 솔 · 시 · 레(음이름 라 · 올림바 · 가)가 이 마디 동안 함께 울려요.',
   volta: '1 · 2번 괄호 — 처음에는 1번 마디까지 가서 도돌이표로 돌아가요. 두 번째에는 1번 마디를 건너뛰고 2번 마디로 가요.',
   drum: '북 반주 — 센박에는 큰북(쿵), 여린박에는 작은북(짝)이 가락과 함께 울려요. (컴퓨터로 만든 소리예요)',
 };
@@ -512,6 +518,7 @@ export function factOf(signId, on = true, extra = {}) {
   if (s.kind === 'keyup') return on ? FACT2.up + (extra.note ? ' ' + extra.note : '') : '조 옮기기를 뺐어요 — 다장조로 돌아왔어요. 맨 앞의 조표도 빠졌어요.';
   if (s.kind === 'drum') return on ? FACT2.drum : '북 반주를 뺐어요 — 가락만 들려요.';
   if (on && (s.kind === 'dc' || s.kind === 'fine')) return dcFineFact(s.id, extra.marks);
+  if (on && s.kind === 'chord' && extra.marks && extra.marks.keyup) return FACT2['g' + s.id];     // 조를 옮겼으면 사장조 화음으로
   if (!on) return `${josa(s.name, '을/를')} 뺐어요. [듣기]로 달라진 소리를 들어 보세요.`;
   return FACT[s.id] || FACT2[s.id] || s.name;
 }
