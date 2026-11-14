@@ -57,8 +57,8 @@ function build(row) {
 
 // 판의 카드 셋 — 답과 상관없이 그 판의 기호 짝(pair)과 x로만 정함
 const CHIP = (a, b) => `<svg viewBox="0 0 156 64" aria-hidden="true"><g font-family="Georgia,'Times New Roman',serif" font-style="italic" font-weight="700" font-size="36" fill="#3B2A1E">` +
-  `<text x="4" y="44">${a}</text><text x="152" y="44" text-anchor="end">${b}</text></g>` +
-  `<path d="M64 33H88M80 25L89 33L80 41" fill="none" stroke="#2F6F4E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  `<text x="60" y="44" text-anchor="end">${a}</text><text x="98" y="44">${b}</text></g>` +
+  `<path d="M66 33H90M82 25L91 33L82 41" fill="none" stroke="#2F6F4E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const card = (key, a, b) => ({ key, label: `${nameOf(a)}\n→ ${nameOf(b)}`, chip: CHIP(a, b), tv: `${a} → ${b}` });
 export const cards = row => { const [a, b] = row.pair; return [card('up', a, b), card('down', b, a), card('same', row.x, row.x)]; };
 
