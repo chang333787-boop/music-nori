@@ -68,6 +68,7 @@ assert.ok(lad.every(r => r.els.length), '빈 층');
 // 9. 만든 칸의 추천 차례(ORDER)는 난이도를 거스르지 않는다
 const lvs = ORDER.map(cellLevel);
 FIRST.forEach(id => assert.ok(cellLevel(id) != null, `${id}가 어느 흐름에도 없음`));
+assert.equal(cellLevel('hy2'), 3, '형2 메기고 받기 = 흐름 f2(난이도 3)');
 for (let i = 1; i < lvs.length; i++) assert.ok(lvs[i] >= lvs[i - 1], `칸 차례 ${ORDER[i - 1]}(${lvs[i - 1]}) → ${ORDER[i]}(${lvs[i]})`);
 
 const dist = [1, 2, 3, 4, 5].map(lv => ids.filter(i => loadOf(i).lv === lv).length);
