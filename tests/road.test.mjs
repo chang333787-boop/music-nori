@@ -27,8 +27,10 @@ for (const [k, t] of Object.entries(ROAD_CARDS)) {
   assert.ok(!/[𝄋𝄌⊕𝄆𝄇]/u.test(s), k + ' 기호 글자를 쓰지 않음(path)');
   const circles = (s.match(/<circle[^>]*fill="#2F6F4E"/g) || []).length;
   assert.equal(circles, parseRoad(t).reduce((a, b) => a + ROAD_MOT[b.n].length, 0), k + ' 상자마다 높낮이 점');
-  const w = Number(s.match(/viewBox="[-\d.]+ 0 ([\d.]+) 100"/)[1]);
-  assert.ok(w <= 350, `${k} 그림 너비 ${w}`);
+  const [, w, h] = s.match(/viewBox="[-\d.]+ 0 ([\d.]+) ([\d.]+)"/).map(Number);
+  assert.ok(w <= 380 && h === 108 && s.includes('height="108"'), `${k} 그림 ${w} × ${h}(뷰박스 1 = 화면 1px)`);
+  // 그림 안 글자는 모두 20(화면 18px 이상 — 카드 그림 높이 108px = 뷰박스 높이)
+  for (const m of s.matchAll(/<text[^>]*font-size="([\d.]+)"/g)) assert.ok(Number(m[1]) >= 20, `${k} 글자 크기 ${m[1]}`);
   if (/DC/.test(t)) assert.ok(s.includes('>처음으로<'), k + ' 처음으로');
   if (/Fine/.test(t)) assert.ok(s.includes('>끝<'), k + ' 끝');
   if (/ S /.test(` ${t} `)) assert.ok(s.includes('>로<') && /D\.S\./.test(s), k + ' 𝄋로');
