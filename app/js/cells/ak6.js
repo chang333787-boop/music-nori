@@ -78,6 +78,7 @@ function staffChip(row, key) {
   const score = { beats: 4, sub: 2, bars: 1, ts: [4, 4], staves: [{ id: 'm', clef: 'treble', voices: [{ stem: 'up', events }] }], ...(key === 'ferm' ? { fermata: { s: fs } } : {}) };
   const R = renderScore(score, { width: 240, barsPerLine: 1, barNumbers: false, names: false, minStep: 18 });
   const el = R.el, top = R.sys && R.sys[0] ? R.sys[0].top : 0;
+  for (const t of el.querySelectorAll('.st-ts')) t.remove();   // 박자표 글자는 카드에서 뺌(단추 카드 72px에서 18px 아래로 작아짐 · 이 칸은 박자를 묻지 않음)
   el.setAttribute('viewBox', `0 ${top - 46} ${R.width} 104`);
   el.removeAttribute('width'); el.removeAttribute('height');
   el.setAttribute('class', (el.getAttribute('class') || '') + ' ak6-staff');
