@@ -78,3 +78,17 @@ engine/depth.js PLAY_KIND에 `rmake jang form dress chord = 'EM'` · flow.js PLA
 - 묶음 B(아홉 칸 — bak1 sem4 ppa2 eum2 eum3 hy3 ga8 hwa2 hwa3) 설계서 = `docs/plan100_batchB.md`. 장부 · 흐름 · 차례(`ORDER_ALL`)에는 `first` 없이 미리 등록함. Opus 세 팀이 worktree `music-nori-wt-b1`(bak1 sem4 ppa2) · `music-nori-wt-b2`(eum2 eum3 hy3) · `music-nori-wt-b3`(ga8 hwa2 hwa3)에서 만드는 중
 - 소리 고치기는 worktree `music-nori-wt-ear` 가지 `ear-fix`
 - 그다음 차례: 틀 넓히기(판마다 카드 · 북 소리 · 음마다 art · 리듬 글리프) → 리듬 칸(ri8~ri15 · ri11) · 악보 칸(ak3~ak7) · 되풀이(ban1 · ban2) · eum1 · 장단(jd2 · hy5 — 국악 사실은 확인된 문장만) → 악보 판 기호 · 놀이터 카드(play:jang · form · rmake · dress · chord) → TV 고르기 · 지도(칸 56개쯤 · 요소마다 한 줄)
+
+## 7. 이어받는 법(11-14 밤)
+- **합치기 반장** = 본 저장소(main 체크아웃)를 고치고 commit · push하는 세션은 하나뿐. 다른 팀은 각자 worktree `/Users/dobuk/Projects/music-nori-wt-<이름>`에서 가지에 commit만 한다.
+- 돌던 팀 · 가지(합치는 차례): `cell-ga5`(ga5 · 가5 5음 · 가락 틀 `_mel.js`) → `batch-b1`(b1 · bak1 sem4 ppa2) → `batch-b2`(b2 · eum2 eum3 hy3) → `batch-b3`(b3 · ga8 hwa2 hwa3) → `ear-fix`(ear · 소리 재기 + 고치기) → `frame-f4`(f4 · 고르기 틀 넓히기 + sem3 ppa4) → 묶음 C(`batch-c1` …). 합친 가지: `cell-sem2`(셈2) · `cell-hy2`(형2).
+- 가지가 '준비됨' = 그 가지에 일한 commit이 있고 그 worktree의 `git status --short`가 비어 있음. 합치기 = `git merge <가지>` → 충돌은 두 쪽 칸을 다 살림(장부 줄 · `ORDER_ALL`은 난이도가 내려가지 않게 · 흐름 acts 합집합 · TV 대본 · docs/cells.md) → `node tools/flowdoc.mjs && node tools/ver.mjs && npm test` → 브라우저 시험 → commit → push → `version.json` 배포 확인.
+- **묶음 C**(15칸 · 다섯 팀 · 설계서 = `docs/plan100_batchC.md` · 설계와 만들기 모두 Opus · Fable 검토 없음): worktree `music-nori-wt-c1..c5` · 가지 `batch-c1..c5`(c1 ri8 ri9 ri13 · c2 ri10 ri14 eum1 · c3 ak3 ak4 ak5 ga7 · c4 ban1 ban2 ak6 · c5 jd2 hy5). 장부 · 흐름 · ORDER_ALL은 메인이 미리 등록(first 없이). 합치는 차례 … → `ear-fix` → `frame-f4`(commit이 생기면 먼저 — 고르기 칸 전부 + sound + pitch 시험) → `batch-c2` → `c3` → `c4` → `c1` → `c5`(준비되는 대로). 확인 게임이 70초 안팎인 칸 여섯(ban1 · ban2 · ri10 · ri14 · ak5 · hy5) · 설계서 §F의 확인 못 한 사실은 칸 글에 쓰지 않음 · jd2의 std는 jd1(3~4학년 번호)을 옮긴 것이라 5~6학년 번호 확인 필요.
+- 흐름 j3 · j4(굿거리 · 중중모리) 학년 글은 국악 사실 장부(11-14)에 맞춰 고침 — 굿거리 '주로 6학년(2015 교과서 8종 분석)' · 중중모리 '미래엔 5학년 기본 꼴 · 6학년 두 꼴' · 2022 교과서는 ⚠ 확인 못 함.
+- 옛 손 목록 꼴로 시험을 고친 가지는 장부에서 나오는 꼴로 옮겨 합친다(docs/cells.md '새 칸을 더하는 법' — 고르기 칸 검사는 `tests/pick/<id>.mjs`).
+- **브라우저 시험 자물쇠**(한 번에 하나): `while ! mkdir /private/tmp/claude-501/nori-browser.lock 2>/dev/null; do sleep 7; done; <명령>; rmdir /private/tmp/claude-501/nori-browser.lock` — 떨어져도 rmdir. 본 저장소를 계속 고쳐야 하면 `git worktree add --detach <임시 자리> <commit>`에서 시험을 돌린다.
+- **사람 눈 · 귀로 확인 안 된 것**: Opus 팀이 만든 칸(셈2 · 형2 · 묶음 B · 묶음 C)은 처음 보는 눈 평가(docs/eyes.md) 전 · 악기 소리 · 세기 · 빠르기 값은 기계로만 잼(ear) · 묶음 C는 설계도 Opus가 씀 · 성취기준 표시(std)는 같은 요소의 칸 것을 옮긴 것.
+- 다음 차례: 리듬 · 악보 · 되풀이 · 장단 칸 → 악보 판 기호 · 놀이터 카드(만들기) → TV 고르기 · 지도 줄 늘리기 → 처음 보는 눈 평가.
+
+## 8. 진행 기록
+(시각 · 합친 가지 · 만든 칸 수 · `node tools/bar.mjs` 내용 범위 · 5~6학년 · 요소 고르기 · 활동 깊이 · 소리 · 확인 못 한 것)

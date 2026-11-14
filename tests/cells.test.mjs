@@ -1,7 +1,8 @@
 // 개념 칸 지도 시험 — 먼저 필요한 칸이 모두 있는지 · 고리(순환) 없음 · 만든 칸(first) · 추천 차례가 앞 칸을 지키는지
 //  칸 목록은 손으로 적지 않는다 — 장부(engine/cells.js)의 first · frame과 칸 모듈이 내보내는 것(TVS · NEAR …)에서 읽음(11-14)
 import assert from 'node:assert/strict';
-import { CELLS, LANES, FIRST, ORDER, ORDER_ALL, cellById, nextCell, missingPre, passed, cellName, easyText, EASY_WORDS, stdText, PLAY_STD, PLAY_CARD } from '../engine/cells.js';
+import { CELLS, LANES, FIRST, ORDER, ORDER_ALL, cellById, nextCell, missingPre, nudgePre, passed, cellName, easyText, EASY_WORDS, stdText, PLAY_STD, PLAY_CARD } from '../engine/cells.js';
+import { cellLevel } from '../engine/load.js';
 
 const ids = new Set(CELLS.map(c => c.id));
 assert.equal(ids.size, CELLS.length, '칸 id 겹침');
@@ -40,8 +41,20 @@ for (const c of CELLS) {
   for (const id of Object.keys(CELL_KIND)) assert.ok(FIRST.includes(id), 'CELL_KIND에 만든 칸이 아닌 ' + id);
 }
 for (const id of FIRST) assert.ok(cellById(id).game, id + ' 확인 게임 설명');
-// 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다
-for (const [i, id] of ORDER.entries()) for (const p of cellById(id).pre) if (FIRST.includes(p)) assert.ok(ORDER.indexOf(p) < i, `${id}보다 ${p}가 먼저`);
+// 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다 — 난이도(engine/load.js)가 더 높은 앞 칸만 뒤에 와도 됨(가벼운 칸부터 · tests/load.test.mjs)
+//  지금은 악2 ← 가5 하나(11-14 가5를 만들며 드러남 · 악2는 가5 없이 만든 칸) — 이런 앞 칸은 들머리 안내도 내지 않는다(nudgePre) · 늘면 칸 지도(pre)나 난이도를 다시 본다
+const LATE = [];
+for (const [i, id] of ORDER.entries()) for (const p of cellById(id).pre) if (FIRST.includes(p)) {
+  if (cellLevel(p) > cellLevel(id)) { LATE.push(`${id}←${p}`); continue; }
+  assert.ok(ORDER.indexOf(p) < i, `${id}보다 ${p}가 먼저`);
+}
+assert.deepEqual(LATE, ['ak2←ga5'], '난이도가 더 높아 추천 차례에서 뒤에 오는 앞 칸');
+// 들머리 안내('○○을 알면 더 쉬워요')는 추천 차례에서 앞에 오는 만든 칸만 — 추천대로 온 아이에게 뒤 칸을 먼저 하라고 하지 않음
+assert.deepEqual(nudgePre({}, 'ak2'), ['ak1']);
+assert.deepEqual(nudgePre({}, 'ga5'), ['ga4']);
+assert.deepEqual(nudgePre({ ga4: { stars: 1 } }, 'ga5'), []);
+assert.deepEqual(nudgePre({ so4: { stars: 1 } }, 'so5'), ['so3']);
+for (const id of ORDER) assert.deepEqual(nudgePre({}, id), cellById(id).pre.filter(q => FIRST.includes(q) && ORDER.indexOf(q) < ORDER.indexOf(id)), id + ' 들머리 안내 앞 칸');
 // 추천 다음 칸
 assert.equal(nextCell({}), 'so3');
 assert.equal(nextCell({ so3: { stars: 1 } }), 'so4');
@@ -187,13 +200,13 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   delete globalThis.localStorage;
 }
-// ── 나머지 고르기 여섯 칸(X2 · 가4 11-10) — 단계 꼬리표 문항 표 · 단계 안 섞기 · 씨앗 1000개 · 찍기 · 번갈아 · 같은 답 · 단계 꼴 봇 ──
+// ── 나머지 고르기 여덟 칸(X2 · 가4 11-10 · 가5 11-14) — 단계 꼬리표 문항 표 · 단계 안 섞기 · 씨앗 1000개 · 찍기 · 번갈아 · 같은 답 · 단계 꼴 봇 ──
 {
   const mem = new Map();
   globalThis.localStorage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)) };
   const K = await import('../app/js/cellkit.js');
   const M = {};
-  for (const id of ['so3', 'so5', 'ga2', 'ga3', 'ga4', 'ak2', 'ppa1']) M[id] = await import(`../app/js/cells/${id}.js`);
+  for (const id of ['so3', 'so5', 'ga2', 'ga3', 'ga4', 'ga5', 'ak2', 'ppa1']) M[id] = await import(`../app/js/cells/${id}.js`);
   const STAGES = ['intro', 'grow', 'twist', 'end'];
   // 판마다 고를 수 있는 답(찍기 봇이 누를 수 있는 것) — 소5는 크기 단추가 비틀기부터 · 가3은 그림 수 · 악2는 비틀기부터 넷
   const OPTS = {
@@ -202,6 +215,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     ga2: () => [69, 67, 64],
     ga3: p => p.opts.map((_, j) => j),
     ga4: p => (p.fmt === 'q' ? [0, 1, 2] : [0, 1]),
+    ga5: p => (p.fmt === 'q' ? [0, 1, 2] : [0, 1]),
     ak2: p => (p.twist ? [0, 1, 2, 3] : [0, 1]),
     ppa1: (p, k) => (k < M.ppa1.CUTS[0] ? ['slow', 'fast'] : ['slow', 'mid', 'fast']),
   };
@@ -214,6 +228,10 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     // 가4 — ? 판: 답 자리 = 미 · 레 · 도 중 ? 자리 음 / 그림 판: 들려줄 가락과 다른 그림이 차례가기 · 뛰어가기 하나씩 · 높낮이 모양 같음 · (섞은 뒤) 답 자리 = 들려줄 그림
     ga4: p => (p.fmt === 'q' ? p.right === [64, 62, 60].indexOf(p.ps[p.q])
       : M.ga4.kindOf(p.ps) === p.kind && [p.kind, M.ga4.kindOf(p.alt)].sort().join() === 'skip,step' && p.ps.length === p.alt.length
+        && p.ps.every((x, j) => !j || Math.sign(x - p.ps[j - 1]) === Math.sign(p.alt[j] - p.alt[j - 1])) && (!p.opts || (p.opts[p.right] === p.ps && p.opts.length === 2))),
+    // 가5 — 가4와 같은 꼴 · ? 판 답 자리 = 라 · 솔 · 미
+    ga5: p => (p.fmt === 'q' ? p.right === [69, 67, 64].indexOf(p.ps[p.q])
+      : M.ga5.kindOf(p.ps) === p.kind && [p.kind, M.ga5.kindOf(p.alt)].sort().join() === 'skip,step' && p.ps.length === p.alt.length
         && p.ps.every((x, j) => !j || Math.sign(x - p.ps[j - 1]) === Math.sign(p.alt[j] - p.alt[j - 1])) && (!p.opts || (p.opts[p.right] === p.ps && p.opts.length === 2))),
     ak2: p => p.right === (p.twist ? [3, 2, 0, -2].indexOf(p.pos) : p.pos % 2 === 0 ? 0 : 1),
     // 빠1 — 답 = 박 빠르기 · 헷갈림 거리는 뒤집어도 헷갈림 거리(촘촘한 음 = 늘 느린 박 · 긴 음 = 늘 빠른 박 · 센 = 느리게 · 여린 = 빠르게 · 높이 판 = 보통)
@@ -229,6 +247,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     ga2: p => `${p.ps.join(',')}:${p.q}:${p.inst}`,
     ga3: p => `${p.ps.join(',')}:${p.inst}`,
     ga4: p => (p.fmt === 'q' ? `q:${p.ps.join(',')}:${p.q}:${p.inst}` : `pic:${[p.ps.join(','), p.alt.join(',')].sort().join('|')}:${p.inst}`),
+    ga5: p => (p.fmt === 'q' ? `q:${p.ps.join(',')}:${p.q}:${p.inst}` : `pic:${[p.ps.join(','), p.alt.join(',')].sort().join('|')}:${p.inst}`),
     ak2: p => `${p.pos}:${p.twist}`,
     ppa1: p => `${p.stage}:${p.kind}:${p.inst}:${p.acc}`,
   };
@@ -256,18 +275,24 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     if (id === 'ga2') bots.push(['안 보이는 음', (k, p, o) => { const shown = p.ps.filter((_, j) => j !== p.q), miss = o.filter(v => !shown.includes(v)), from = miss.length ? miss : o; return from[Math.floor(rr() * from.length)]; }]);
     // 가4 화면 틈 봇(11-10) — ? 판: 안 보이는 음 · 사이 음(양옆 두 음 사이에 끼는 음) / 그림 판: 레가 든 그림 · 차례가기 그림 · 뛰어가기 그림 · 높낮이 모양(오르내림만 듣고 같은 모양 그림)
     //  ? 판 넷은 화면이 같은 짝 둘(도-?-미 · 미-?-도)이라 보이는 것만으로는 둘까지 · 그림 판은 두 그림 모양이 같고 들려줄 쪽 · 자리를 씨앗이 정해 반반
-    if (id === 'ga4') {
-      const QK = [64, 62, 60], any = o => o[Math.floor(rr() * o.length)];
+    //  가5(11-14)도 같은 봇 — 답 단추 음 = 라 · 솔 · 미 · 새 음 = 라 · ? 판 화면 짝 = 미-라-? · 라-?-미 + '이웃과 같은 음'(앞뒤에 보이는 음을 그대로 고름)
+    if (id === 'ga4' || id === 'ga5') {
+      const QK = id === 'ga4' ? [64, 62, 60] : [69, 67, 64], NEW = id === 'ga4' ? 62 : 69, any = o => o[Math.floor(rr() * o.length)];
       const shape = ps => ps.slice(1).map((x, j) => Math.sign(x - ps[j])).join();
       const picBy = (p, o, f) => { const hit = o.filter(j => f(p.opts[j])); return any(hit.length && hit.length < o.length ? hit : o); };
       bots.push(
         ['안 보이는 음', (k, p, o) => { if (p.fmt !== 'q') return any(o); const shown = p.ps.filter((_, j) => j !== p.q), miss = o.filter(v => !shown.includes(QK[v])); return any(miss.length ? miss : o); }],
         ['사이 음', (k, p, o) => { if (p.fmt !== 'q') return any(o); const a = p.ps[p.q - 1], b = p.ps[p.q + 1], mid = o.filter(v => a != null && b != null && (QK[v] - a) * (QK[v] - b) < 0); return any(mid.length ? mid : o); }],
-        ['레가 든 그림', (k, p, o) => (p.fmt === 'q' ? 1 : picBy(p, o, ps => ps.includes(62)))],
-        ['차례가기 그림', (k, p, o) => (p.fmt === 'q' ? 1 : picBy(p, o, ps => M.ga4.kindOf(ps) === 'step'))],
-        ['뛰어가기 그림', (k, p, o) => (p.fmt === 'q' ? any(o) : picBy(p, o, ps => M.ga4.kindOf(ps) === 'skip'))],
+        [id === 'ga4' ? '레가 든 그림' : '라가 든 그림', (k, p, o) => (p.fmt === 'q' ? 1 : picBy(p, o, ps => ps.includes(NEW)))],
+        ['차례가기 그림', (k, p, o) => (p.fmt === 'q' ? 1 : picBy(p, o, ps => M[id].kindOf(ps) === 'step'))],
+        ['뛰어가기 그림', (k, p, o) => (p.fmt === 'q' ? any(o) : picBy(p, o, ps => M[id].kindOf(ps) === 'skip'))],
         ['높낮이 모양', (k, p, o) => (p.fmt === 'q' ? 1 : picBy(p, o, ps => shape(ps) === shape(p.ps)))],
       );
+      if (id === 'ga5') {
+        const same = (p, o, nb) => { const hit = o.filter(v => QK[v] === nb); return any(hit.length ? hit : o); };
+        bots.push(['뒤 음과 같은 음', (k, p, o) => (p.fmt !== 'q' ? any(o) : same(p, o, p.ps[p.q + 1] ?? p.ps[p.q - 1]))],
+          ['앞 음과 같은 음', (k, p, o) => (p.fmt !== 'q' ? any(o) : same(p, o, p.ps[p.q - 1] ?? p.ps[p.q + 1]))]);
+      }
     }
     // 빠1 화면 틈 봇(11-10) — 소리를 끄고 '잘 들어요'가 얼마나 오래 가는지(답 열림) · 소리 길이만 봄: 길면 느리게 · 짧으면 빠르게 · 같으면 아무거나
     //  (소리 창이 빠르기와 상관없이 3.6초라 단서가 없어야 함 → 찍기와 같아야)
@@ -317,6 +342,35 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     assert.equal(Q.filter(p => p.ps.filter((_, j) => j !== p.q).includes(p.ps[p.q])).length, 2, '가4 답 음이 화면에 한 번 더 보이는 ? 판 둘');
     assert.ok(P.every(p => G.kindOf(p.ps) !== 'mix' && G.kindOf(p.alt) !== 'mix'), '가4 그림 판 가락은 차례가기 · 뛰어가기 둘 중 하나로만');
     assert.equal(K.minKeepP(G.GUESS(G.PLAN)), 9, '가4 별 ① 바닥 9/12');
+  }
+  // 가5(11-14) — 가4와 같은 짜임(? 판 넷 · 그림 판 여덟 · 화면이 같은 ? 판 짝 둘 · 바닥 9/12) + 다섯 음으로만 · 라가 든 판이 절반 넘게 · 가4 문항을 그대로 쓰지 않음
+  {
+    const G = M.ga5, Q = G.PLAN.filter(p => p.fmt === 'q'), P = G.PLAN.filter(p => p.fmt === 'pic');
+    assert.deepEqual([Q.length, P.length], [4, 8], '가5 ? 판 넷 · 그림 판 여덟');
+    assert.ok(G.PLAN.slice(0, 4).every(p => p.fmt === 'q'), '가5 ? 판은 앞 넷(소개)');
+    const screen = p => p.ps.map((x, j) => (j === p.q ? '?' : x)).join();
+    const byScreen = {}; for (const p of Q) (byScreen[screen(p)] = byScreen[screen(p)] || new Set()).add(p.right);
+    assert.ok(Object.values(byScreen).every(v => v.size === 2), '가5 ? 판 화면마다 답이 둘(화면만으로는 반)');
+    assert.equal(Q.filter(p => p.ps.filter((_, j) => j !== p.q).includes(p.ps[p.q])).length, 2, '가5 답 음이 화면에 한 번 더 보이는 ? 판 둘');
+    assert.ok(P.every(p => G.kindOf(p.ps) !== 'mix' && G.kindOf(p.alt) !== 'mix'), '가5 그림 판 가락은 차례가기 · 뛰어가기 둘 중 하나로만');
+    assert.equal(K.minKeepP(G.GUESS(G.PLAN)), 9, '가5 별 ① 바닥 9/12');
+    // 다섯 음(도 · 레 · 미 · 솔 · 라)으로만 — 파는 없음 · 다섯 음이 모두 나옴
+    assert.deepEqual([...new Set(G.PLAN.flatMap(p => [...p.ps, ...(p.alt || [])]))].sort((a, b) => a - b), [60, 62, 64, 67, 69], '가5 가락은 다섯 음으로만 · 다섯 음 모두');
+    // 라가 든 판이 절반 넘게 — 들려주는 가락 기준 · 어느 쪽을 들려주든(씨앗 1000개) / 화면(? 판 칸 · 두 그림)에는 판마다 라가 보임
+    const withLa = plan => plan.filter(p => p.ps.includes(69)).length;
+    assert.ok(withLa(G.PLAN) > 6, '가5 원판 — 라가 든 판 ' + withLa(G.PLAN));
+    let lo = 12;
+    for (let sd = 1; sd <= 1000; sd++) { const r = K.rng(K.seedOf('t', sd)); lo = Math.min(lo, withLa(G.arrange(K.stageShuffle(G.PLAN, G.CUTS, r, G.SHUF), r))); }
+    assert.ok(lo > 6, '가5 씨앗마다 라가 든 판이 절반 넘게 — 가장 적을 때 ' + lo);
+    assert.ok(G.PLAN.every(p => (p.fmt === 'q' ? p.ps.filter((_, j) => j !== p.q) : [...p.ps, ...p.alt]).includes(69)), '가5 판마다 화면에 라가 보임');
+    // 이 칸의 헷갈림 — 솔-라(차례가기) ↔ 미-솔(뛰어가기)을 견주는 비틀기 판 · 라에서 내려오는 가락
+    const only = (ps, a, b) => ps.every(n => n === a || n === b) && ps.includes(a) && ps.includes(b);
+    assert.ok(G.PLAN.some(p => p.stage === 'twist' && [p.ps, p.alt].some(x => only(x, 67, 69)) && [p.ps, p.alt].some(x => only(x, 64, 67))), '가5 비틀기 — 솔-라 ↔ 미-솔');
+    assert.ok(P.filter(p => [p.ps, p.alt].some(x => x[0] === 69 && x[1] < 69)).length >= 3, '가5 — 라에서 내려오는 가락');
+    // 가4 문항을 그대로 쓰지 않음(같은 열쇠 0)
+    const k4 = new Set(M.ga4.PLAN.map(NORM.ga4));
+    assert.equal(G.PLAN.filter(p => k4.has(NORM.ga5(p))).length, 0, '가5 — 가4와 같은 문항 X');
+    if (process.env.X2LOG) console.log('ga5', { withLa: withLa(G.PLAN), lo });
   }
   delete globalThis.localStorage;
 }
@@ -585,7 +639,7 @@ for (const c of CELLS.filter(x => x.frame === 'pick')) {
   assert.ok(only(notes(R.so5[0])[0], notes(R.so5[0])[1], 'vel') && only(notes(R.so5[1])[0], notes(R.so5[1])[1], 'p'), '소5 — 크기만 · 높이만');
   { const [a, b] = R.sem1.map(notes), avg = (ns, f) => ns.reduce((s, n) => s + n[f], 0) / ns.length;
     assert.ok(avg(a, 'p') > avg(b, 'p') && avg(a, 'vel') < avg(b, 'vel') && a.length === b.length, '셈1 — 높지만 여리게 · 낮지만 세게(같은 가락)'); }
-  for (const id of ['ga1', 'ga2', 'ga3', 'ga4']) { const [a, b] = R[id].map(notes); assert.ok(a.length === b.length && a.every((n, j) => n.d === b[j].d && n.inst === b[j].inst) && a.some((n, j) => n.p !== b[j].p), id + ' — 음 높이만 다름'); }
+  for (const id of ['ga1', 'ga2', 'ga3', 'ga4', 'ga5']) { const [a, b] = R[id].map(notes); assert.ok(a.length === b.length && a.every((n, j) => n.d === b[j].d && n.inst === b[j].inst) && a.some((n, j) => n.p !== b[j].p), id + ' — 음 높이만 다름'); }
   { const [a, b] = R.ppa1, kicks = x => x.c.filter(c => c.kind === 'kick').length;
     assert.equal(a.sec, b.sec, '빠1 — 두 소리 길이가 같음(길이로 못 고르게)'); assert.ok(kicks(a) < kicks(b), '빠1 — 박 수만 다름(보통 < 빠르게)'); }
   { const [a, b] = R.sem2.map(notes);
@@ -607,4 +661,4 @@ for (const c of CELLS.filter(x => x.frame === 'pick')) {
   }
   console.log('✓ 칸 → 곡 바꾸기 부탁 ' + Object.keys(PLAY_CARD).length + '칸');
 }
-console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 일곱 칸 문항 표(X2) · TV 소리 모드 ${ALL_CELLS.filter(id => MODS[id].TVS).length}칸 · TV 대본 ${FIRST.length}칸 · 장1 장단 표기`);
+console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 여덟 칸 문항 표(X2) · TV 소리 모드 ${ALL_CELLS.filter(id => MODS[id].TVS).length}칸 · TV 대본 ${FIRST.length}칸 · 장1 장단 표기`);
