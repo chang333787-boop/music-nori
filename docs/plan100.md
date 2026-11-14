@@ -92,3 +92,5 @@ engine/depth.js PLAY_KIND에 `rmake jang form dress chord = 'EM'` · flow.js PLA
 
 ## 8. 진행 기록
 (시각 · 합친 가지 · 만든 칸 수 · `node tools/bar.mjs` 내용 범위 · 5~6학년 · 요소 고르기 · 활동 깊이 · 소리 · 확인 못 한 것)
+- 11-14 19:44 · 합침(push 전 · 브라우저 시험 중): cell-sem2 · cell-hy2 · 묶음 B 미리 등록 · cell-ga5 · 묶음 C 미리 등록 · frame-f4(78f3347까지) · batch-b3 · batch-b2 · batch-b1 · batch-c2 · pre-d · batch-c3 · batch-c5 · ear-fix · 만든 칸 44 · bar 내용 범위 82% · 5~6학년 70% · 요소 고르기 50% · 활동 깊이 37% · 소리(기계) 100% · 확인 못 한 것: Opus 칸은 처음 보는 눈 평가 전 · jd2 std는 장1(3~4학년) 번호를 옮긴 것(5~6학년 번호 확인 필요) · 새 칸 화면 사진은 scratchpad shots에 모두 있음 · TV 고르기는 여덟 칸 넘는 줄을 옆으로 밀어 보는 임시 꼴
+- 11-14 19:50 · push 4cac74a(origin 00e4ae9 → 4cac74a · 배포 version 74124d1b03a0 확인) — 셈2 · 형2 · 가5 · 틀 넓히기 · 묶음 B 셋 · 묶음 B/C 미리 등록 · 만든 칸 32 · 브라우저: cells(고르기 칸 + 가5) · rules 전체 · sound · pitch 통과 · app은 #/tv 스크롤 하나(그 뒤 f4e6fef에서 고침 · 다음 push에 들어감)
