@@ -62,3 +62,7 @@
 .pk-cards .ans .chip svg{height:64px;width:auto;max-width:200px}
 .pk-cards .ans .lab{white-space:pre-line;font-size:22px;line-height:1.2}
 .tvmode .pk-cards .ans .lab{font-size:26px}
+/* 보기 카드 위 그림(EX chip — 리11 리듬 카드 · 악7 악보 카드) — 카드가 낮아지지 않게 그림은 52px */
+.pk-exc{gap:4px;padding-top:10px;padding-bottom:10px}
+.pk-exchip{display:block;height:52px;line-height:0}
+.pk-exchip svg{height:52px;width:auto;max-width:100%}
