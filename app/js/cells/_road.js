@@ -74,9 +74,10 @@ export const roadTokens = text => String(text).trim().split(/\s+/);
 export const roadSymbols = text => roadTokens(text).filter(t => !/^\d+$/.test(t));
 
 // ── 그림 ──
-const H = 100, TOP = 32, BH = 46, BW = 48, GAP = 8, REP = 16;
-const LAT = 14, KO = 19;                            // 라틴 표 글자 · 우리말 글자(뷰박스 단위 — 높이 96px에 그리면 약 18px)
-const txtW = (s, fs) => [...s].reduce((a, c) => a + (/[가-힣]/.test(c) ? fs : /[A-Z]/.test(c) ? fs * 0.66 : c === ' ' || c === '.' ? fs * 0.3 : fs * 0.55), 0);
+//  뷰박스 1 = 화면 1px(카드 그림 높이 108px · css) — 그림 안 글자는 모두 20(아이 글 18px 이상 · tests/rules.browser.cjs 카드 글자 검사)
+const H = 108, TOP = 42, BH = 40, BW = 50, GAP = 8, REP = 16;
+const LAT = 20, KO = 20, NUM = 20;
+const txtW = (s, fs) => [...s].reduce((a, c) => a + (/[가-힣]/.test(c) ? fs : /[A-Z]/.test(c) ? fs * 0.7 : c === ' ' || c === '.' ? fs * 0.32 : fs * 0.58), 0);
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const line = (x1, y1, x2, y2, w = 2.4) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${INK}" stroke-width="${w}" stroke-linecap="round"/>`;
 const text = (x, y, s, fs, anchor = 'start', extra = '') => `<text x="${x}" y="${y}" font-size="${fs}" text-anchor="${anchor}" fill="${INK}" font-family="var(--body, sans-serif)" font-weight="700"${extra}>${esc(s)}</text>`;
@@ -97,7 +98,7 @@ export const codaPath = (x, y, k = 1) => {
 const repStart = x => `<rect x="${x}" y="${TOP}" width="4" height="${BH}" fill="${INK}"/>${line(x + 8, TOP, x + 8, TOP + BH, 1.8)}<circle cx="${x + 13}" cy="${TOP + 17}" r="2.4" fill="${INK}"/><circle cx="${x + 13}" cy="${TOP + 29}" r="2.4" fill="${INK}"/>`;
 const repEnd = x => `<circle cx="${x + 3}" cy="${TOP + 17}" r="2.4" fill="${INK}"/><circle cx="${x + 3}" cy="${TOP + 29}" r="2.4" fill="${INK}"/>${line(x + 8, TOP, x + 8, TOP + BH, 1.8)}<rect x="${x + 11}" y="${TOP}" width="4" height="${BH}" fill="${INK}"/>`;
 
-export function roadSVG(textIn, { mot = null, size = 96 } = {}) {
+export function roadSVG(textIn, { mot = null, size = H } = {}) {
   const B = parseRoad(textIn), parts = [];
   let x = 6, lo = 0, hi = 0;
   const grow = (a, b) => { lo = Math.min(lo, a); hi = Math.max(hi, b); };
@@ -114,33 +115,33 @@ export function roadSVG(textIn, { mot = null, size = 96 } = {}) {
   }
   for (const { b, x: bx, w } of pos) {
     parts.push(`<rect x="${bx}" y="${TOP}" width="${w}" height="${BH}" rx="7" style="fill:var(--surface, #FFFDF7)" stroke="${INK}" stroke-width="2.4"/>`);
-    parts.push(text(bx + 5, TOP + 18, String(b.n), 17));
+    parts.push(text(bx + 4, TOP + 19, String(b.n), NUM));
     const m = mot && mot[b.n];
     if (m) {
       const beats = m.reduce((a, [, d]) => a + d, 0);
       let t = 0;
       for (const [p, d] of m) {
         if (p != null) {
-          const cx = bx + 18 + ((t + d / 2) / beats) * (w - 24), cy = TOP + BH - 9 - Math.max(0, Math.min(1, (p - 60) / 12)) * (BH - 20);
+          const cx = bx + 22 + ((t + d / 2) / beats) * (w - 28), cy = TOP + BH - 8 - Math.max(0, Math.min(1, (p - 60) / 12)) * (BH - 18);
           parts.push(`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.2" fill="${GREEN}" stroke="${INK}" stroke-width="1.6"/>`);
         }
         t += d;
       }
     }
     grow(bx, bx + w);
-    if (b.segno) parts.push(segnoPath(bx + 2, 4));
-    if (b.coda) parts.push(codaPath(bx + 2, 4));
+    if (b.segno) parts.push(segnoPath(bx + 1, 14));
+    if (b.coda) parts.push(codaPath(bx + 1, 14));
     if (b.mark) {
       const mt = MARK_TXT[b.mark];
-      mt.forEach((s, k) => parts.push(text(bx + w - 2, mt.length === 1 ? 24 : 12 + k * 14, s, LAT, 'end', ' font-style="italic"')));
+      mt.forEach((s, k) => parts.push(text(bx + w - 2, mt.length === 1 ? 36 : 17 + k * 20, s, LAT, 'end', ' font-style="italic"')));
       grow(bx + w - 2 - Math.max(...mt.map(s => txtW(s, LAT))), bx + w);
       // 우리말 — 상자 가운데 아래
       const ko = MARK_KO[b.mark], cx = bx + w / 2;
       if (ko[0] === 'S' || ko[0] === 'O') {
         const tw = 16 * 0.8 + 2 + KO, x0 = cx - tw / 2;
-        parts.push((ko[0] === 'S' ? segnoPath : codaPath)(x0, TOP + BH + 3, 0.8), text(x0 + 16 * 0.8 + 2, TOP + BH + 19, '로', KO));
+        parts.push((ko[0] === 'S' ? segnoPath : codaPath)(x0, TOP + BH + 4, 0.8), text(x0 + 16 * 0.8 + 2, TOP + BH + 21, '로', KO));
         grow(x0, x0 + tw);
-      } else { const tw = txtW(ko, KO); parts.push(text(cx, TOP + BH + 19, ko, KO, 'middle')); grow(cx - tw / 2, cx + tw / 2); }
+      } else { const tw = txtW(ko, KO); parts.push(text(cx, TOP + BH + 21, ko, KO, 'middle')); grow(cx - tw / 2, cx + tw / 2); }
     }
   }
   // 1 · 2번 괄호 — 같은 번호가 이어진 상자 위 한 줄
@@ -149,8 +150,8 @@ export function roadSVG(textIn, { mot = null, size = 96 } = {}) {
     if (!v || (k && pos[k - 1].b.v === v)) continue;
     let e = k; while (e + 1 < pos.length && pos[e + 1].b.v === v) e++;
     const x0 = pos[k].x + 1, x1 = pos[e].x + pos[e].w - (v === 1 ? 1 : 10);
-    parts.push(line(x0, TOP - 1, x0, 18, 2), line(x0, 18, x1, 18, 2), text(x0 + 4, 15, v + '.', 14));
-    if (v === 1) parts.push(line(x1, 18, x1, TOP - 1, 2));
+    parts.push(line(x0, TOP - 1, x0, 16, 2.2), line(x0, 16, x1, 16, 2.2), text(x0 + 5, 37, v + '.', NUM));
+    if (v === 1) parts.push(line(x1, 16, x1, TOP - 1, 2.2));
   }
   const vx = Math.floor(lo - 4), W = Math.ceil(hi + 4) - vx;
   const order = expandRoad(B).join(' ');

@@ -1,5 +1,5 @@
 // 화면 규칙 검사기(11-08 토론 X1 · docs/ui.md) — 아이 화면마다(쓰는 법: node tests/rules.browser.cjs [칸 id …] · 없으면 만든 칸 모두):
-//  ① 보이는 글자 18px 이상(SVG 글은 화면 배율을 곱함) ② 답 단추가 다른 것에 덮이지 않음(가운데를 누르면 그 단추)
+//  ① 보이는 글자 18px 이상(SVG 글은 화면 배율을 곱함 · 답 단추 카드 그림 안 글도 — aria-hidden이어도) ② 답 단추가 다른 것에 덮이지 않음(가운데를 누르면 그 단추)
 //  ③ 보이는 주황(.go) 단추 하나 이하(지금 누를 것 하나) ④ 빈 칭찬 낱말 X(AI 슬롭 X)
 //  선생님 화면(#/teacher · records · calib · speaker · credits · tv)은 글이 많아 ①을 보지 않음
 //  악보 판(#/lab · 묶음 여섯 · 기호를 올린 모습)과 찾아 쓰기(#/find)는 네 가지 모두 봄(11-14)
@@ -35,6 +35,14 @@ function audit() {
     if (px < 17.5) { const k = label(el) + ' ' + px.toFixed(1) + 'px'; if (!small.has(k)) small.set(k, n.textContent.trim().slice(0, 16)); }
   }
   for (const [k, t] of small) out.push(`글자 ${k} "${t}"`);
+  // ①′ 답 단추 카드 그림 안 글자(11-14 묶음 C · .chip은 aria-hidden이라 위에서 빠짐 — 그래도 아이가 읽는 글) — 그림 배율을 곱해 18px 이상
+  const csmall = new Map();
+  for (const el of document.querySelectorAll('.ans .chip svg text')) {
+    if (!el.textContent.trim() || !vis(el) || el.closest('.ans.locked')) continue;
+    const m = el.getScreenCTM(), px = parseFloat(getComputedStyle(el).fontSize) * (m ? Math.hypot(m.a, m.b) : 1);
+    if (px < 17.5) { const k = label(el) + ' ' + px.toFixed(1) + 'px'; if (!csmall.has(k)) csmall.set(k, el.textContent.trim().slice(0, 16)); }
+  }
+  for (const [k, t] of csmall) out.push(`카드 글자 ${k} "${t}"`);
   // ② 덮인 답 단추
   for (const b of document.querySelectorAll('.ans')) {
     if (!vis(b) || b.closest('.busy') || b.classList.contains('locked')) continue;

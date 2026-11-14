@@ -1,5 +1,5 @@
-/* 반2 처음으로 · 𝄋로 · 끝 — 공용 틀(_pick.css) + 마디 상자 카드가 읽히게 단추 묶음을 넓히고 카드 그림을 키움(우리말 작은 글이 18px 안팎) — _pick.css가 이 파일보다 늦게 붙을 수 있어 앞에 .pk .answers를 붙여 이기게 */
+/* 반2 처음으로 · 𝄋로 · 끝 — 공용 틀(_pick.css) + 마디 상자 카드가 읽히게 단추 묶음을 넓히고 카드 그림을 키움(그림 높이 108px = 뷰박스 높이 → 그림 안 글자 20px) — _pick.css가 이 파일보다 늦게 붙을 수 있어 앞에 .pk .answers를 붙여 이기게 */
 .pk .answers.pk-cards{width:500px}
-.pk .answers.pk-cards .ans{min-height:108px;padding:6px 14px}
-.pk .answers.pk-cards .ans .chip{max-width:380px;height:96px}
-.pk .answers.pk-cards .ans .chip svg{height:96px;max-width:380px}
+.pk .answers.pk-cards .ans{min-height:116px;padding:4px 14px}
+.pk .answers.pk-cards .ans .chip{max-width:380px;height:108px}
+.pk .answers.pk-cards .ans .chip svg{height:108px;width:auto;max-width:380px}
