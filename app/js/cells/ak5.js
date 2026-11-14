@@ -29,6 +29,8 @@ const KEYSIG = { ksharp: 'sharp', kflat: 'flat' };
 export const RANGE = { lo: -1, hi: 11 };
 
 // 판 — { stage, kind: plain | inst(둘째 소리만 리코더) | high(한 옥타브 높게), base, right }
+//  마무리 둘째 판은 ♭ 조표(뒤집으면 그대로) — 첫째 판(♯ 임시표 · 뒤집으면 ♭ 조표)과 같은 답이 될 수 있게. 예전(그대로)엔 끝 두 판의 답이 늘 달라
+//  '앞 판 답 피하기' 봇이 9%대에 머물렀음(F5) · 답 수를 3 · 3 · 3 · 3으로 두려고 비틀기 리코더 B1 판을 ♭ 조표 → 그대로로
 const R = (stage, kind, base, right) => ({ stage, kind, base, right });
 export const PLAN = [
   R('intro', 'plain', 'B1', 'ksharp'),
@@ -37,12 +39,12 @@ export const PLAN = [
   R('grow', 'plain', 'B1', 'osharp'),
   R('grow', 'plain', 'B2', 'ksharp'),
   R('grow', 'plain', 'B2', 'kflat'),
-  R('twist', 'inst', 'B1', 'kflat'),
+  R('twist', 'inst', 'B1', 'none'),
   R('twist', 'high', 'B2', 'osharp'),
   R('twist', 'inst', 'B2', 'ksharp'),
   R('twist', 'high', 'B1', 'none'),
   R('end', 'plain', 'B3', 'osharp'),
-  R('end', 'plain', 'B3', 'none'),
+  R('end', 'plain', 'B3', 'kflat'),
 ];
 export const CUTS = stageCuts(PLAN);
 const CYC3 = { none: 'ksharp', ksharp: 'kflat', kflat: 'none' };

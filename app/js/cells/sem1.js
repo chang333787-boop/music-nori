@@ -34,7 +34,7 @@ export const PLAN = [
   { kind: 'sym', mel: 'M2', inst: 'piano', ans: 'B' },
 ];
 export const CUTS = [4, 8, 11];
-export const SHUF = { flip: p => ({ ...p, ans: p.ans === 'A' ? 'B' : 'A' }), answerOf: p => p.ans };
+export const SHUF = { flip: p => ({ ...p, ans: p.ans === 'A' ? 'B' : 'A' }), answerOf: p => p.ans, chance: plan => plan.map(() => 1 / 2) };   // chance = 앞 판 기억 봇 검사(F5)
 const MEL = { M1, M2 };
 // 판 → 들려줄 조각들(segs: 화면 칸 하나씩) · 각 조각의 세기(굵기 공개용)
 function build(it) {

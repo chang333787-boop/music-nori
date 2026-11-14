@@ -20,6 +20,8 @@
 //    pool              연습 문항(여기서 무작위 · flip이 있으면 반은 뒤집음)  ·  passText
 //    game              { title | title(lo), sub(lo) } 시작 창
 //    PLAN · CUTS · SHUF · GUESS? · tipOf(plan, results, picks)
+//                      SHUF에 chance가 없으면 pickCell이 채워 넣는다(GUESS · 없으면 1/단추 수) — 섞을 때 앞 판 기억 봇 검사(cellkit stageShuffle · F5).
+//                      칸이 내보내는 SHUF와 같은 물건이라 시험 · TV · 아이 기기가 모두 같은 판을 만든다
 //    cards?(row, lo)   판마다 다른 단추 카드 [{ key, label, chip, tv? }] — key 모음은 keys 그대로(채점 · 찍기 확률 · 숫자 키 그대로).
 //                      연습 · 게임 · TV 소리 모드에서 판이 바뀔 때마다 단추 글 · 그림을 바꿈(label의 \n = 줄바꿈 · 그림 칸이 넓어짐 .pk-cards)
 //  }
@@ -168,6 +170,7 @@ export function pickCell(C) {
     }
   };
   const chance = plan => (C.GUESS ? C.GUESS(plan) : plan.map(() => 1 / C.keys.length));
+  if (C.SHUF.answerOf && !C.SHUF.chance) C.SHUF.chance = chance;   // 앞 판 기억 봇 검사(F5 · 위 머리말)
   const root = (kit, cls, ...kids) => kit.h('div', { class: 'pk ' + cls, style: { '--pk': `var(--${C.friend})`, '--pk-t': `var(--${C.friend}-t)` } }, ...kids);
   const palBox = kit => kit.h('div', { class: 'pk-pal' }, pal(kit, C.friend));
   const face = (kit, box, p) => pose(kit, box.firstChild, C.friend, p);

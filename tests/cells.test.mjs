@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { CELLS, LANES, FIRST, ORDER, ORDER_ALL, cellById, nextCell, missingPre, nudgePre, passed, cellName, easyText, EASY_WORDS, stdText, PLAY_STD, PLAY_CARD } from '../engine/cells.js';
 import { cellLevel } from '../engine/load.js';
+import { memoBots } from './memobots.mjs';
 
 const ids = new Set(CELLS.map(c => c.id));
 assert.equal(ids.size, CELLS.length, '칸 id 겹침');
@@ -171,6 +172,8 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   for (const [name, mod, norm] of [['so4', so4, norm4], ['ga1', ga1, normG]]) {
     const bounds = [0, ...mod.CUTS, mod.PLAN.length];
     let alt = 0, same = 0, cheat = 0, origin = 0;
+    // 앞 판 기억 봇(F5 · tests/memobots.mjs) — 봇마다 따로 셈(위 넷은 합쳐 셈)
+    const memo = memoBots(mod.SHUF.answerOf, K.rng(77)), memoGot = new Map(memo.map(([n]) => [n, 0]));
     for (let sd = 1; sd <= 1000; sd++) {
       const plan = K.stageShuffle(mod.PLAN, mod.CUTS, K.rng(K.seedOf('t', sd)), mod.SHUF);
       if (plan === mod.PLAN || plan.every((p, k) => p === mod.PLAN[k])) origin++;
@@ -184,12 +187,10 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
       const chance = name === 'so4' ? plan.map(() => 0.5) : mod.GUESS(plan);
       const vals = [...new Set(a)];
       const bots = [k => vals[k % 2], k => vals[(k + 1) % 2], () => vals[0], () => vals[1]];
-      for (const bot of bots) {
-        // 소4 봇: 그 차례 답을 누름 · 가1 봇: 첫 음은 봇 차례 음, 나머지는 반대 음(솔미 · 미솔 · 솔미솔…만 누름)
-        const res = name === 'so4' ? plan.map((p, k) => mod.SHUF.answerOf(p) === bot(k))
-          : plan.map((p, k) => p[0].every((x, j) => x === (j % 2 === 0 ? bot(k) : vals.find(v => v !== bot(k)))));
-        if (K.scoreChoices(res, 5, { chance }).stars > 0) cheat++;
-      }
+      // 소4 봇: 그 차례 답을 누름 · 가1 봇: 첫 음은 봇 차례 음, 나머지는 반대 음(솔미 · 미솔 · 솔미솔…만 누름) — 봇은 판마다 한 번만 부름(찍는 봇)
+      const resOf = bot => plan.map((p, k) => { const v = bot(k); return name === 'so4' ? mod.SHUF.answerOf(p) === v : p[0].every((x, j) => x === (j % 2 === 0 ? v : vals.find(w => w !== v))); });
+      for (const bot of bots) if (K.scoreChoices(resOf(bot), 5, { chance }).stars > 0) cheat++;
+      for (const [n, bot] of memo) if (K.scoreChoices(resOf(k => bot(k, plan[k], vals, plan)), 5, { chance }).stars > 0) memoGot.set(n, memoGot.get(n) + 1);
       // 같은 씨앗이면 같은 판
       if (sd === 1) assert.deepEqual(K.stageShuffle(mod.PLAN, mod.CUTS, K.rng(K.seedOf('t', 1)), mod.SHUF), plan);
     }
@@ -197,6 +198,8 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     assert.equal(alt, 0, `${name} 처음 네 판 번갈아`);
     assert.ok(origin < 5, `${name} 원판으로 되돌아간 씨앗 ${origin}`);
     assert.ok(cheat / 4000 < 0.10, `${name} 번갈아 · 같은 답 봇 별 비율 ${cheat / 40}%`);
+    if (process.env.X2LOG) console.log(name, [...memoGot].map(([n, v]) => `${n} ${v / 10}%`).join(' · '));
+    for (const [n, v] of memoGot) assert.ok(v / 1000 < 0.10, `${name} ${n} 봇 별 비율 ${v / 10}%`);
   }
   delete globalThis.localStorage;
 }
@@ -271,6 +274,8 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     for (let a = 0; a < vals.length; a++) for (let b = a + 1; b < vals.length; b++) bots.push([`번갈아 ${vals[a]}/${vals[b]}`, k => (k % 2 ? vals[b] : vals[a])], [`번갈아 ${vals[b]}/${vals[a]}`, k => (k % 2 ? vals[a] : vals[b])]);
     const rr = K.rng(99);
     bots.push(['찍기', (k, p, o) => o[Math.floor(rr() * o.length)]]);
+    // 앞 판 기억 봇(F5 · tests/memobots.mjs) — 답 = 단추(p.right · 가3 · 가4 · 가5 그림 판은 arrange가 정한 자리)
+    bots.push(...memoBots(p => p.right, K.rng(77)));
     // 가2 화면 틈 봇(11-10) — 화면에 안 보이는 음을 고름(하나면 그것 · 둘이면 그중 하나 · 다 보이면 아무거나)
     if (id === 'ga2') bots.push(['안 보이는 음', (k, p, o) => { const shown = p.ps.filter((_, j) => j !== p.q), miss = o.filter(v => !shown.includes(v)), from = miss.length ? miss : o; return from[Math.floor(rr() * from.length)]; }]);
     // 가4 화면 틈 봇(11-10) — ? 판: 안 보이는 음 · 사이 음(양옆 두 음 사이에 끼는 음) / 그림 판: 레가 든 그림 · 차례가기 그림 · 뛰어가기 그림 · 높낮이 모양(오르내림만 듣고 같은 모양 그림)
@@ -317,7 +322,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
       if (sd === 1) assert.deepEqual(make(1), plan, id + ' 같은 씨앗이면 같은 판');
       const chance = mod.GUESS(plan);
       for (const [name, bot] of bots) {
-        const res = plan.map((p, k) => { const o = OPTS[id](p, k), v = bot(k, p, o); return o.includes(v) ? v === p.right : null; });
+        const res = plan.map((p, k) => { const o = OPTS[id](p, k), v = bot(k, p, o, plan); return o.includes(v) ? v === p.right : null; });
         if (K.scoreChoices(res, 5, { chance }).stars > 0) got.set(name, got.get(name) + 1);
       }
     }
@@ -408,6 +413,11 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     ['단계 꼴', p => common[p.stage]],
     ['화면 틈(그림 판은 악보대로 · 그림 없는 판은 박마다 반짝만 보고)', p => (p.hidden ? ['q', 'q', 'q', 'q'] : p.pat)],
   ];
+  // 앞 판 기억 봇(F5 · tests/memobots.mjs) — 앞 판 리듬을 또 침 · 앞 판 리듬만 빼고 그 단계 리듬 가운데 찍기 · 둘씩(고를 리듬 = 원판 그 단계의 리듬들)
+  //  ⚠ 알려진 구멍 — 시험에 걸지 않고 X2LOG로만 봄: 단계마다 리듬이 모두 달라(소개 · 발전 · 마무리 둘씩) 앞 판 리듬을 빼면 그 단계 둘째 판이 정해지고,
+  //   박 칸 예전 규칙(절반 넘게 · 5번 이어서)이라 '앞 판 리듬 피하기'가 별을 58% 받음. 섞기(틀)로는 못 막음 — 표 · 점수 규칙을 바꿔야(docs/cells.md)
+  const memo = memoBots(SHUF.answerOf, K.rng(77)).map(([n, b]) => [n, (p, k, plan) => b(k, p, [...new Set(PLAN.filter(q => q.stage === p.stage).map(SHUF.answerOf))], plan).split(' ')]);
+  const memoGot = new Map(memo.map(([n]) => [n, 0]));
   const got = new Map(bots.map(([n]) => [n, 0]));
   const bounds = [0, ...CUTS, PLAN.length];
   let origin = 0;
@@ -419,9 +429,10 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     if (sd === 1) assert.deepEqual(K.stageShuffle(PLAN, CUTS, K.rng(K.seedOf('t', 1)), SHUF), plan, '리3 같은 씨앗이면 같은 판');
     assert.equal(K.scoreChoices(plan.map(p => okWith(p, p.pat)), 5).stars, 3, '리3 그대로 치면 별 셋');
     for (const [name, bot] of bots) if (K.scoreChoices(plan.map((p, k) => okWith(p, bot(p, k))), 5).stars > 0) got.set(name, got.get(name) + 1);
+    for (const [name, bot] of memo) if (K.scoreChoices(plan.map((p, k) => okWith(p, bot(p, k, plan))), 5).stars > 0) memoGot.set(name, memoGot.get(name) + 1);
   }
   assert.ok(origin < 50, `리3 원판 차례 그대로인 씨앗 ${origin}`);
-  if (process.env.X2LOG) console.log('ri3', [...got].map(([n, v]) => `${n} ${v / 10}%`).join(' · '));
+  if (process.env.X2LOG) console.log('ri3', [...got].map(([n, v]) => `${n} ${v / 10}%`).join(' · '), '| 앞 판 기억(시험 X)', [...memoGot].map(([n, v]) => `${n} ${v / 10}%`).join(' · '));
   for (const [name, n] of got) assert.ok(n / 1000 < 0.10, `리3 ${name} 봇 별 비율 ${n / 10}%`);
   delete globalThis.localStorage;
 }

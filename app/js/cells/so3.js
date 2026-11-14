@@ -39,7 +39,7 @@ export const PLAN = [
 ];
 export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 8, 11] — 섞어도 '9번째부터' 말이 그대로 맞게
 // 단계 안 섞기(N2) — 뒤집기 = 같은 단계 짝의 반대 길이(높고 긴 ↔ 높고 짧은) · 답 = 긴 소리인가
-export const SHUF = { flip: p => row(p.stage, p.right !== 'long', p.inst, p.p), answerOf: p => p.right };
+export const SHUF = { flip: p => row(p.stage, p.right !== 'long', p.inst, p.p), answerOf: p => p.right, chance: plan => GUESS(plan) };   // chance = 앞 판 기억 봇 검사(F5)
 export const GUESS = plan => plan.map(() => 1 / 2);   // 찍기 바닥 — 긴 · 짧은 둘 중 하나
 // 답 단추는 짧은 소리든 긴 소리든 소리 시작 0.65초 뒤에 똑같이 열림 — 화면만 보고 길이를 알 수 없게(N2 · 소리 끈 봇이 찾은 틈)
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만

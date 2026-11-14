@@ -72,7 +72,7 @@ export function flip(p) {
   if (p.kind === 'dyn') o.vel = t === 'slow' ? LOUD : SOFT;
   return o;
 }
-export const SHUF = { flip, answerOf: p => p.right };
+export const SHUF = { flip, answerOf: p => p.right, chance: plan => GUESS(plan) };   // chance = 앞 판 기억 봇 검사(F5)
 // 찍기 바닥 — 소개는 둘 중 하나 · 보통 단추가 나온 뒤엔 셋 중 하나
 export const GUESS = plan => plan.map((x, k) => (k < MID_AT ? 1 / 2 : 1 / 3));
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만

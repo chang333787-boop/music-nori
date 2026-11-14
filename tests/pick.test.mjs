@@ -2,7 +2,7 @@
 //  칸마다 검사 파일 하나: tests/pick/<id>.mjs = right(답 = 소리) · opts(판마다 단추) · norm(같은 문항 열쇠) + 있으면 bots · seedCheck · extra(그 칸만의 덧검사)
 //   파일이 없으면 떨어진다 — 새 고르기 칸은 장부 줄에 frame: 'pick'을 적고 이 파일을 만든다(이 시험 파일은 고치지 않음)
 //  ① 줄의 답 = 실제로 나는 소리(뒤집어도) ② 답과 상관없이 소리 길이가 같음(열리는 때로 답이 새지 않음)
-//  ③ 듣지 않고 누르는 봇(같은 답 · 번갈아 · 단계 꼴 · 찍기 · 소리 길이)이 별을 못 받음 ④ 같은 답 세 번 연속 X
+//  ③ 듣지 않고 누르는 봇(같은 답 · 번갈아 · 단계 꼴 · 찍기 · 소리 길이 · 앞 판 기억 셋)이 별을 못 받음 ④ 같은 답 세 번 연속 X
 //  node tests/pick.test.mjs
 import assert from 'node:assert/strict';
 
@@ -11,6 +11,7 @@ const K = await import('../app/js/cellkit.js');
 const P = await import('../app/js/cells/_pick.js');
 const { CELLS } = await import('../engine/cells.js');
 const { existsSync } = await import('node:fs');
+const { memoBots } = await import('./memobots.mjs');
 const PICK = CELLS.filter(c => c.frame === 'pick').map(c => c.id);
 // 11-14에 이 시험에 손 목록으로 있던 칸 — 빠지면 안 됨
 for (const id of ['so6', 'hy1', 'hwa1']) assert.ok(PICK.includes(id), id + ' — 장부에 frame: \'pick\'');
@@ -82,10 +83,12 @@ for (const [id, mod] of Object.entries(M)) {
     const same = plan.filter(x => x.stage === p.stage).map(S.OPEN), mean = same.reduce((a, b) => a + b) / same.length, d = S.OPEN(p) - mean;
     return d > 1 ? o[o.length - 1] : d < -1 ? o[0] : o[Math.floor(rr() * o.length)];
   }]);
+  // 앞 판 기억 봇(F5 · tests/memobots.mjs) — 앞 판 답 또 · 앞 판 답 피하기 · 둘씩
+  bots.push(...memoBots(ansOf, K.rng(77)));
   // 그 칸만의 봇(형1 '새 단추' 등 — tests/pick/<id>.mjs의 bots)
   if (X.bots) bots.push(...X.bots(ctx));
   const got = new Map(bots.map(([n]) => [n, 0]));
-  let same = 0, alt = 0, origin = 0;
+  let same = 0, alt = 0, origin = 0, memoOver = 0;
   for (let sd = 1; sd <= 1000; sd++) {
     const plan = make(sd);
     assert.equal(plan.length, PLAN.length);
@@ -95,7 +98,13 @@ for (const [id, mod] of Object.entries(M)) {
     for (let i = 2; i < a.length; i++) if (a[i] === a[i - 1] && a[i] === a[i - 2]) same++;
     if (a[0] === a[2] && a[1] === a[3] && a[0] !== a[1]) alt++;
     if (X.seedCheck) X.seedCheck(plan, ctx);
-    if (sd === 1) assert.deepEqual(make(1), plan, id + ' 같은 씨앗이면 같은 판');
+    if (sd === 1) {
+      assert.deepEqual(make(1), plan, id + ' 같은 씨앗이면 같은 판');
+      // 틀(_pick.js)이 SHUF에 chance를 채워 앞 판 기억 봇 검사가 걸림 · TV 판(tvsSpec.plan)도 이 시험과 같은 판(F5)
+      assert.equal(typeof SHUF.chance, 'function', id + ' SHUF.chance(틀이 채움)');
+      assert.deepEqual(S.plan(K.seedOf('t', 1)), plan, id + ' TV 판 = 시험 판');
+    }
+    { const o = K.memoryOdds(plan.map(ansOf), chanceOf(plan)); if (Math.max(...o) >= K.MEMO_CAP) memoOver++; }
     const chance = chanceOf(plan);
     for (const [name, bot] of bots) {
       const res = plan.map((p, k) => { const o = X.opts(p, k, ctx), v = bot(k, p, o, plan); return o.includes(v) ? v === ansOf(p) : null; });
@@ -105,7 +114,9 @@ for (const [id, mod] of Object.entries(M)) {
   assert.equal(same, 0, `${id} 같은 답 세 번 연속`);
   assert.equal(alt, 0, `${id} 처음 네 판 번갈아`);
   assert.ok(origin < 50, `${id} 원판 차례 그대로인 씨앗 ${origin}`);
-  if (process.env.X2LOG) console.log(id, { origin, floor: K.minKeepP(chanceOf(make(1))) }, [...got].map(([n, v]) => `${n} ${v / 10}%`).join(' · '));
+  // 앞 판 기억 검사를 tries 안에 못 넘어 '가장 덜 새는 판'으로 간 씨앗(둘 고르기 칸은 10%쯤 — 같은 답 세 번 X · 6:6이 남기는 판이 적음)
+  assert.ok(memoOver < 200, `${id} 앞 판 기억 검사를 못 넘은 씨앗 ${memoOver}`);
+  if (process.env.X2LOG) console.log(id, { origin, memoOver, floor: K.minKeepP(chanceOf(make(1))) }, [...got].map(([n, v]) => `${n} ${v / 10}%`).join(' · '));
   for (const [name, n] of got) assert.ok(n / 1000 < 0.10, `${id} ${name} 봇 별 비율 ${n / 10}%`);
   assert.equal(K.scoreChoices(PLAN.map(() => true), 5, { chance: chanceOf(make(1)) }).stars, 3, id + ' 다 맞히면 별 셋');
   // 1~2학년 판 — 단추 글 · 한 줄 말에 어려운 낱말이 없음

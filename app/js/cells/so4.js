@@ -54,7 +54,7 @@ function ladder(kit) {
 
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
 export const CUTS = [4, 8, 11];                   // 단계 경계 — 소개 · 발전 · 비틀기 · 마무리(섞어도 '9번째부터' 말이 그대로 맞게)
-export const SHUF = { flip: ([d, inst]) => [-d, inst], answerOf: p => p[0] > 0 };   // 뒤집기 = 같은 간격을 반대로 · 답 = 높아지나
+export const SHUF = { flip: ([d, inst]) => [-d, inst], answerOf: p => p[0] > 0, chance: plan => plan.map(() => 1 / 2) };   // 뒤집기 = 같은 간격을 반대로 · 답 = 높아지나 · chance = 앞 판 기억 봇 검사(F5)
 // TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)
 export const TIPS_TV = ['높이 차이가 작을 때', '낮아지는 소리', '높아지는 소리'];
 // 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 높이 차이가 가장 작은 짝(비틀기 단계 3도)

@@ -58,11 +58,47 @@ export function scoreChoices(results, need = 5, { chance = null } = {}) {
 // 찍기 바닥(N2) — 판마다 찍어 맞힐 확률 ps일 때, 찍어서 k개 이상 맞힐 확률이 alpha(10%)보다 작아지는 가장 작은 k
 //  (판마다 확률이 달라도 되게 포아송 이항 분포를 직접 셈) · minKeep(12, 2) = 9 · minKeep(12, 3) = 7
 export function minKeepP(ps, alpha = 0.10) {
-  let dist = [1];
-  for (const p of ps) { const nx = Array(dist.length + 1).fill(0); dist.forEach((v, k) => { nx[k] += v * (1 - p); nx[k + 1] += v * p; }); dist = nx; }
+  const dist = hitDist(ps);
   let tail = 0;
   for (let k = dist.length - 1; k >= 0; k--) { tail += dist[k]; if (tail >= alpha) return Math.min(ps.length, k + 1); }
   return 0;
+}
+// 판마다 맞을 확률 ps → 맞힌 수 분포(포아송 이항 · dist[k] = 꼭 k개 맞힐 확률)
+function hitDist(ps) {
+  let dist = [1];
+  for (const p of ps) { const nx = Array(dist.length + 1).fill(0); dist.forEach((v, k) => { nx[k] += v * (1 - p); nx[k + 1] += v * p; }); dist = nx; }
+  return dist;
+}
+const atLeast = (ps, k) => hitDist(ps).slice(k).reduce((a, b) => a + b, 0);
+// 앞 판 기억 봇(F5) — 판마다 맞음 · 틀림이 보이므로 소리를 듣지 않아도 앞 판까지의 답은 안다. 앞 판 답이 몇 번 이어졌는지(L)만 보고
+//  '또'(앞 판 답을 또 누름 — 같은 답인 판만 맞음) · '바꾸기'(앞 판 답만 빼고 찍기 — 다른 답인 판에서 맞을 확률 c / (1 − c))를 고르는 봇 셋:
+//  또(늘 또) · 피하기(늘 바꾸기) · 둘씩(한 번이면 또 · 두 번 이어졌으면 바꾸기 — '같은 답 세 번 X'를 아는 봇). 첫 판은 셋 다 찍기
+//  memoryOdds(answers = 판마다 답, ps = 찍기 확률) → 그 판에서 셋이 별 ①(찍기 바닥 minKeepP)을 받을 확률 [또, 피하기, 둘씩]
+export const MEMO_BOTS = [['또', () => true], ['피하기', () => false], ['둘씩', L => L < 2]];
+export function memoryOdds(answers, ps, alpha = 0.10) {
+  const floor = minKeepP(ps, alpha);
+  return MEMO_BOTS.map(([, again]) => atLeast(answers.map((a, k) => {
+    if (!k) return ps[0];
+    let L = 1;
+    while (L < k && answers[k - 1 - L] === answers[k - 1]) L++;
+    const same = a === answers[k - 1];
+    return again(L) ? (same ? 1 : 0) : same ? 0 : Math.min(1, ps[k] / (1 - ps[k]));
+  }), floor));
+}
+export const MEMO_CAP = 0.10;   // 판 하나에서 앞 판 기억 봇이 별을 받을 확률의 상한(찍기 바닥과 같은 10%)
+// 미리 정한 차례로 누르는 봇(F5) — 늘 같은 답(답마다) · 번갈아(답 둘 · 두 위상) · 단계 꼴(원판 단계마다 가장 흔한 답 — 같으면 표에서 먼저 나온 답)
+//  → [k(판 차례) → 누를 답] 목록. 판 하나에서 이 봇들은 별을 받거나(1) 못 받거나(0)
+export function blindBots(plan, cuts, answerOf, flip = null) {
+  const vals = [...new Set([...plan.map(answerOf), ...(flip ? plan.map(p => answerOf(flip(p))) : [])])];
+  const bots = vals.map(v => () => v);
+  for (const a of vals) for (const b of vals) if (a !== b) bots.push(k => (k % 2 ? b : a));
+  const bounds = [0, ...cuts, plan.length], mode = [];
+  for (let s = 0; s + 1 < bounds.length; s++) {
+    const a = plan.slice(bounds[s], bounds[s + 1]).map(answerOf), n = x => a.filter(z => z === x).length, m = a.slice().sort((x, y) => n(y) - n(x))[0];
+    for (let k = bounds[s]; k < bounds[s + 1]; k++) mode[k] = m;
+  }
+  bots.push(k => mode[k]);
+  return bots;
 }
 export const minKeep = (total, choices, alpha = 0.10) => minKeepP(Array(total).fill(1 / choices), alpha);
 // 씨앗(N2) — 글 조각을 이어 32비트 FNV-1a(같은 방 · 같은 칸 · 같은 판 시각이면 TV와 아이 기기가 같은 판)
@@ -74,7 +110,11 @@ export function seedOf(...parts) {
 // 단계 안 섞기(N2) — 단계 경계(cuts)는 그대로 두고 단계 안에서만 차례를 섞고, 판마다 반쯤 답을 뒤집음(flip).
 //  조건: 같은 답 maxRun+1번 연속 X · 처음 네 판이 ABAB로 번갈아 X · balance면 답 수가 같게. 못 채우면 다시 뽑고 tries 넘으면 원판
 //  → 번갈아 누르기 · 늘 같은 답으로 별을 받지 못하게(11-08 토론: 소4는 번갈아 누르면 12번 중 10번이었음)
-export function stageShuffle(plan, cuts, r, { flip = null, answerOf = null, maxRun = 2, noAlt4 = true, balance = true, tries = 300 } = {}) {
+//  chance(plan → 판마다 찍기 확률)를 주면 하나 더(F5): 앞 판 기억 봇 셋(memoryOdds)이 그 판에서 별을 받을 확률이 MEMO_CAP(10%) 아래인 판만.
+//   (같은 답 세 번 X · 답 수 맞추기 때문에 앞 판과 같은 답이 우연보다 적게 나와 '앞 판 답 피하기'가 둘 고르기 칸에서 33%였음)
+//   위 조건은 맞는데 이 검사를 tries 안에 못 넘으면 넘은 판 가운데 셋의 가장 큰 확률이 가장 작은 판(원판으로 돌아가지 않음).
+//   무작위는 r 하나만 써서 같은 씨앗이면 같은 판(TV · 아이 기기)
+export function stageShuffle(plan, cuts, r, { flip = null, answerOf = null, maxRun = 2, noAlt4 = true, balance = true, chance = null, tries = chance ? 1000 : 300 } = {}) {
   const bounds = [0, ...cuts, plan.length];
   const good = arr => {
     if (!answerOf) return true;
@@ -84,12 +124,23 @@ export function stageShuffle(plan, cuts, r, { flip = null, answerOf = null, maxR
     if (balance) { const c = {}; for (const x of a) c[x] = (c[x] || 0) + 1; const v = Object.values(c); if (v.length > 1 && Math.max(...v) - Math.min(...v) > a.length % 2) return false; }
     return true;
   };
+  const blind = chance && answerOf ? blindBots(plan, cuts, answerOf, flip) : [];
+  const odds = arr => {
+    if (!chance || !answerOf) return 0;
+    const a = arr.map(answerOf), ps = chance(arr), floor = minKeepP(ps);
+    if (blind.some(bot => a.filter((x, k) => x === bot(k)).length >= floor)) return 1;
+    return Math.max(...memoryOdds(a, ps));
+  };
+  let best = null, bestOdds = Infinity;
   for (let t = 0; t < tries; t++) {
     const out = [];
     for (let k = 0; k + 1 < bounds.length; k++) out.push(...shuffle(plan.slice(bounds[k], bounds[k + 1]), r).map(p => (flip && r() < 0.5 ? flip(p) : p)));
-    if (good(out)) return out;
+    if (!good(out)) continue;
+    const o = odds(out);
+    if (o < MEMO_CAP) return out;
+    if (o < bestOdds) { best = out; bestOdds = o; }
   }
-  return plan.slice();
+  return best || plan.slice();
 }
 // 단계 꼬리표 문항 표(X2) → 단계 경계 — 줄마다 stage('intro' 소개 · 'grow' 발전 · 'twist' 비틀기 · 'end' 마무리)가 바뀌는 자리
 //  문항 표 하나에서 경계를 읽어 CUTS가 표와 어긋날 수 없게(새 칸 · TV 소리 모드 · 섞어 듣기가 모두 이 표를 씀)
