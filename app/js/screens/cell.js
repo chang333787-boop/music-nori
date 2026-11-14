@@ -11,7 +11,7 @@
 import { h, onPress, josa, copyText, lsGet } from '../util.js';
 import { friendImg, setPose, preload, BAND } from '../band.js';
 import * as room from '../room.js';
-import { cellById, LANES, missingPre, nextCell, cellName, easyText, PLAY_CARD } from '../../../engine/cells.js';
+import { cellById, LANES, nudgePre, nextCell, cellName, easyText, PLAY_CARD } from '../../../engine/cells.js';
 import * as K from '../cellkit.js';
 import { TV_STEPS, TV_SCRIPT } from '../../../engine/tvscript.js';
 import { starSounds } from '../music.js';
@@ -398,7 +398,7 @@ export default function mount(root, ctx) {
     if (gone) return;
     // 방 아이 기기가 선생님 단계를 따라가게 — 같은 칸이면 다시 열지 않고 단계만 바꿈
     if (inRoom) room.here.cur = { cell: cell.id, idx: () => (overlay.hidden ? phase : 3), go: i => runPhase(i) };
-    const miss = missingPre(K.getProg(), cell.id).map(cellById).filter(c => c && c.first);
+    const miss = nudgePre(K.getProg(), cell.id).map(cellById);   /* 추천 차례에서 앞에 오는 만든 칸만(engine/cells.js nudgePre) */
     if (miss.length && !warned.has(cell.id) && !tv && !inRoom && !startAt) {
       warned.add(cell.id);
       const m = miss[0];

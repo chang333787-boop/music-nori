@@ -33,7 +33,7 @@ export const CELLS = [
   C('ga2', '가2', 'melody', '라', ['ga1'], '아는 두 음 위에 새 음 하나만 더한다', '1학년~', { first: true, game: '물음표 자리에 온 소리 고르기(라 · 솔 · 미)', easy: '새 음 하나', std: ST('4음02-01◎') }),
   C('ga3', '가3', 'melody', '도 · 건너뛰는 가락', ['ga2'], '솔-미-라 틀 아래로 넓힌다', '1~2학년', { first: true, game: '건너뛰는 가락 그림 고르기', easy: '건너뛰는 노래', std: ST('4음02-01◎') }),
   C('ga4', '가4', 'melody', '레(차례가기)', ['ga3'], '도-미 사이를 메워 차례가기와 뛰어가기를 가른다', '2학년~', { first: true, game: '물음표 소리 고르기 · 차례가기와 뛰어가기 가려내기', easy: '한 계단씩 노래', std: ST('4음02-01◎') }),
-  C('ga5', '가5', 'melody', '5음(도레미솔라)', ['ga4'], '어떻게 이어도 어울려 첫 즉흥이 실패하지 않는다', '2~3학년'),
+  C('ga5', '가5', 'melody', '5음(도레미솔라)', ['ga4'], '다섯 음의 자리를 귀와 계단으로 가려낸다 — 라는 솔 바로 위 한 계단 · 미와 솔 사이(파 자리)는 건너뜀. 듣고 가려내기까지(지어 부르기는 이 칸에 없음 · 11-14)', '2~3학년', { first: true, game: '물음표 소리 고르기(라 · 솔 · 미) · 차례가기와 뛰어가기 가려내기', easy: '다섯 계단 노래', std: ST('4음02-01◎') }),
   C('ga6', '가6', 'melody', '낮은 라·솔, 높은 도', ['ga5', 'ak2'], '오선 위치와 함께 음역을 넓힌다', '3학년~'),
   C('ga7', '가7', 'melody', '파·시(장음계)', ['ga6'], '반음 자리(미-파, 시-도)는 5음이 익은 뒤에야 들린다', '3~4학년'),
   C('ga8', '가8', 'melody', '조 바꾸기', ['ga7', 'ak4'], '같은 노래를 다른 도 자리에서 — 이동도와 음이름을 함께', '5~6학년'),
@@ -85,7 +85,7 @@ export const FIRST = CELLS.filter(c => c.first).map(c => c.id);
 //  난이도 1(듣고 둘 중 하나 · 박 따라 누르기) → 2(셋 중 하나 · 앞 소리 기억하기 · 그림 읽기) → 3(음표 · 마디 · 오선 · 장단보)
 //  같은 난이도 안에서는 예전 차례(헷갈리는 짝 높이 ↔ 길이가 일찍 만나게 · 빠1은 리1 바로 뒤 — 빠르기 = 박의 빠르기 · 곰 줄은 셈1 → 리1 → 빠1)
 //  tests/load.test.mjs가 이 차례의 난이도가 내려가지 않는지 본다
-export const ORDER = ['so3', 'so4', 'sem1', 'ri1', 'ppa1', 'so6', 'so5', 'ri2', 'ga1', 'ga2', 'ak1', 'hy1', 'hwa1', 'ak2', 'ri3', 'ri4', 'ga3', 'ga4', 'ri5', 'jd1', 'ri6'];
+export const ORDER = ['so3', 'so4', 'sem1', 'ri1', 'ppa1', 'so6', 'so5', 'ri2', 'ga1', 'ga2', 'ak1', 'hy1', 'hwa1', 'ak2', 'ri3', 'ri4', 'ga3', 'ga4', 'ga5', 'ri5', 'jd1', 'ri6'];
 
 // ── 1~2학년 판(band 'low') ──
 // 칸 이름 — 1~2학년 판이면 쉬운 이름(easy가 없는 칸은 그대로)
@@ -125,7 +125,7 @@ export const PLAY_STD = ST('4음03-02◎ 4음03-03◎ 6음03-02○ 6음03-03○'
 // 칸 결과 → 곡 바꾸기의 그 부탁으로 바로(11-10 · 배운 요소를 곡에서 직접 바꿔 보기) — 키 = play.js CARDS의 key · 없는 칸(장1 등)은 단추를 내지 않음
 export const PLAY_CARD = {
   so3: ['long', '길게 바꿔 보기'], so4: ['pitch', '높이 바꿔 보기'], so5: ['tempo', '빠르기만 바꿔 보기'], sem1: ['dyn', '셈여림 바꿔 보기'], ppa1: ['tempo', '빠르기 바꿔 보기'],
-  ga1: ['pitch', '높이 바꿔 보기'], ga2: ['pitch', '높이 바꿔 보기'], ga3: ['make', '가락 지어 보기'], ga4: ['pitch', '높이 바꿔 보기'],
+  ga1: ['pitch', '높이 바꿔 보기'], ga2: ['pitch', '높이 바꿔 보기'], ga3: ['make', '가락 지어 보기'], ga4: ['pitch', '높이 바꿔 보기'], ga5: ['pitch', '높이 바꿔 보기'],
   ri1: ['tempo', '빠르기 바꿔 보기'], ri2: ['rest', '쉼표 넣어 보기'], ri4: ['long', '두 박으로 늘여 보기'], ri5: ['meter', '박자표 바꿔 보기'], ri6: ['fix', '마디 고쳐 보기'],
   ak1: ['long', '길게 바꿔 보기'], ak2: ['pitch', '높이 바꿔 보기'],
 };
@@ -136,6 +136,9 @@ export const stdText = std => (std || []).map(([code, m]) => `[${code}]${m}`).jo
 export const passed = (progress, id) => !!(progress && progress[id] && progress[id].stars >= 1);
 // 앞 칸 중 아직 안 지난 것(건너뛰고 들어오면 한 줄 안내 · 잠그지 않음)
 export const missingPre = (progress, id) => (cellById(id)?.pre || []).filter(p => !passed(progress, p));
+// 칸 들머리 안내('○○을 알면 더 쉬워요')에 낼 앞 칸 — 만든 칸 가운데 추천 차례에서 이 칸보다 앞에 오는 것만
+//  난이도가 더 높아 추천 차례에서 뒤에 오는 앞 칸(악2 ← 가5 · 11-14)은 안내하지 않는다 — 추천대로 온 아이에게 '뒤 칸 먼저'라고 하지 않게
+export const nudgePre = (progress, id) => missingPre(progress, id).filter(p => cellById(p)?.first && (!ORDER.includes(id) || ORDER.indexOf(p) < ORDER.indexOf(id)));
 // 추천 다음 칸 — start(반 설정 시작 칸)부터 차례에서 아직 안 지난 첫 칸. 다 지났으면 null
 export function nextCell(progress, start = ORDER[0]) {
   const i = Math.max(0, ORDER.indexOf(start));
