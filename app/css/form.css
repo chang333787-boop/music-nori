@@ -1,0 +1,62 @@
+/* 도막 짜기 판(#/form · 11-14 묶음 D5) — 화면 약속 docs/ui.md · 1366×768 스크롤 0 · 글 18px↑ · 단추 3px 잉크 테 · 모서리 18 · 64px↑ · 주황은 [듣기] 하나
+   왼쪽 판(도막 고르기 · 칸 여섯 · 짜임 줄 + 듣기) · 오른쪽 부탁 카드(점 · 글 · 안내 · 낱말 뜻) — 부탁 점 · 글 모양은 놀이터(play.css .pc-*)를 그대로 씀 */
+.form{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px}
+.fm-board{min-width:0;min-height:0;display:flex;flex-direction:column;gap:16px;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:16px 20px}
+.fm-lab{flex:none;font-family:var(--head);font-size:20px;color:var(--ink-2)}
+
+/* 도막 고르기 — 셋 · 고른 것은 잉크로 채움 */
+.fm-pieces{flex:none;display:flex;align-items:center;gap:14px}
+.fm-pieces .fm-lab{width:96px}
+.fm-piece{flex:1;min-width:0;min-height:88px;justify-content:flex-start;gap:16px;padding:8px 20px;color:var(--turtle)}
+.fm-piece b{flex:none;font-family:var(--head);font-weight:400;font-size:44px;line-height:1;color:var(--ink)}
+.fm-piece .fm-pict{flex:1;min-width:0;height:44px}
+.fm-piece[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.fm-piece[aria-pressed="true"] b{color:var(--paper)}
+
+/* 칸 여섯 — 칸(도막) · 혼자/여럿 · 느리게/빠르게 */
+.fm-slots{flex:1;min-height:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.fm-col{min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px}
+.fm-num{flex:none;font-family:var(--head);font-size:20px;line-height:22px;text-align:center;color:var(--ink-2)}
+.fm-slot{position:relative;flex:1;min-height:110px;min-width:0;flex-direction:column;gap:6px;padding:8px 10px 14px;overflow:hidden;color:var(--turtle)}
+.fm-slot b{font-family:var(--head);font-weight:400;font-size:56px;line-height:1;color:var(--ink)}
+.fm-slot .fm-pict{width:100%;height:42px;transform-origin:left center;transition:transform var(--up)}
+.fm-slot.fast .fm-pict{transform:scaleX(.62)}
+.fm-slot.empty{background:var(--paper);border-style:dashed;border-color:var(--ink-2);box-shadow:none;color:var(--ink-2)}
+.fm-slot.empty:active,.fm-slot.empty.press{transform:none}
+.fm-empty{font-size:20px}
+.fm-prog{position:absolute;left:0;bottom:0;height:8px;width:calc(var(--p,0) * 100%);background:var(--turtle);opacity:0}
+.fm-col.now .fm-slot{background:var(--turtle-t)}
+.fm-col.now .fm-prog{opacity:1}
+.fm-tg{flex:none;min-width:0;min-height:64px;padding:4px 6px;gap:6px;font-size:20px;line-height:1.1;box-shadow:0 3px 0 var(--ink)}
+.fm-tg .fm-tl{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.fm-tg small{font-family:var(--body);font-size:18px;line-height:1.15;white-space:nowrap}
+.fm-tg[data-v="many"],.fm-tg[data-v="fast"]{background:var(--ink);color:var(--paper)}
+.fm-ico{flex:none;width:30px;height:24px;display:block}
+.fm-ico.wide{width:40px;height:18px}
+.fm-tg:disabled{background:transparent;border:3px dashed var(--line2);color:var(--ink-2);box-shadow:none}
+.fm-tg:disabled small{display:none}
+/* 부탁이 가리키는 자리 — 점선 고리(빨강 X) */
+.fm-col.at-piece .fm-slot,.fm-col.at-voice .fm-tg[data-t="voice"],.fm-col.at-speed .fm-tg[data-t="speed"]{outline:3px dashed var(--ink);outline-offset:4px}
+
+/* 짜임 줄 + 듣기 */
+.fm-foot{flex:none;display:flex;align-items:center;gap:20px;min-height:84px;padding-top:4px;border-top:3px solid var(--line)}
+.fm-name{flex:1;min-width:0;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:2px}
+.fm-nm{display:inline-flex;gap:4px;font-family:var(--head);font-weight:400;font-size:40px;line-height:1.1}
+.fm-nm i{font-style:normal;padding:0 4px;border-radius:10px}
+.fm-nm i.now{background:var(--turtle);color:var(--paper)}
+.fm-none{font-size:24px;color:var(--ink-2)}
+.fm-facts{font-size:20px;line-height:1.35;flex-basis:100%}
+.fm-play{flex:none;min-width:180px;min-height:76px;font-size:30px}
+
+/* 오른쪽 부탁 카드 */
+.fm-card{min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:14px 18px 16px;overflow:hidden}
+.fm-word{display:flex;flex-direction:column;gap:6px;padding:10px 14px;border-radius:14px;border:2px solid var(--turtle);background:var(--turtle-t)}
+.fm-word p{margin:0;font-size:19px;line-height:1.45}
+.fm-word .fm-note{font-size:18px;color:var(--ink-2)}
+
+/* 좁은 화면(세로 휴대폰) — 쌓음 */
+@media (max-width:900px){
+  .form{grid-template-columns:1fr;height:auto}
+  .fm-slots{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .fm-slot{min-height:110px}
+}
