@@ -45,8 +45,24 @@ export const CLUSTERS = [
 export const PLAY_NAME = {
   pitch: '높이 바꿔 보기', long: '길이 바꿔 보기', tempo: '빠르기 바꿔 보기', dyn: '셈여림 바꿔 보기',
   rest: '쉼표 넣어 보기', make: '가락 지어 보기', meter: '박자표 바꿔 보기', fix: '마디 고쳐 보기',
+  rmake: '리듬 지어 보기', dress: '내 곡 꾸며 보기', chord: '반주 화음 붙여 보기', jang: '장단 놓아 보기', form: '도막 짜 보기',
 };
-export const PLAY_KEYS = [...new Set(Object.values(PLAY_CARD).map(v => v[0]))];
+// 칸 결과 카드에 매이지 않고 따로 서는 놀이터 카드(11-14 묶음 D · docs/plan100_batchD.md) — 만든 팀이 제 줄의 주석을 푼다(그 전에는 흐름에 못 씀)
+//  줄마다 한 키 · 줄 사이를 띄워 둔 것은 여러 가지를 합칠 때 부딪히지 않게
+export const PLAY_SOLO = [
+  // 'rmake',   // D3 리듬 지어 보기(놀이터 부탁 카드)
+
+  // 'dress',   // D3 내 곡 꾸며 보기(놀이터 부탁 카드)
+
+  // 'chord',   // D3 반주 화음 붙여 보기(놀이터 부탁 카드)
+
+  // 'jang',    // D4 장단 판(#/jang)
+
+  // 'form',    // D5 도막 짜기 판(#/form)
+];
+// 놀이터(#/play/<키>)가 아닌 따로 선 화면
+export const PLAY_ROUTE = { jang: '#/jang', form: '#/form' };
+export const PLAY_KEYS = [...new Set([...Object.values(PLAY_CARD).map(v => v[0]), ...PLAY_SOLO])];
 
 const S = (id, name, g, gr, why, ev, acts, keys = '') => ({ id, name, g, gr, why, ev, acts, keys });
 const E = (id, name, friend, keys, curr, steps, mix = []) => ({ id, name, friend, keys, curr, steps, mix });
@@ -58,7 +74,7 @@ export const ELEMENTS = [
     [
       S('b1', '일정박 — 고르게 이어지는 박', '1~3학년', [1, 3],
         '박에 몸을 맞추는 일은 일찍부터 되고, 뒤에 오는 리듬 공부가 모두 여기에 기댄다. 교과서는 3학년 첫머리에 둔다.',
-        ['mid', 'book'], ['cell:ri1', 'play:tempo'], '박 맞추기 박 치기'),
+        ['mid', 'book'], ['cell:ri1', 'cell:bak1', 'play:tempo'], '박 맞추기 박 치기'),
       S('b2', '센박·여린박 — 둘씩 · 셋씩 묶어 듣기', '3학년', [3, 4],
         '악보에 적기 전에 둘 묶음과 셋 묶음을 몸과 귀로 겪는다. 듣고 몇 박자인지 말하기는 초등 내내 어렵다는 연구가 있어, 맞히기보다 센박을 넣었다 빼며 듣는 활동을 앞에 둔다.',
         ['method', 'strong'], ['lab:meter', 'cell:ri5'], '센박 여린박 강박 약박 묶음'),
@@ -67,16 +83,16 @@ export const ELEMENTS = [
         ['method', 'book'], ['cell:ri5', 'lab:meter', 'play:meter'], '마디 마디줄 2박자 3박자 4박자 2/4 3/4 4/4 4분의 2박자 4분의 3박자 4분의 4박자'),
       S('b4', '한 마디를 박 수에 맞게 채우기', '3학년', [3, 4],
         '박자표의 뜻을 알아야 한 마디에 음표가 얼마나 들어가는지 셀 수 있다.',
-        ['logic'], ['cell:ri6', 'play:fix'], '마디 채우기'),
+        ['logic'], ['cell:ri6', 'play:fix', 'cell:ri11'], '마디 채우기'),
       S('b5', '6/8박자', '4학년(교과서 8종 가운데 6종)', [4, 6],
         '한 박을 셋으로 나누는 느낌은 3학년 자진모리장단에서 먼저 겪는다. 교육과정은 박자의 종류를 학년별로 정해 두지 않았다.',
-        ['book'], ['cell:ri9'], '8분의 6박자'),
+        ['book'], ['cell:ri13'], '8분의 6박자'),
       S('b6', '못갖춘마디', '노래 악보에 나올 때', [3, 6],
         '학년을 정한 근거를 찾지 못했다. 마디와 박자표를 안 뒤, 못갖춘마디로 시작하는 노래를 만날 때 다룬다.',
         ['none', 'logic'], ['cell:ri10']),
       S('b7', '변박자', '5~6학년', [5, 6],
         '한 곡 안에서 박자가 바뀌는 것은 박자표를 읽을 수 있게 된 뒤에 다룬다.',
-        ['book'], [], '박자 바뀜'),
+        ['book'], ['cell:ri14'], '박자 바뀜'),
     ],
     [
       X('박을 셀 줄 알면 박자도 안다고 보기 쉽다. 박은 느껴도 마디마다 돌아오는 센박은 5~8세에 잘 드러나지 않았고, 9~12세도 박자를 가려내기 어려워했다.', 'Nave-Blodgett 외(2021) · Jones(1976)', 'strong'),
@@ -92,16 +108,16 @@ export const ELEMENTS = [
         ['mid', 'curr'], ['cell:so3', 'play:long'], '긴 소리 짧은 소리'),
       S('r2', '4분음표 · 4분쉼표', '3학년(교과서)', [1, 3],
         '한 박짜리 음표와 한 박 쉼표부터 읽는다. 일정박에 맞출 수 있어야 한다.',
-        ['book', 'logic'], ['cell:ri2', 'lab:len:rest', 'play:rest']),
+        ['book', 'logic'], ['cell:ri2', 'lab:len:rest', 'play:rest', 'cell:ri11']),
       S('r3', '8분음표 둘', '3학년(교과서)', [1, 3],
         '한 박을 둘로 나눈다. 4분음표와 견주어 듣는다.',
-        ['book', 'logic'], ['cell:ri3']),
+        ['book', 'logic'], ['cell:ri3', 'cell:ri11']),
       S('r4', '2분음표', '3학년(교과서)', [2, 3],
         '두 박 동안 이어지는 소리. 길게 · 짧게를 가려 들을 수 있어야 한다.',
-        ['book', 'logic'], ['cell:ri4', 'play:long']),
+        ['book', 'logic'], ['cell:ri4', 'play:long', 'cell:ri11']),
       S('r5', '간단한 리듬꼴 — 한 마디 채우기', '3~4학년', [3, 4],
         '배운 음표를 한 마디 안에서 섞어 쓴다. 교육과정 3~4학년 요소가 「간단한 리듬꼴」이다.',
-        ['curr', 'logic'], ['cell:ri6', 'play:fix']),
+        ['curr', 'logic'], ['cell:ri6', 'play:fix', 'cell:ri11']),
       S('r6', '점음표', '3~4학년(교과서 · 점4분음표와 점2분음표)', [3, 4],
         '음표에 그 반을 더한 길이. 앞의 음표들을 읽을 수 있어야 한다.',
         ['book'], ['cell:ri9'], '점4분음표 점2분음표'),
@@ -116,7 +132,7 @@ export const ELEMENTS = [
         ['book', 'none'], ['cell:ri8']),
       S('r10', '스타카토 · 늘임표', '스타카토 5~6학년(교과서 1종씩) · 늘임표 4~6학년(출판사마다 다름)', [4, 6],
         '적힌 길이보다 짧게 끊거나 더 늘인다. 악보 판에서 넣었다 빼며 견준다.',
-        ['book'], ['lab:len:stacc', 'lab:len:fermata']),
+        ['book'], ['lab:len:stacc', 'lab:len:fermata', 'cell:ak6']),
     ],
     [
       X('음이 잘게 많은 것과 빠른 것이 섞일 수 있다. 3 · 5 · 6학년의 빠르기 판단이 가락의 움직임에 흔들렸다(어느 쪽으로 흔들렸는지는 원문에서 확인하지 못했다).', 'Kuhn & Booth(1988)', 'mid'),
@@ -132,12 +148,12 @@ export const ELEMENTS = [
       S('j2', '세마치장단', '4학년(교과서)', [3, 4],
         '세 박이 한 장단. 자진모리장단과 견주어 듣는다.',
         ['book'], ['cell:jd1'], '덩 쿵 덕 장단보'),
-      S('j3', '굿거리장단', '5학년(교과서)', [5, 6],
-        '교과서 8종이 5학년에 둔다.',
-        ['book'], []),
-      S('j4', '중중모리장단', '6학년(교과서)', [6, 6],
-        '교과서 8종이 6학년에 둔다.',
-        ['book'], []),
+      S('j3', '굿거리장단', '주로 6학년(2015 교과서 8종 분석) · 미래엔은 5학년에도', [5, 6],
+        '2015 개정 교과서 8종을 분석한 논문은 굿거리가 주로 6학년에 나온다고 했다. 미래엔은 5학년에도 낸다. ⚠ 2022 개정 교과서의 학년은 확인 못 함.',
+        ['book'], ['cell:jd2']),
+      S('j4', '중중모리장단', '5학년(미래엔 기본 꼴) · 6학년(두 꼴 잇기)', [5, 6],
+        '미래엔은 5학년에 중중모리 기본 장단꼴을, 6학년에 두 꼴을 이어 치게 한다. ⚠ 다른 교과서 · 2022 개정 교과서의 학년은 확인 못 함.',
+        ['book'], ['cell:jd2']),
     ]),
 
   E('melody', '가락·음높이', 'bird', '가락 음높이 높낮이 계이름 음계',
@@ -163,7 +179,7 @@ export const ELEMENTS = [
         ['book'], ['cell:ga5', 'cell:ga6', 'play:pitch'], '5음'),
       S('m7', '일곱 음 — 장음계', '5~6학년(교육과정 「장음계, 단음계」)', [5, 6],
         '파와 시가 들어오면 일곱 음이 다 모인다.',
-        ['curr', 'book'], ['cell:ga7'], '7음 파 시 단음계'),
+        ['curr', 'book'], ['cell:ga7', 'play:pitch'], '7음 파 시 단음계'),
       S('m8', '음이름 · 계이름을 오선에서 읽기', '5학년(교과서)', [5, 6],
         '교육과정 5~6학년 요소가 「음이름, 계이름, 율명」이다. 3~4학년에는 계이름을 몸과 손기호로 익힌다.',
         ['book', 'curr'], ['cell:ak4'], '율명 다라마바사가나'),
@@ -184,19 +200,19 @@ export const ELEMENTS = [
         ['mid', 'curr'], ['cell:sem1', 'play:dyn', 'cell:so1'], '큰 소리 작은 소리'),
       S('d2', '여리게 p · 세게 f', '3학년(교과서)', [3, 4],
         '귀로 가려낸 뒤에 이름과 기호를 붙인다. 악보 판에서 p와 f를 넣었다 빼며 듣는다.',
-        ['book', 'method'], ['lab:dyn:p', 'lab:dyn:f', 'cell:sem1'], '피아노 포르테'),
+        ['book', 'method'], ['lab:dyn:p', 'lab:dyn:f', 'cell:sem1', 'cell:sem3'], '피아노 포르테'),
       S('d3', '조금 여리게 mp · 조금 세게 mf', '3학년(교과서)', [3, 4],
         '교과서 8종은 3학년에 p · mp · mf · f를 함께 낸다. 나라 밖 문서들은 가운데 세기를 더 뒤에 두기도 해서, 앞뒤를 굳게 정할 까닭은 없다.',
-        ['book', 'method'], ['lab:dyn:mp', 'lab:dyn:mf', 'cell:sem2'], '메조 피아노 메조 포르테'),
+        ['book', 'method'], ['lab:dyn:mp', 'lab:dyn:mf', 'cell:sem3'], '메조 피아노 메조 포르테'),
       S('d4', '점점 세게 · 점점 여리게', '4학년(교과서 2종) · 5학년(6종)', [4, 6],
         '뚜렷한 대비를 먼저, 점점 바뀌는 것은 나중에 둔다. 교육과정도 3~4학년 「셈여림」, 5~6학년 「셈여림의 변화」 차례다.',
         ['curr', 'book'], ['lab:dyn:cresc', 'lab:dyn:decresc', 'cell:sem2'], '크레셴도 데크레셴도 셈여림의 변화'),
       S('d5', '매우 여리게 pp · 매우 세게 ff', '4학년(교과서 1종) · 5학년(2종)', [4, 6],
         '점점 세게와 어느 쪽이 먼저인지는 문서마다 엇갈린다. 순서를 바꿔 써도 된다.',
-        ['book', 'method'], ['lab:dyn:pp', 'lab:dyn:ff'], '피아니시모 포르티시모'),
+        ['book', 'method'], ['lab:dyn:pp', 'lab:dyn:ff', 'cell:sem3'], '피아니시모 포르티시모'),
       S('d6', '악센트', '학년 근거를 찾지 못함', [3, 6],
         '한 음만 세게. 셈여림표를 안 뒤에 다룬다.',
-        ['none', 'method'], ['lab:dyn:accent']),
+        ['none', 'method'], ['lab:dyn:accent', 'cell:sem4']),
     ],
     [
       X('느리게와 여리게, 세게와 빠르게를 한데 묶는다(5~9세 연주 자료 · 6세와 11세 듣기 자료).', 'Flowers 외(1997) · Eitan & Tubul(2010)', 'mid'),
@@ -212,16 +228,16 @@ export const ELEMENTS = [
         ['mid', 'book'], ['cell:ppa1', 'cell:ri1', 'play:tempo', 'lab:tempo:slow', 'lab:tempo:fast', 'cell:so2'], '빠른 느린'),
       S('t2', '빠르기만 떼어 듣기', '3~4학년', [3, 4],
         '빠르기는 셈여림이나 음이 잘게 많은 것과 섞이기 쉽다. 같은 가락에서 빠르기만 바꿔 듣는다.',
-        ['mid', 'design'], ['lab:tempo', 'play:tempo']),
+        ['mid', 'design'], ['lab:tempo', 'cell:ppa1', 'play:tempo']),
       S('t3', '빠르기말(우리말)', '4학년 두세 개 · 5학년 다섯~일곱 개(교과서)', [4, 6],
         '느리게와 빠르게 사이의 말을 늘려 간다. 원어 빠르기말을 몇 학년에 내는지는 확인하지 못했다.',
-        ['book'], ['lab:tempo:slowish', 'lab:tempo:mid', 'lab:tempo:fastish', 'cell:ppa2'], '보통 빠르게 조금 느리게 조금 빠르게'),
+        ['book'], ['lab:tempo:slowish', 'lab:tempo:mid', 'lab:tempo:fastish', 'cell:ppa4'], '보통 빠르게 조금 느리게 조금 빠르게'),
       S('t4', '점점 느리게 · 점점 빠르게', '5학년(교과서) · rit.와 a tempo는 6학년', [5, 6],
         '교육과정 5~6학년 요소가 「빠르기의 변화」다. 뚜렷한 대비를 먼저, 점점 바뀌는 것은 나중에 둔다.',
         ['curr', 'book'], ['lab:tempo:rit', 'lab:tempo:accel', 'cell:ppa2'], '리타르단도 아첼레란도 빠르기의 변화 rit accel'),
       S('t5', '늘임표', '4~6학년(출판사마다 다름)', [4, 6],
         '한 음을 적힌 길이보다 늘인다.',
-        ['book'], ['lab:len:fermata'], '페르마타'),
+        ['book'], ['lab:len:fermata', 'cell:ak6'], '페르마타'),
     ],
     [
       X('느리게와 여리게, 세게와 빠르게를 한데 묶는다(5~9세 연주 자료).', 'Flowers 외(1997)', 'mid'),
@@ -239,7 +255,7 @@ export const ELEMENTS = [
         ['curr', 'book'], ['cell:eum1']),
       S('e3', '같은 가락, 다른 악기', '3~6학년', [3, 6],
         '악보는 그대로 두고 악기만 바꿔 듣는다. 앱의 악기 소리는 만든 소리라 진짜 악기와 다르다.',
-        ['design'], ['lab:inst'], '피아노 리코더 실로폰 바이올린 트럼펫 악기 바꾸기'),
+        ['design'], ['lab:inst', 'cell:eum3'], '피아노 리코더 실로폰 바이올린 트럼펫 악기 바꾸기'),
       S('e4', '관악기 · 현악기', '5~6학년(교육과정) · 4학년 교과서에 관악기 맛보기', [4, 6],
         '교육과정 5~6학년 요소 그대로다. 교과서는 5학년에 목관 · 금관 · 현악기를 가른다.',
         ['curr', 'book'], ['cell:eum2', 'lab:inst'], '목관 금관'),
@@ -259,7 +275,7 @@ export const ELEMENTS = [
         ['curr', 'book'], ['cell:hy2'], '메기고 받는 형식'),
       S('f3', 'ab', '3~4학년(교육과정)', [3, 4],
         '같은 도막과 다른 도막에 글자를 붙인다.',
-        ['curr', 'book'], [], '두 도막 형식'),
+        ['curr', 'book'], ['cell:hy1', 'cell:hy3'], '두 도막 형식'),
       S('f4', '도돌이표', '노래 악보에 나올 때', [3, 6],
         '학년을 정한 근거를 찾지 못했다. 마디를 알아야 어디로 돌아가는지 보인다. 악보 판에서 넣었다 빼면 같은 마디를 한 번 더 연주한다.',
         ['none', 'logic'], ['lab:repeat:repeat', 'cell:ban1'], '되돌아가기'),
@@ -271,7 +287,7 @@ export const ELEMENTS = [
         ['curr', 'book'], ['cell:hy3'], '세 도막 형식'),
       S('f7', '긴자진 형식 · 시조 형식', '5~6학년(교육과정)', [5, 6],
         '교육과정 5~6학년 요소다. 교과서는 긴자진 형식을 5학년, 시조 형식을 6학년에 둔다.',
-        ['curr', 'book'], []),
+        ['curr', 'book'], ['cell:hy5']),
       S('f8', 'D.C. · Fine · D.S. · 코다', '노래 악보에 나올 때', [4, 6],
         '학년을 정한 근거를 찾지 못했다. 나라 밖 문서들은 도돌이표, 1 · 2번 괄호, D.C. al Fine, D.S. 차례로 둔다(코다의 자리는 미루어 본 것).',
         ['none', 'method'], ['cell:ban2'], '다 카포 달 세뇨 피네'),
@@ -291,7 +307,7 @@ export const ELEMENTS = [
         ['book', 'strong'], ['cell:hwa2'], '3화음 으뜸화음 딸림화음 버금딸림화음'),
       S('h3', '바장조 · 사장조 주요 3화음', '6학년(교과서)', [6, 6],
         '교과서 8종이 6학년에 둔다.',
-        ['book'], [], '3화음'),
+        ['book'], ['cell:hwa3'], '3화음'),
     ],
     [
       X('가락이 얹히면 화음이 바뀐 것을 못 듣는다(5세 자료).', 'Costa-Giomi(1994)', 'mid'),
@@ -304,16 +320,16 @@ export const ELEMENTS = [
     [
       S('s1', '그림 악보', '1~2학년', [1, 2],
         '소리를 먼저 겪고, 그림으로 적어 본 뒤에 약속된 기호로 간다.',
-        ['method'], ['cell:ak1', 'play:long'], '그림으로 적기'),
+        ['method'], ['cell:ak1', 'play:long', 'cell:ak7'], '그림으로 적기'),
       S('s2', '오선의 줄과 칸', '3학년', [3, 4],
         '높낮이를 줄과 칸의 자리로 읽는다.',
-        ['method', 'logic'], ['cell:ak2', 'play:pitch'], '오선보'),
+        ['method', 'logic'], ['cell:ak2', 'play:pitch', 'cell:ak7'], '오선보'),
       S('s3', '높은음자리표 · 가온 도 · 덧줄', '3~4학년', [3, 4],
         '줄과 칸을 읽을 수 있어야 음자리표가 정하는 자리가 보인다.',
-        ['method', 'logic'], ['cell:ak3'], '음자리표'),
+        ['method', 'logic'], ['cell:ak3', 'play:pitch', 'play:make'], '음자리표'),
       S('s4', '악보 기호를 넣었다 빼며 듣기', '3~6학년', [3, 6],
         '기호를 넣기 전과 넣은 뒤를 이어 들어서, 기호 하나가 소리를 어떻게 바꾸는지 귀로 확인한다.',
-        ['method', 'design'], ['lab:dyn', 'lab:tempo', 'lab:len', 'lab:repeat', 'lab:meter', 'lab:inst'], '악보 기호 기호'),
+        ['method', 'design'], ['lab:dyn', 'lab:tempo', 'lab:len', 'lab:repeat', 'lab:meter', 'lab:inst', 'cell:ak6'], '악보 기호 기호'),
       S('s5', '음이름(다라마바사가나)', '5학년(교과서)', [5, 6],
         '교육과정 5~6학년 요소가 「음이름, 계이름, 율명」이다.',
         ['book', 'curr'], ['cell:ak4']),
@@ -351,7 +367,7 @@ export function actInfo(act) {
   if (kind === 'play') {
     if (!PLAY_NAME[a] || !PLAY_KEYS.includes(a)) return null;
     return { act, kind, kindName: '곡 바꾸기', ref: a, sign: null, label: PLAY_NAME[a], friend: 'bear', built: true,
-      href: '#/play/' + a, tv: null, std: null };
+      href: PLAY_ROUTE[a] || '#/play/' + a, tv: null, std: null };
   }
   return null;
 }

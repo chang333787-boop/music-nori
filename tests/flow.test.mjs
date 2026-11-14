@@ -22,6 +22,7 @@ ok('요소 열 가지 · id와 단계 id가 겹치지 않는다', () => {
   }
   assert.equal(elementById('nope'), null);
   assert.equal(stepById('d4').el.id, 'dyn');
+  assert.ok(stepById('d4').step.acts.includes('cell:sem2') && !stepById('d3').step.acts.includes('cell:sem2'), '셈2(점점 세게·점점 여리게)는 d4에만 — mp · mf(d3)는 악보 판만');
   assert.equal(stepById('nope'), null);
 });
 
@@ -79,9 +80,10 @@ ok('악보 판의 모든 묶음 · 모든 기호가 어느 단계에든 걸려 �
     assert.ok(used.has(`lab:${s.group}:${s.id}`) || used.has(`lab:${s.group}`), s.id);
 });
 
-ok('만든 칸 스물하나는 모두 어느 흐름에든 들어 있다', () => {
+ok('만든 칸(장부 first)은 모두 어느 흐름에든 들어 있다', () => {
   const used = new Set(acts.filter(a => a.act.startsWith('cell:')).map(a => a.act.slice(5)));
   for (const id of FIRST) assert.ok(used.has(id), id);
+  assert.deepEqual(stepById('f2').step.acts, ['cell:hy2'], '형2 메기고 받기 = 흐름 f2');
 });
 
 ok('걸음 다섯 · 덩어리 셋이 있는 요소만 가리킨다', () => {

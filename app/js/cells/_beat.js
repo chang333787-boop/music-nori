@@ -7,6 +7,7 @@
 import { windows } from '../../../engine/judge.js';
 import { audioToPerf } from '../clock.js';
 import { accompBar, cadence } from '../../../engine/theme.js';
+import { headSVG, stemSVG, qRestSVG } from './_glyph.js';   // 음표 머리 · 기둥 · 4분쉼표 — 리듬 악보 그림(_glyph.js)과 같은 조각
 
 // ── 빠르기(학년군마다) ──
 export const TEMPO = {
@@ -200,13 +201,13 @@ const INK = '#3B2A1E';
 const TIGHT = { q: '3 5 27 70', h: '2 5 28 71', w: '6 50 36 25', qr: '6 4 26 69', ee: '0 3 58 72', qs: '15 6 10 68', ees: '10 8 44 68' };
 export function noteSVG(kind, { stick = false, size = 80, color = INK, tight = false } = {}) {
   const S = `stroke="${color}" stroke-linecap="round" stroke-linejoin="round"`;
-  const head = (cx, hollow) => `<ellipse cx="${cx}" cy="64" rx="11.5" ry="8.2" transform="rotate(-22 ${cx} 64)" fill="${hollow ? '#FFFFFF' : color}" ${S} stroke-width="${hollow ? 4 : 2}"/>`;
-  const stem = x => `<line x1="${x}" y1="61" x2="${x}" y2="9" ${S} stroke-width="4"/>`;
+  const head = (cx, hollow) => headSVG(cx, hollow, color);
+  const stem = x => stemSVG(x, color);
   let vb = '0 0 40 80', body = '';
   if (kind === 'q') body = stick ? `<line x1="20" y1="10" x2="20" y2="70" ${S} stroke-width="6"/>` : head(16, false) + stem(26.5);
   else if (kind === 'h') body = head(16, true) + stem(26.5);
   else if (kind === 'w') { vb = '0 0 48 80'; body = `<ellipse cx="24" cy="62" rx="16" ry="10.5" fill="${color}"/><ellipse cx="24" cy="62" rx="5.2" ry="8.4" transform="rotate(38 24 62)" fill="#FFFFFF"/>`; }
-  else if (kind === 'qr') body = `<path d="M13 6 L28 23 C22 29 20 33 21 37 C22 41 26 46 30 50 L28 52 C22 48 14 49 16 58 C17 62 19 66 22 69 L20 71 C12 66 7 60 8 53 C9 46 16 44 22 46 L12 34 C17 29 19 25 19 21 C19 17 16 12 11 8 Z" fill="${color}" ${S} stroke-width="2"/>`;
+  else if (kind === 'qr') body = qRestSVG(color);
   else if (kind === 'ee') {
     vb = '0 0 64 80';
     body = stick

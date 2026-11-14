@@ -25,7 +25,7 @@ export default function mount(root, ctx) {
       ctl),
     ...rows.map(lanes => h('div', { class: 'tvrow', style: { '--a-t': `var(--${LANES[lanes[0]].friend}-t)` } },
       h('div', { class: 'mlane' + (lanes.length > 1 ? ' two' : '') }, friendImg(LANES[lanes[0]].friend, 'face', { label: false }), h('b', {}, ...lanes.map(lane => h('span', {}, LANES[lane].name)))),
-      h('div', { class: 'tvcells' + (lanes.reduce((n, lane) => n + ORDER.filter(id => cellById(id).lane === lane).length, 0) > 6 ? ' dense' : '') }, ...lanes.flatMap((lane, li) => ORDER.filter(id => cellById(id).lane === lane).map((id, k) => {
+      h('div', { class: 'tvcells' + ((n => (n > 7 ? ' dense crowd' : n > 6 ? ' dense' : ''))(lanes.reduce((n, lane) => n + ORDER.filter(id => cellById(id).lane === lane).length, 0))) },   /* 여덟 칸 넘는 줄 = 옆으로 밀어 보기(11-14 · 칸이 늘어 1366×768에서 넘침 — 줄 늘리기 전 임시) */ ...lanes.flatMap((lane, li) => ORDER.filter(id => cellById(id).lane === lane).map((id, k) => {
         const c = cellById(id);
         const b = h('button', { type: 'button', class: 'tvcell' + (li && !k ? ' gap' : '') }, h('small', {}, `${LANES[lane].name} ${k + 1}`), cellName(c, band),   /* 지도와 같은 번호(평가 3차) */
           c.std ? stdEl(c.std, 'tvstd') : null);

@@ -39,7 +39,9 @@ const CSS = arg('css', '');                          // 시험용 CSS 덧씌우�
 const FONTDELAY = Number(arg('fontdelay', 0));      // >0이면 처음 화면을 한 번 더: 구글 글꼴 응답을 이만큼 늦춘 뒤 끊음
 const OUT = arg('out', '');
 const SITE = arg('base', '');                      // 배포된 곳에서 재기(예: --base=https://chang333787-boop.github.io/music-nori/) — 진짜 망 · HTTP/2 · 캐시
+// 무거운 칸 표본 12(11-07 첫 판 12칸 · 메모리 · 프레임 기준선을 견주려고 일부러 고정) — 칸이 늘어도 그대로 · 장부에서 빠진 칸이 있으면 바로 알림
 const FIRST12 = ['so3', 'so4', 'so5', 'ga1', 'ga2', 'ga3', 'ri2', 'ri4', 'ri5', 'ri6', 'ak1', 'ak2'];
+{ const built = require('./ledger.cjs').builtCells(); const gone = FIRST12.filter(id => !built.includes(id)); if (gone.length) throw new Error('perf 표본 칸이 장부(만든 칸)에 없음: ' + gone.join(' ')); }
 const UA = 'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 const sleep = ms => new Promise(r => setTimeout(r, Math.max(0, ms)));
 
