@@ -239,37 +239,47 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .fmsg{margin:0;min-height:34px;font-family:var(--head);font-size:24px;color:var(--ink)}
 .row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 
-/* ── 마을 지도 — 갈래 넷 ── */
-.map{display:grid;grid-template-rows:repeat(6,minmax(0,1fr));gap:8px;height:100%}   /* 11-08 곰 줄(셈여림·빠르기) · 11-14 형식·화음 줄이 열려 여섯 줄 */
-.mrow.later{opacity:.6;padding:2px 18px}
-.mrow.later .mlane img,.mrow.later .mlane svg{width:44px;height:44px}
-.mrow.later .mlane b{font-size:19px;white-space:nowrap}
-.mlater{font-family:var(--head);font-size:20px;color:var(--ink-2)}
-.mrow{display:grid;grid-template-columns:160px minmax(0,1fr);align-items:center;gap:16px;background:var(--a-t);border:3px solid var(--ink);border-radius:24px;padding:6px 18px;min-height:0}
-.mlane{display:flex;align-items:center;gap:10px}
-.mlane img,.mlane svg{width:64px;height:64px;object-fit:contain}
-.mlane b{font-family:var(--head);font-weight:400;font-size:26px}
-.mpath{position:relative;display:flex;align-items:center;gap:16px;min-height:0;height:100%}
-.mnode:not(:last-child)::after{content:'';position:absolute;right:-19px;top:50%;width:16px;border-top:4px dashed rgba(59,42,30,.4)}
-.mnode{position:relative;display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;align-items:center;column-gap:12px;background:var(--surface);border:3px solid var(--ink);border-radius:20px;padding:8px 14px 8px 10px;min-height:76px;box-shadow:0 4px 0 var(--ink);font-family:var(--body);text-align:left;flex:0 1 auto;min-width:0}
-.mnode .mdot{grid-row:1/3;display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--a-t);border:3px solid var(--ink);font-family:var(--head);font-size:26px}
+/* ── 마을 지도 — 위 갈래 띠 여섯 · 아래 고른 갈래 판(큰 칸 6칸씩 + '다른 놀이' 작은 줄) · 칸 52개도 1366×768 스크롤 0(D7 · 11-14) ── */
+.map{display:grid;grid-template-rows:auto minmax(0,1fr);gap:14px;height:100%}
+.mtabs{display:flex;gap:10px}
+.mtab{flex:1 1 auto;justify-content:flex-start;gap:10px;min-height:76px;padding:6px 14px 6px 8px;background:var(--a-t);font-family:var(--body)}
+.mtab img,.mtab svg{width:52px;height:52px;object-fit:contain;flex:none}
+.mtab-t{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;text-align:left}
+.mtab-t b{font-family:var(--head);font-weight:400;font-size:22px;white-space:nowrap}
+.mtab-n{display:inline-flex;align-items:center;gap:4px;font-size:18px;font-weight:700;color:var(--ink-2)}
+.mtab .mtab-n svg{width:20px;height:20px}
+/* 고른 갈래 = 잉크로 채움 · 눌린 채 */
+.mtab.on,.mtab.on:active{background:var(--ink);color:var(--paper);transform:translateY(4px);box-shadow:0 0 0 var(--ink)}
+.mtab.on .mtab-n{color:var(--paper)}
+.mtab.fresh .mtab-n svg{animation:starpop 600ms cubic-bezier(.3,1.5,.5,1) 250ms both}
+.mpanel{display:flex;flex-direction:column;gap:16px;background:var(--a-t);border:3px solid var(--ink);border-radius:24px;padding:18px 14px 14px;min-height:0;overflow:hidden}
+.mbig{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:150px;gap:22px 12px}
+.mbig.dense{grid-auto-rows:118px;gap:18px 12px}   /* 한 갈래가 18칸을 넘으면(지금 장부엔 없음) 네 줄 */
+.mnode{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);align-items:start;justify-content:stretch;gap:6px 8px;min-width:0;min-height:64px;padding:10px 12px;background:var(--surface);border-radius:20px;font-family:var(--body);text-align:left}
+.mbig .mnode:not(:nth-child(6n)):not(:last-child)::after{content:'';position:absolute;right:-15px;top:50%;width:12px;border-top:4px dashed rgba(59,42,30,.4)}
+.mnode .mdot{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:var(--a-t);border:3px solid var(--ink);font-family:var(--head);font-size:22px;line-height:1}
 .mnode.done .mdot{background:var(--a);color:#fff}
-.mnode .mname{font-family:var(--head);font-size:21px;white-space:nowrap}
-.mnode .mstars{display:flex;gap:2px}
-.mnode .mstars svg{width:22px;height:22px}
+.mnode .mstars{justify-self:end;align-self:center;display:flex;gap:2px}
+.mnode .mstars svg{width:24px;height:24px}
+.mnode .mname{grid-column:1/-1;font-family:var(--head);font-size:22px;line-height:1.15;overflow-wrap:anywhere}
+.mbig.dense .mnode .mname{font-size:20px}
 /* 새로 별을 받은 칸 — 한 번 반짝(0.6초) */
 .mnode.fresh .mstars svg{animation:starpop 600ms cubic-bezier(.3,1.5,.5,1) 250ms both}
 .mnode.fresh .mdot{animation:freshdot 600ms ease-out 250ms both}
 @keyframes freshdot{0%{box-shadow:0 0 0 0 var(--great)}50%{box-shadow:0 0 0 8px var(--great)}100%{box-shadow:0 0 0 0 transparent}}
 .mnode.next{box-shadow:0 4px 0 var(--ink),0 0 0 4px var(--paper),0 0 0 8px var(--go)}
-/* 칸이 여섯 넘는 줄(박·리듬 일곱 칸 · 11-10 리3) — 칸 너비를 고르게 · 번호 작게 · 이름은 두 줄까지(1366 폭에 넘치지 않게) */
-.mrow.dense .mpath{gap:10px}
-.mrow.dense .mnode{flex:1 1 0;column-gap:8px;padding:6px 8px 6px 6px}
-.mrow.dense .mnode:not(:last-child)::after{right:-13px;width:10px}
-.mrow.dense .mnode .mdot{width:38px;height:38px;font-size:21px}
-.mrow.dense .mnode .mname{font-size:19px;line-height:1.15;white-space:normal;overflow-wrap:anywhere}
-.mrow.dense .mnode .mstars svg{width:19px;height:19px}
-.mnode .mtag{position:absolute;left:12px;top:-20px;font-family:var(--head);font-size:18px;line-height:1;color:#fff;background:var(--go);border:2px solid var(--ink);border-radius:999px;padding:4px 12px}
+.mtag{position:absolute;left:12px;top:-16px;font-family:var(--head);font-size:18px;line-height:1;color:#fff;background:var(--go);border:2px solid var(--ink);border-radius:999px;padding:4px 12px;white-space:nowrap}
+.mtab .mtag{position:static;flex:none;margin-left:auto}
+/* 다른 놀이 — 학년 띠 밖 칸(작게 · 한 번 눌러 바로 열림 · 잠금 X) */
+.mmore{border-top:3px dashed rgba(59,42,30,.35);padding-top:8px}
+.mmore-t{margin:0 0 8px;font-family:var(--head);font-size:20px;line-height:1.2;color:var(--ink-2)}
+.mchips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px 12px}
+.mnode.mchip{grid-template-rows:auto;align-items:center;padding:5px 10px 5px 6px;border-radius:18px;box-shadow:0 3px 0 var(--ink)}
+.mchip .mdot{width:34px;height:34px;font-size:18px}
+.mchip .mname{grid-column:auto;font-size:19px}
+.mpanel{position:relative}
+.mfriend{position:absolute;right:28px;bottom:16px;height:190px;pointer-events:none}
+.mfriend img,.mfriend svg{height:100%;width:auto}
 
 /* ── TV로 다같이 ── */
 .cellscreen.tvmode{grid-template-rows:minmax(0,1fr) auto 120px;gap:10px}
@@ -285,22 +295,26 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .tvmode .csay-t{font-size:38px}
 .tvmode .ans{font-size:34px;min-height:96px}
 .tvmode .ccount,.tvmode .ctell{font-size:32px}
-.tvpick{display:grid;grid-template-rows:auto repeat(4,minmax(auto,1fr));gap:12px;height:100%}
-.tvhead h1{font-size:30px}.tvhead p{margin:4px 0 0;font-size:19px;color:var(--ink-2)}
-.tvrow{display:grid;grid-template-columns:160px minmax(0,1fr);align-items:center;gap:14px;background:var(--a-t);border:3px solid var(--ink);border-radius:22px;padding:6px 16px}
-.tvcells{display:flex;gap:12px;flex-wrap:nowrap;min-width:0}
-.tvcell{flex:0 1 auto;min-width:0;flex-direction:column;align-items:flex-start;gap:0;min-height:72px;padding:6px 16px;font-size:22px;text-align:left}
-.tvcell small{font-family:var(--body);font-size:16px;font-weight:700;color:var(--ink-2)}
-.tvrow .mlane b span{display:block}
-.tvrow .mlane.two b{font-size:22px;line-height:1.2}   /* 거북 줄 = 갈래 둘(악보 · 형식·화음) */
-.tvcell.gap{margin-left:14px}
-.tvcells.dense .tvcell{flex:1 1 0;padding-left:12px;padding-right:12px}   /* 칸이 일곱인 줄 — 너비를 똑같이 나눠 성취기준 글이 칸 밖으로 안 나가게(11-14) */
-.tvcells.crowd{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding-bottom:4px}   /* 여덟 칸 넘는 줄 — 칸 너비를 그대로 두고 옆으로 밀어 봄(높이가 늘지 않게 · 11-14) */
-.tvcells.crowd .tvcell{flex:0 0 auto}
-.tvcells.crowd .tvcell .tvstd{max-width:none;white-space:nowrap}   /* 성취기준을 한 줄로 — 줄 높이가 늘지 않게 */
-.tvcell .tvstd{max-width:214px;font-family:var(--body);font-size:18px;font-weight:700;line-height:1.25;color:var(--ink-2);text-align:left;white-space:normal}
+/* TV 고르기 — 위 갈래 띠 여섯(곰 갈래까지) · 아래 고른 갈래의 모든 만든 칸(4칸씩 네 줄 · 번호 · 이름 · 성취기준) · 칸 52개도 스크롤 0(D7) */
+.tvpick{display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:10px;height:100%}
+.tvhead h1{font-size:24px;line-height:1.3}
+.tvhead h1 span{font-family:var(--body);font-size:18px;color:var(--ink-2)}
+.tvhead p{margin:2px 0 0;font-size:18px;line-height:1.4;color:var(--ink-2)}
+.tvhead p.tvstd-note{font-weight:700}
+.tvtabs{display:flex;gap:10px}
+.tvtab{flex:1 1 auto;justify-content:flex-start;gap:8px;min-height:64px;padding:4px 12px 4px 8px;background:var(--a-t);font-size:22px}
+.tvtab img,.tvtab svg{width:44px;height:44px;object-fit:contain;flex:none}
+.tvtab b{font-weight:400;white-space:nowrap}
+.tvtab-n{margin-left:auto;min-width:34px;padding:0 8px;border:2px solid var(--ink);border-radius:999px;background:var(--surface);color:var(--ink);font-family:var(--body);font-size:18px;font-weight:700;line-height:1.5;text-align:center}
+.tvtab.on,.tvtab.on:active{background:var(--ink);color:var(--paper);transform:translateY(4px);box-shadow:0 0 0 var(--ink)}
+.tvpanel{background:var(--a-t);border:3px solid var(--ink);border-radius:22px;padding:12px 14px 14px;min-height:0;overflow:hidden}
+.tvcells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:10px 12px;height:100%}
+.tvcells.dense{grid-template-columns:repeat(5,minmax(0,1fr))}   /* 한 갈래가 16칸을 넘으면(지금 장부엔 없음) */
+.tvcell{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);align-items:start;align-content:start;justify-content:stretch;gap:4px 8px;min-width:0;min-height:64px;padding:6px 10px;font-size:20px;line-height:1.2;text-align:left}
+.tvno{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--a-t);border:3px solid var(--ink);font-size:18px;line-height:1}
+.tvname{align-self:center;overflow-wrap:anywhere}
+.tvcell .tvstd{grid-column:1/-1;font-family:var(--body);font-size:18px;font-weight:700;line-height:1.2;color:var(--ink-2);text-align:left;white-space:normal}
 .sc{white-space:nowrap}
-.tvhead p.tvstd-note{font-size:18px;font-weight:700}
 
 /* ── 선생님 칸 ── */
 .teacher{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-content:start;padding-top:8px}
