@@ -8,6 +8,11 @@
 //  묶음 D3(11-14): 부탁 9 · 10 · 11 = 따로 서는 '짓고 꾸미기' 카드(rmake · dress · chord — flow.js PLAY_SOLO) — 앞 여덟 번호 뒤에 붙여 예전 저장(play.done)이 그대로 맞음
 //   카드마다 mode가 있으면 화면이 바뀐다: rhythm = 솔 한 줄 판 + 음표 · 쉼표 단추 · dress = 도막(두 마디)마다 셈여림 · 빠르기 · 악기 · chord = 마디마다 반주 화음
 //   셋 모두 정답 없음 — 판정은 '다 했나'(두 마디가 꽉 참 · 도막을 다르게 꾸밈 · 마디마다 고름)만 보고, 듣고 나면 끝
+//  묶음 D8(11-14): 부탁 12 · 13 = '보고 놓기' 카드(staff 오선 보고 놓기 · name 음이름 보고 놓기 — flow.js PLAY_SOLO) — 앞 열하나 뒤에 붙임(예전 저장 그대로)
+//   mode read = 4분음표 칸 3~4개짜리 빈 판(engine/edit.js readBoard) · 카드에 보기(오선 그림 · 음이름 글) · 줄을 누르면 그 칸에 그 높이(또 누르면 빠짐)
+//   정답이 있는 놓기 — 판정은 '자리가 같은지' 사실만(빨강 · X · 부정하는 말 X): 다 놓은 뒤 '4개 가운데 3개 … 오선의 두 번째 음은 한 칸 위예요'
+//   다 같으면 판 가락을 저절로 들려주며 카드의 오선 음 · 음이름 글도 함께 반짝 → 끝까지 들으면 끝 · 끝낼 때마다 다음 보기(play.readNo)
+//   줄 이름 · 블록 글자: 오선 = 계이름 · 음이름 = 음이름(선반의 계이름 ↔ 음이름 단추로 바꿈 · 다장조라 도 = 다)
 import { h, svg, onPress, lsGet, lsSet, josa } from '../util.js';
 import { Player } from '../audio.js';
 import { friendImg, setPose, preload } from '../band.js';
@@ -17,6 +22,7 @@ import { barTicks, beatTicks, colorOf, solfege, pc, DUR_NAME, REST_NAME } from '
 import * as E from '../../../engine/edit.js';
 import { songById } from '../../../engine/songs/index.js';
 import { glyph } from '../cells/_glyph.js';
+import { staffCard } from '../cells/_staff.js';
 
 // ── 고정 값 ──
 const ROWS = [76, 74, 72, 71, 69, 67, 65, 64, 62, 60, 59, 57, 55];   // 위 → 아래: 높은 미 … 낮은 솔(다장조 음계)
@@ -93,6 +99,28 @@ function offMsg(cur, target) {
   if (sigP(cur) !== sigP(target)) return { st: 'diff', msg: "가락이 다르게 바뀌었어요 — '처음 곡으로'를 누르고 다시 해 봐요" };
   return { st: 'diff', msg: "길이가 다르게 바뀌었어요 — '처음 곡으로'를 누르고 다시 해 봐요" };
 }
+// 보고 놓기(묶음 D8) — 판을 살펴 카드 상태로. 맞고 틀림은 '자리가 같은지' 사실만 · 다른 자리는 다 놓은 뒤 첫 칸 하나만 알려 줌
+//  (놓는 중에는 몇 번째를 놓을 차례인지만 — 하나씩 맞춰 보기보다 오선 · 글을 끝까지 읽고 놓게)
+const COUNT = ['', '한', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'];
+//  목록은 줄바꿈 없는 띄어쓰기(\u00A0)로 묶어 '도 · / 미'처럼 목록 가운데서 줄이 갈리지 않게
+const NB = '\u00A0·\u00A0';
+const nameList = ps => '음이름\u00A0' + ps.map(E.noteName).join(NB);
+const solList = ps => '계이름\u00A0' + ps.map(p => solfege(p, { short: true })).join(NB);
+function readMsg(cur) {
+  const r = E.readCheck(cur), name = cur.readKind === 'name', want = cur.readPs || [], nm = k => E.noteName(want[k]);
+  if (r.all) return { st: 'ready', need: cur.total, done: name
+    ? `${COUNT[r.n]} 음 모두 같은 음이름이에요 — ${nameList(want)} = ${solList(r.slots)}`
+    : `${COUNT[r.n]} 음 모두 오선과 같은 높이예요 — ${solList(want)} = ${nameList(want)}` };
+  if (!r.placed) return { st: 'idle', msg: name ? `첫 음 '${nm(0)}'부터 — 그 이름의 줄을 눌러 놓아요` : '오선의 첫 번째 음과 같은 높이의 줄을 눌러 놓아요' };
+  if (r.next >= 0) return { st: 'idle', msg: name ? `${ord(r.next)} 음 '${nm(r.next)}'${obj(nm(r.next), '을/를')} 놓아요` : `오선의 ${ord(r.next)} 음을 놓아요` };
+  const k = r.first;
+  if (name) return { st: 'diff', msg: `${r.n}개 가운데 ${r.same}개가 같은 음이름이에요 — ${ord(k)} 음은 '${nm(k)}'예요(지금은 '${E.noteName(r.slots[k])}')` };
+  const s = Math.abs(r.steps);
+  return { st: 'diff', msg: `${r.n}개 가운데 ${r.same}개가 오선과 같은 높이예요 — 오선의 ${ord(k)} 음은 ${COUNT[s] || s} 칸 ${r.steps > 0 ? '위' : '아래'}예요` };
+}
+// 지금 놓을 칸(카드 보기 · 판의 칸에 같은 표시) — 빈 칸이 있으면 처음 빈 칸 · 다 놓았으면 다른 첫 칸 · 다 같으면 없음(-1)
+const readCur = s => { const r = E.readCheck(s); return r.next >= 0 ? r.next : r.first; };
+
 const CARDS = [
   { key: 'pitch',
     info(base) {
@@ -326,6 +354,22 @@ const CARDS = [
       if (A.bar() !== k) return A.pickBar(k);
       return A.chord(['I', 'V', 'IV', 'I'][k % 4]);
     } },
+
+  // ── 묶음 D8 · 보고 놓기(정답 있음 — 넣고 빼기 E) ──
+  //  오선 보고 놓기 — 카드의 오선 가락(가온 도 ~ 높은 미 · 덧줄은 가온 도 하나)을 그림 악보 판(열 줄)의 같은 높이에 · 블록 글자 = 계이름
+  { key: 'staff', mode: 'read', read: 'staff', ready: "오선과 같아요 — '듣기'로 오선과 그림 악보를 함께 들어 봐요",
+    setup: (song, H) => ({ song: E.readBoard(E.readTarget('staff', H.readNo('staff'))) }),
+    info: base => ({ n: base.readPs.length }),
+    text: () => '오선 가락을 보고 그림 악보에 같은 높이로 놓아요',
+    check: cur => readMsg(cur),
+    auto: (c, A) => A.readAuto() },
+  //  음이름 보고 놓기 — 음이름 글(다 라 마 바 사 가 나)을 보고 같은 이름의 줄(다 ~ 높은 다 여덟 줄)에 · 줄 이름 · 블록 글자 = 음이름
+  { key: 'name', mode: 'read', read: 'name', ready: "모두 같은 음이름이에요 — '듣기'로 들어 봐요",
+    setup: (song, H) => ({ song: E.readBoard(E.readTarget('name', H.readNo('name'))) }),
+    info: base => ({ n: base.readPs.length }),
+    text: () => '음이름을 보고 그림 악보에 같은 높이로 놓아요',
+    check: cur => readMsg(cur),
+    auto: (c, A) => A.readAuto() },
 ];
 
 export default function mount(root, ctx) {
@@ -349,7 +393,10 @@ export default function mount(root, ctx) {
   let player = null, pre = null, raf = 0, playT0 = 0, nowIdx = -1, msgUntil = 0, msgText = '';
   let L = null, staffEls = null, pickerEl = null, anim = null, playTm = null;
   let selSec = 0, selBar = 0;             // 꾸미기 카드의 고른 도막 · 반주 화음 카드의 고른 마디(0부터)
+  let names = false;                      // 보고 놓기 판의 줄 이름 · 블록 글자 = 음이름(true) · 계이름(false)
   const modeNow = () => (card && card.def.mode) || null;
+  // 블록 · 줄 이름 글자 — 보고 놓기 판에서 음이름을 고르면 다 라 마 … · 나머지는 늘 계이름
+  const pname = p => (modeNow() === 'read' && names ? E.noteName(p) : solfege(p, { short: true }));
   const timers = new Set();
   const later = (fn, ms) => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); };
 
@@ -371,6 +418,8 @@ export default function mount(root, ctx) {
       const D = E.secDyns(s), T = E.secTempos(s), I = E.secInsts(s, inst);
       return D.map((dyn, k) => ({ dyn, tempo: tempoKey(T[k]), inst: I[k] }));
     },
+    // 보고 놓기 — 몇 번째 보기를 낼지(끝낼 때마다 하나씩 넘어감 · 이 기기)
+    readNo: kind => Number((lsGet('play.readNo', {}) || {})[kind]) || 0,
   };
   const noFocus = el => { el.addEventListener('mousedown', e => e.preventDefault()); return el; };   // 눌러도 스페이스 = 듣기가 그대로
   const press = (el, fn) => noFocus(onPress(el, fn));
@@ -421,7 +470,11 @@ export default function mount(root, ctx) {
   const chordLab = h('span', { class: 'pshelf-lab' });
   const chordBtns = CHORDS.map(c => press(h('button', { type: 'button', class: 'ptool pchord', 'data-k': c.k, 'aria-pressed': 'false' }, h('span', { class: 'lab' }, c.name), c.rom ? h('span', { class: 'rom' }, c.rom) : null), () => act('chord', c.k)));
   const chordEl = h('div', { class: 'ptools', hidden: true, role: 'group', 'aria-label': '반주 화음' }, chordLab, ...chordBtns);
-  shelf.append(toolsEl, rToolsEl, secEl, chordEl, playBtn);
+  // 보고 놓기: 줄 이름(계이름 ↔ 음이름) · 다 비우기
+  const nameBtns = [[false, '계이름', '도 레 미'], [true, '음이름', '다 라 마']].map(([v, lab, sub]) => press(h('button', { type: 'button', class: 'ptool pname', 'data-v': String(v), 'aria-pressed': 'false' }, h('span', { class: 'lab' }, lab), h('span', { class: 'sub' }, sub)), () => act('names', v)));
+  const readClearBtn = press(h('button', { type: 'button', class: 'ptool pclear' }, '다 비우기'), () => act('rdclear'));
+  const readToolsEl = h('div', { class: 'ptools', hidden: true, role: 'group', 'aria-label': '줄 이름' }, h('span', { class: 'pshelf-lab' }, '줄 이름'), ...nameBtns, readClearBtn);
+  shelf.append(toolsEl, rToolsEl, secEl, chordEl, readToolsEl, playBtn);
 
   // 오른쪽: 곡 전체
   // 곡 전체 고르기 한 묶음 — 돌려주는 함수(k → 고른 단추 표시)에 .wrap · .lab · .seg를 달아 둠(꾸미기 카드는 '도막 n …'으로 이름을 바꿔 씀)
@@ -449,9 +502,11 @@ export default function mount(root, ctx) {
     const cap = barTicks(song.meter), B = modeNow() === 'rhythm' ? E.rhythmBars(song) : E.bars(song), X = [];
     let x = 0;
     for (const b of B) { X.push(x); x += Math.max(cap, b.ticks); }
-    const D = x + 12;
+    const read = modeNow() === 'read';
+    const D = x + (read ? 2 : 12);
     const w = Math.max(240, scroller.clientWidth - 6);
-    const px = Math.max(16 / 6, Math.min(48 / 6, w / D));   // 8분음표 한 칸 16~48px(넘치면 판 안에서만 옆으로 밀림 · 좁은 블록은 글자 없이)
+    // 8분음표 한 칸 16~48px(넘치면 판 안에서만 옆으로 밀림 · 좁은 블록은 글자 없이) · 보고 놓기 판은 칸 3~4개라 판 넓이를 채움(4분음표 칸 240px까지)
+    const px = read ? Math.max(16 / 6, Math.min(240 / 12, w / D)) : Math.max(16 / 6, Math.min(48 / 6, w / D));
     return { cap, B, X, end: x, D, px, bt: beatTicks(song.meter) };
   }
   function barAtTick(t) { const { B } = L; let k = B.length - 1; while (k > 0 && B[k].start > t) k--; return k; }
@@ -463,8 +518,14 @@ export default function mount(root, ctx) {
   // 쉼표 블록을 그릴 줄 = 쉼표로 바꾸기 전 높이(기억) 또는 이웃 음 높이
   const restRow = (i, t) => restMem.get(t) ?? E.neighborPitch(song, i);
   // 줄 — 리듬 판은 솔 한 줄을 크게(남는 높이를 그 줄이 다 씀) · 나머지는 낮은 솔 ~ 높은 미 13줄
-  const rowsNow = () => (modeNow() === 'rhythm' ? [song.boardP ?? E.RHYTHM_P] : ROWS);
-  const rowH = () => (modeNow() === 'rhythm' ? Math.max(96, (scroller.clientHeight || 300) - RULER_H - 4) : ROW_H);
+  //  보고 놓기 판은 오선 = 가온 도 ~ 높은 미 열 줄 · 음이름 = 다 ~ 높은 다 여덟 줄(남는 높이만큼 줄을 굵게 · 64px까지)
+  const rowsNow = () => { const m = modeNow(); return m === 'rhythm' ? [song.boardP ?? E.RHYTHM_P] : m === 'read' ? E.READ_ROWS[song.readKind] || E.READ_ROWS.staff : ROWS; };
+  const rowH = () => {
+    const m = modeNow(), avail = (scroller.clientHeight || 300) - RULER_H - 4;
+    if (m === 'rhythm') return Math.max(96, avail);
+    if (m === 'read') return Math.max(ROW_H, Math.min(64, Math.floor(avail / rowsNow().length)));
+    return ROW_H;
+  };
   const rowOf = p => { const R = rowsNow(), r = R.indexOf(p); return r >= 0 ? r : p > R[0] ? 0 : R.length - 1; };
   // 그 자리(틱 · 판 위 가로)가 든 마디 — 꾸미기 · 반주 화음 카드에서 마디를 눌러 고를 때
   function barAtX(dx) { const { B, X, cap } = L; for (let k = 0; k < B.length; k++) if (dx >= X[k] && dx < X[k] + Math.max(cap, B[k].ticks)) return k; return dx < 0 ? 0 : B.length - 1; }
@@ -474,7 +535,7 @@ export default function mount(root, ctx) {
     const RH = rowH();
     labels.replaceChildren(h('div', { class: 'plab-ruler' }), ...rowsNow().map(p => {
       const dim = card && card.def.allowed && !card.def.allowed.includes(pc(p));
-      return h('div', { class: 'plab' + (dim ? ' dim' : ''), style: { height: RH + 'px', '--c': colorOf(p), color: INK_TEXT.has(colorOf(p)) ? 'var(--ink)' : '#fff' } }, h('span', { class: 'chip' }, solfege(p, { short: true }), p >= 72 ? h('i', { class: 'oct up' }) : null, p < 60 ? h('i', { class: 'oct dn' }) : null));
+      return h('div', { class: 'plab' + (dim ? ' dim' : ''), style: { height: RH + 'px', '--c': colorOf(p), color: INK_TEXT.has(colorOf(p)) ? 'var(--ink)' : '#fff' } }, h('span', { class: 'chip' }, pname(p), p >= 72 ? h('i', { class: 'oct up' }) : null, p < 60 ? h('i', { class: 'oct dn' }) : null));
     }));
   }
 
@@ -485,9 +546,12 @@ export default function mount(root, ctx) {
     const W = Math.ceil(D * px), Hh = RULER_H + RS.length * RH;
     canvas.style.width = W + 'px'; canvas.style.height = Hh + 'px';
     canvas.classList.toggle('rh', mode === 'rhythm');
+    canvas.classList.toggle('rd', mode === 'read');
     const kids = [];
     const allowed = card && card.def.allowed;
-    RS.forEach((p, r) => kids.push(h('div', { class: 'prow' + (allowed && !allowed.includes(pc(p)) ? ' dim' : ''), style: { top: RULER_H + r * RH + 'px', height: RH + 'px', '--c': colorOf(p) } })));
+    RS.forEach((p, r) => kids.push(h('div', { class: 'prow' + (allowed && !allowed.includes(pc(p)) ? ' dim' : ''), 'data-p': p, style: { top: RULER_H + r * RH + 'px', height: RH + 'px', '--c': colorOf(p) } })));
+    // 보고 놓기: 칸마다 세로 띠(지금 놓을 칸 = 옅은 파랑 + 위 굵은 줄 — 카드 보기의 같은 차례 음과 같은 표시)
+    if (mode === 'read') { const cur = card && !card.done ? readCur(song) : -1; song.ev.forEach((e, k) => kids.push(h('div', { class: 'pslot' + (k === cur ? ' on' : ''), 'data-slot': k, style: { left: k * 12 * px + 'px', width: 12 * px + 'px' } }))); }
     const fresh = freshFrom();
     const S = mode === 'dress' ? E.sections(song) : null, C = mode === 'chord' ? E.chordBars(song) : null;
     const picked = k => (mode === 'dress' ? S[selSec] && k >= S[selSec].b0 && k <= S[selSec].b1 : mode === 'chord' ? k === selBar : false);
@@ -531,8 +595,9 @@ export default function mount(root, ctx) {
     B.forEach((b, k) => {
       for (let i = b.first; i <= b.last; i++) {
         const e = song.ev[i], u = uOf[i], rest = e.p == null;
+        if (mode === 'read' && rest) continue;   // 보고 놓기 판의 빈 칸은 그리지 않음(쉼표가 아니라 아직 안 놓은 자리)
         const p = mode === 'rhythm' ? RS[0] : rest ? restRow(i, e.t) : e.p, r = rowOf(p), c = colorOf(p);
-        const th = mode === 'rhythm' ? Math.min(RH - 60, 168) : rest ? 30 : DYN_H[e.dyn] || 28;
+        const th = mode === 'rhythm' ? Math.min(RH - 60, 168) : mode === 'read' ? Math.min(RH - 10, 40) : rest ? 30 : DYN_H[e.dyn] || 28;
         const x = (X[k] + e.t - b.start) * px, w = e.d * px - (i !== u.i1 ? 0 : 2);
         const cls = ['pblk'];
         if (rest) cls.push('rest');
@@ -545,9 +610,9 @@ export default function mount(root, ctx) {
         // 리듬 판 블록 = 음표 · 쉼표 그림(높이는 솔 하나라 계이름 대신) · 나머지 = 계이름
         const gw = { 6: 46, 12: 58, 24: 78, 36: 100, 48: 98 }[e.d], gs = gw ? Math.min(84, th - 24, Math.floor((w - 10) * 84 / gw)) : 0;   // 그림 넓이(_glyph.js 한 개짜리) — 블록 안에 들게
         const lab = mode === 'rhythm' ? (gs >= 24 ? h('span', { class: 'pglyph', html: glyph([rest ? -e.d / 12 : e.d / 12], { size: gs, color: rest ? '#6B5A4A' : '#3B2A1E' }) }) : '')
-          : !rest && i === u.i0 && w >= 25 ? solfege(e.p, { short: true }) : '';
+          : !rest && i === u.i0 && w >= 25 ? pname(e.p) : '';
         const pin = fitIn && i === u.i0 && fitIn.has(u.i0) ? h('i', { class: 'pin', 'aria-hidden': 'true' }) : null;
-        kids.push(h('div', { class: cls.join(' '), 'data-i': i, 'aria-label': rest ? `쉼표 ${beatsWord(e.d)}` : `${solfege(e.p)} ${lenName(u.d)}${pin ? ' · 화음 안' : ''}`,
+        kids.push(h('div', { class: cls.join(' '), 'data-i': i, 'aria-label': rest ? `쉼표 ${beatsWord(e.d)}` : mode === 'read' ? `${ord(i)} 자리 ${pname(e.p)}` : `${solfege(e.p)} ${lenName(u.d)}${pin ? ' · 화음 안' : ''}`,
           style: { left: x + 'px', width: w + 'px', top: top + 'px', height: th + 'px', '--c': c, color: rest ? 'var(--ink-2)' : INK_TEXT.has(c) ? 'var(--ink)' : '#fff' } }, lab, pin));
         if (isMark && i === u.i0 && !tagEl) { tagEl = h('span', { class: 'pmarktag', style: { left: x + w / 2 + 'px', top: Math.max(RULER_H + 2, top - 34) + 'px' } }, '이 음'); kids.push(tagEl); }
       }
@@ -591,8 +656,14 @@ export default function mount(root, ctx) {
   function renderTools() {
     const mode = modeNow();
     toolsEl.hidden = !!mode; rToolsEl.hidden = mode !== 'rhythm'; secEl.hidden = mode !== 'dress'; chordEl.hidden = mode !== 'chord'; palEl.hidden = mode !== 'rhythm';
-    resetBtn.hidden = pickBtn.hidden = mode === 'rhythm';   // 리듬 판은 곡을 쓰지 않음('다 비우기'가 처음으로)
+    readToolsEl.hidden = mode !== 'read';
+    resetBtn.hidden = pickBtn.hidden = mode === 'rhythm' || mode === 'read';   // 리듬 판 · 보고 놓기 판은 곡을 쓰지 않음('다 비우기'가 처음으로)
     if (mode === 'rhythm') { rTools.pop.disabled = rTools.clear.disabled = !song.ev.length; return; }
+    if (mode === 'read') {
+      nameBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(names))));
+      readClearBtn.disabled = !song.ev.some(e => e.p != null);
+      return;
+    }
     if (mode === 'dress') {
       const S = E.sections(song);
       if (secEl.children.length !== S.length) secEl.replaceChildren(...S.map((x, k) => press(h('button', { type: 'button', class: 'ptool psec', 'data-k': k, 'aria-pressed': 'false' },
@@ -617,8 +688,9 @@ export default function mount(root, ctx) {
   function renderGlobal() {
     const mode = modeNow(), dress = mode === 'dress';
     // 보이는 묶음: 리듬 판 = 박자표 · 빠르기 · 악기 / 꾸미기 = 고른 도막의 셈여림 · 빠르기 · 악기 / 반주 화음 = 빠르기 · 악기
-    setMeterUI.wrap.hidden = dress || mode === 'chord';
-    setDynUI.wrap.hidden = mode === 'rhythm' || mode === 'chord';
+    //  보고 놓기 = 빠르기 · 악기(판의 박자표 · 셈여림은 보기에 딸린 것)
+    setMeterUI.wrap.hidden = dress || mode === 'chord' || mode === 'read';
+    setDynUI.wrap.hidden = mode === 'rhythm' || mode === 'chord' || mode === 'read';
     for (const g of [setTempoUI, setDynUI, setInstUI]) g.lab.textContent = dress ? `도막 ${selSec + 1} ${g.label}` : g.label;
     setMeterUI(song.meter.join('/'));
     const look = dress ? H.looks(song)[selSec] : null;
@@ -636,13 +708,20 @@ export default function mount(root, ctx) {
     if (mode === 'dress') { const x = E.sections(song)[selSec]; line1.replaceChildren(`도막 ${selSec + 1}(${x ? (x.b0 === x.b1 ? `${x.b0 + 1}마디` : `${x.b0 + 1}~${x.b1 + 1}마디`) : ''}) 꾸미는 중 · 마디를 누르면 그 도막을 골라요`); return; }
     if (mode === 'rhythm' && sel < 0) { const n = song.ev.filter(e => e.p != null).length; line1.replaceChildren(`${song.meter[0]}박씩 두 마디 · 음표 ${n}개 · 쉼표 ${song.ev.length - n}개`); return; }
     const u = unitAtIdx(song, sel);
+    if (mode === 'read') {
+      if (u && u.p != null) line1.replaceChildren(h('span', { class: 'pdot-c', style: { '--c': colorOf(u.p) } }), `${ord(sel)} 자리 · ${pname(u.p)}`);
+      else line1.replaceChildren('줄을 눌러 음을 놓아요 · 같은 자리를 또 누르면 빠져요');
+      return;
+    }
     if (u) line1.replaceChildren(h('span', { class: 'pdot-c', style: { '--c': u.p != null ? colorOf(u.p) : 'transparent' } }), u.p != null ? `${solfege(u.p)} · ${lenName(u.d)}(${beatsWord(u.d)})` : `쉼표 · ${beatsWord(u.d)}`);
     else line1.replaceChildren('음 블록을 눌러 골라요 · ', h('span', { class: 'kbd' }, '← →'), ' 고르기 ', h('span', { class: 'kbd' }, '↑ ↓'), ' 높이 ', h('span', { class: 'kbd' }, '스페이스'), ' 듣기');
   }
   function say(text, ms = 3600) { msgText = text; msgUntil = performance.now() + ms; renderLine(); later(renderLine, ms + 30); }
 
   function renderAll() {
-    titleEl.textContent = modeNow() === 'rhythm' ? '내가 짓는 리듬' : tuneName(tuneDef);
+    const mode = modeNow();
+    titleEl.textContent = mode === 'rhythm' ? '내가 짓는 리듬' : mode === 'read' ? (song.readKind === 'name' ? '음이름 가락' : '오선 가락') : tuneName(tuneDef);
+    viewSeg.hidden = mode === 'read';   // 보고 놓기 판은 그림 악보만(오선 보기로 견주면 읽지 않고 그림만 맞추게 됨)
     viewBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === view)));
     roll.hidden = view !== 'roll'; staffBox.hidden = view !== 'staff';
     renderLabels();
@@ -661,6 +740,7 @@ export default function mount(root, ctx) {
     if (def.setup) { const r = def.setup(song, H); if (r.song !== song) { song = r.song; sel = -1; restMem.clear(); } setupNote = r.note || null; }
     selSec = 0; selBar = 0;
     if (def.mode) sel = -1;
+    if (def.mode === 'read') { view = 'roll'; names = def.read === 'name'; }
     const base = song;
     card = { def, base, info: def.info(base), st: 'idle', msg: '', need: 0, done: false, note: note || setupNote, bear: def.scene ? friendImg('bear', 'idle', { label: false, cls: 'pbear' }) : null };
     heard = -1;
@@ -679,6 +759,7 @@ export default function mount(root, ctx) {
     card.done = true; card.st = 'done';
     if (card.bear) setPose(card.bear, 'bear', 'play');
     if (card.def.key === 'make') saveCurrent(true);
+    if (card.def.read) { const o = lsGet('play.readNo', {}) || {}; lsSet('play.readNo', { ...o, [card.def.read]: H.readNo(card.def.read) + 1 }); }   // 다음에 열면 다음 보기
     if (!done.has(cardNo)) { done.add(cardNo); lsSet('play.done', [...done].sort((a, b) => a - b)); }
     sfxGood();
     renderAll();
@@ -693,7 +774,7 @@ export default function mount(root, ctx) {
   }
   function renderCard() {
     // 점 = 부탁 단추(44 × 44 · 보이는 점은 그 안에 14px) · 채움 = 끝냄 · 고리 = 지금(아직 안 끝낸) 부탁
-    //  한 줄에 여덟 칸(카드 폭 352)이라 부탁 9~11(짓고 꾸미기)은 둘째 줄 — 앞 여덟(곡 바꾸기)과 줄로 나뉨(11-14 D3)
+    //  한 줄에 여덟 칸(카드 폭 352)이라 부탁 9~11(짓고 꾸미기) · 12~13(보고 놓기 · D8)은 둘째 줄 — 앞 여덟(곡 바꾸기)과 줄로 나뉨(11-14 D3)
     //  '부탁 n / 11' 글은 뺐다(지금 자리는 고리 · 화면 읽기는 aria-current)
     const dots = h('div', { class: 'pc-dots', role: 'group', 'aria-label': '부탁 고르기' }, ...CARDS.map((_, k) => {
       const on = done.has(k) || (k === cardNo && card && card.done), now = k === cardNo && card && !card.done;
@@ -708,6 +789,7 @@ export default function mount(root, ctx) {
     }
     const kids = [dots,
       h('p', { class: 'pc-text' }, card.def.text(card))];
+    if (card.def.read) kids.push(readView());
     const nextBtn = card.done ? press(h('button', { type: 'button', class: 'pc-next' }, cardNo + 1 < CARDS.length ? '다음 부탁' : '부탁 끝'), () => nextCard()) : null;
     if (card.bear) kids.push(h('div', { class: 'pc-scene' + (card.done ? ' awake' : '') }, card.bear, h('span', { class: 'zz' }, card.done ? '깼어요!' : '쿨쿨'), card.done ? h('div', { class: 'pc-act in' }, nextBtn) : null));
     let hint, k = card.st;
@@ -718,6 +800,18 @@ export default function mount(root, ctx) {
     kids.push(h('p', { class: 'pc-hint', 'data-k': k }, hint));
     if (card.done && !card.bear) kids.push(h('div', { class: 'pc-act' }, nextBtn));
     cardEl.replaceChildren(...kids);
+  }
+  // 보고 놓기 카드의 보기 — 오선 그림(_staff.js staffCard · 덧줄은 가온 도 하나) 또는 음이름 글. 음 하나 = .prd-item(차례대로)
+  //  지금 놓을 차례 = 파랑(판의 그 칸 띠와 같은 색) · 들을 때 지금 음 = 금색(오선 보기와 같은 표시)
+  function readView() {
+    const ps = song.readPs || [], cur = card.done ? -1 : readCur(song);
+    if (card.def.read === 'staff') {
+      const el = h('div', { class: 'prd-staff', role: 'img', 'aria-label': `오선 가락 ${COUNT[ps.length]} 음` });
+      el.innerHTML = staffCard(ps, { lo: -2, hi: 9, width: 190 });   // viewBox를 좁게 = 카드 폭에서 크게 보임
+      el.querySelectorAll('ellipse').forEach((x, k) => { x.classList.add('prd-item'); if (k === cur) x.classList.add('cur'); });
+      return el;
+    }
+    return h('div', { class: 'prd-names', role: 'img', 'aria-label': '음이름 ' + ps.map(E.noteName).join(' ') }, ...ps.map((p, k) => h('span', { class: 'prd-item prd-name' + (k === cur ? ' cur' : '') }, E.noteName(p))));
   }
 
   // ── 바꾸기 ──
@@ -780,6 +874,15 @@ export default function mount(root, ctx) {
         return commit(E.rhythmPop(song), { kind: 'rpop', desel: true, msg: `${josa(lenName(z.d, z.p == null), '을/를')} 뺐어요` });
       }
       case 'rclear': return commit(E.rhythmClear(song), { kind: 'rpop', desel: true, msg: '다 비웠어요 — 처음부터 지어요', same: '아직 놓은 것이 없어요' });
+      // ── 보고 놓기 ──
+      case 'rdclear': return commit(E.readClear(song), { kind: 'unplace', desel: true, msg: '다 비웠어요 — 첫 번째 자리부터 놓아요', same: '아직 놓은 음이 없어요' });
+      case 'names': {
+        if (names === arg) return;
+        names = arg;
+        say(arg ? '줄 이름을 음이름(다 라 마 …)으로 보여요' : '줄 이름을 계이름(도 레 미 …)으로 보여요');
+        renderAll();
+        return;
+      }
       // ── 반주 화음 붙여 보기 ──
       case 'chord': {
         const next = E.setChord(song, selBar, arg);
@@ -850,6 +953,17 @@ export default function mount(root, ctx) {
     const t = E.insertTick(song, at);
     return commit(E.insertNote(song, at, p), { kind: 'insert', tick: t, timing: true, p, msg: `${josa(solfege(p), '을/를')} 넣었어요` });
   }
+  // 보고 놓기: k번째 칸에 높이 p — 빈 칸이면 놓고, 다른 높이면 옮기고, 같은 높이를 또 누르면(toggle) 뺌 · p = null이면 뺌
+  function place(k, p, toggle = false) {
+    const e = song.ev[k];
+    if (!e) return 'none';
+    const old = e.p ?? null;
+    if (p == null || (toggle && old === p)) {
+      if (old == null) return 'none';
+      return commit(E.readPlace(song, k, null), { kind: 'unplace', tick: k * 12, msg: `${ord(k)} 자리를 비웠어요` });
+    }
+    return commit(E.readPlace(song, k, p), { kind: 'place', tick: k * 12, anim: old != null ? { tick: k * 12, dy: (rowOf(old) - rowOf(p)) * rowH() } : null, msg: `${ord(k)} 자리 — ${pname(p)}` });
+  }
   function fillBar(k, p = 67) {
     const b = E.bars(song)[k];
     if (!b) return 'none';
@@ -894,6 +1008,8 @@ export default function mount(root, ctx) {
       }
       case 'rmeter': if (song.total) snippet(0, Math.min(song.total, cap * 2), true); break;
       case 'sec': { const x = E.sections(song)[selSec]; if (x) snippet(x.t0, x.t1); break; }
+      // 보고 놓기: 놓은 음을 바로 · 다 같아지면 판 가락을 처음부터 끝까지(듣기와 같음 → 다 들으면 끝)
+      case 'place': if (card && !card.done && card.st === 'ready') { startPlay(); break; } if (u && u.p != null) blip(u.p, u.d, song.ev[u.i0].dyn, u.t); break;
       case 'chord': { const b = E.bars(song)[selBar]; if (b) snippet(b.start, b.start + b.ticks); break; }
     }
   }
@@ -937,6 +1053,8 @@ export default function mount(root, ctx) {
       const k = soundIdx(i);
       if (k >= 0) (staffEls.get(k) || []).forEach(el => el.classList.add('now'));
     }
+    // 보고 놓기: 카드의 오선 음 · 음이름 글도 함께(판의 칸 k = song.ev k = 보기 k번째 음)
+    if (modeNow() === 'read') cardEl.querySelectorAll('.prd-item').forEach((el, k) => el.classList.toggle('now', k === i));
     nowIdx = i;
   }
   function frame() {
@@ -1002,6 +1120,14 @@ export default function mount(root, ctx) {
     if (mode === 'dress' || mode === 'chord') { pickBar(barAtX(x / L.px)); return; }
     // 리듬 판: 블록은 골라 들어 보기만 · 빈 자리는 아래 단추로 놓는다고 알려 줌
     if (mode === 'rhythm') { if (blk && !blk.classList.contains('rest')) choose(Number(blk.dataset.i)); else say('아래 단추를 눌러 음표나 쉼표를 놓아요'); return; }
+    // 보고 놓기: 칸(가로) · 줄(세로)을 눌러 그 높이를 놓음 — 블록 위를 눌러도 같은 규칙(같은 줄 = 빼기)
+    if (mode === 'read') {
+      if (y < RULER_H) return;
+      const R = rowsNow(), row = Math.floor((y - RULER_H) / rowH()), k = Math.floor(x / L.px / 12);
+      if (row < 0 || row >= R.length || k < 0 || k >= song.ev.length) return;
+      place(k, R[row], true);
+      return;
+    }
     if (blk && !blk.classList.contains('rest')) { choose(Number(blk.dataset.i)); return; }   // 쉼표(점선)는 빈 자리 — 누르면 그 줄 높이 음이 들어감
     if (y < RULER_H) return;
     const row = Math.floor((y - RULER_H) / ROW_H);
@@ -1023,6 +1149,19 @@ export default function mount(root, ctx) {
       }
       if (mode === 'rhythm' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); move(e.key === 'ArrowLeft' ? -1 : 1); return; }
       if (mode === 'rhythm' && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); act('rpop'); return; }
+      // 보고 놓기: ← → 칸 고르기 · ↑ ↓ 그 칸의 음을 한 줄씩(빈 칸이면 맨 아래 · 맨 위 줄부터) · 지우기 = 그 칸 빼기
+      if (mode === 'read') {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); move(e.key === 'ArrowLeft' ? -1 : 1); return; }
+        const k = Math.max(0, sel), R = rowsNow();
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const up = e.key === 'ArrowUp', cur = song.ev[k] ? song.ev[k].p : null;
+          const r = cur == null ? (up ? R.length - 1 : 0) : Math.max(0, Math.min(R.length - 1, R.indexOf(cur) + (up ? -1 : 1)));
+          if (cur != null && R[r] === cur) say(up ? '더 높은 줄은 이 판에 없어요' : '더 낮은 줄은 이 판에 없어요'); else place(k, R[r]);
+          return;
+        }
+        if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); place(k, null); return; }
+      }
       return;
     }
     switch (e.key) {
@@ -1059,6 +1198,8 @@ export default function mount(root, ctx) {
     looks: () => H.looks(song),
     inst: k => { act('inst', k); return 'inst'; },
     chord: c => { act('chord', c); return 'chord'; },
+    // 보고 놓기 — 보기와 다른 첫 칸에 맞는 높이를 놓음
+    readAuto: () => { const k = E.readCheck(song).ok.findIndex(x => !x); if (k < 0) return 'none'; place(k, E.readWant(song, k)); return 'place'; },
   };
   window.__playAuto = () => {
     if (pickerEl) closePicker();
