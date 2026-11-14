@@ -70,3 +70,11 @@ engine/depth.js PLAY_KIND에 `rmake jang form dress chord = 'EM'` · flow.js PLA
 
 ## 5. 지키는 것
 사실만(국악은 gugak_facts.md의 '안전한 문장' · 2022 교과서는 확인 못 함) · 악기 소리는 모두 컴퓨터 소리라고 적음 · 목소리 · 물체 소리 녹음은 없음(100이어도 남는 것) · 빨강·X·부정하는 말 X · 주황은 지금 누를 하나 · 잠금 X · TV에 아이 번호 X · 4학년 눈높이 쉬운 말 · 같은 꼴이면 답과 상관없이 길이가 같게(열리는 때로 답이 새지 않음)
+
+## 6. 11-14 저녁 조정
+- 안 만듦: ppa3(흐름 t2 '빠르기만 떼어 듣기'는 빠1이 이미 함 — t2 acts에 `cell:ppa1`) · hy4(f3 ab = 형1 + 형3 + play:form)
+- sem3 · ppa4는 '판마다 다른 카드' 틀이 생긴 뒤 묶음으로 · t3(빠르기말) = ppa4 · t4(점점 느리게 · 점점 빠르게) = ppa2(t3에서 `cell:ppa2`를 뺌)
+- 도막마다 쉼(gap)은 형2가 고르기 틀(`_pick.js`)에 넣음
+- 묶음 B(아홉 칸 — bak1 sem4 ppa2 eum2 eum3 hy3 ga8 hwa2 hwa3) 설계서 = `docs/plan100_batchB.md`. 장부 · 흐름 · 차례(`ORDER_ALL`)에는 `first` 없이 미리 등록함. Opus 세 팀이 worktree `music-nori-wt-b1`(bak1 sem4 ppa2) · `music-nori-wt-b2`(eum2 eum3 hy3) · `music-nori-wt-b3`(ga8 hwa2 hwa3)에서 만드는 중
+- 소리 고치기는 worktree `music-nori-wt-ear` 가지 `ear-fix`
+- 그다음 차례: 틀 넓히기(판마다 카드 · 북 소리 · 음마다 art · 리듬 글리프) → 리듬 칸(ri8~ri15 · ri11) · 악보 칸(ak3~ak7) · 되풀이(ban1 · ban2) · eum1 · 장단(jd2 · hy5 — 국악 사실은 확인된 문장만) → 악보 판 기호 · 놀이터 카드(play:jang · form · rmake · dress · chord) → TV 고르기 · 지도(칸 56개쯤 · 요소마다 한 줄)
