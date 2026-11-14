@@ -1,6 +1,6 @@
 // 요소별 공부 흐름 시험 — 차례 자료가 앱에 있는 것만 가리키는지, 찾기가 선생님 말로 되는지
 import assert from 'node:assert/strict';
-import { ELEMENTS, EV, WALK, CLUSTERS, PLAY_KEYS, SAMPLES, actInfo, elementById, stepById, parseQuery, search } from '../engine/flow.js';
+import { ELEMENTS, EV, WALK, CLUSTERS, PLAY_KEYS, PLAY_ROUTE, SAMPLES, actInfo, elementById, stepById, parseQuery, search } from '../engine/flow.js';
 import { CELLS, FIRST } from '../engine/cells.js';
 import { GROUPS, SIGNS } from '../engine/marks.js';
 
@@ -58,7 +58,7 @@ ok('앱에서 쓸 것(acts)이 모두 실제로 있는 것을 가리킨다', () 
       if (i.sign) assert.equal(SIGNS.find(s => s.id === i.sign).group, i.ref, act);
       assert.ok(i.href.startsWith('#/lab/' + i.ref), act);
     }
-    if (i.kind === 'play') { assert.ok(PLAY_KEYS.includes(i.ref), act); assert.equal(i.href, '#/play/' + i.ref); }
+    if (i.kind === 'play') { assert.ok(PLAY_KEYS.includes(i.ref), act); assert.equal(i.href, PLAY_ROUTE[i.ref] || '#/play/' + i.ref); }
   }
   assert.equal(actInfo('cell:ri1').href, '#/tap');
   assert.equal(actInfo('cell:ri1').tv, '#/tvtap');
@@ -83,7 +83,10 @@ ok('악보 판의 모든 묶음 · 모든 기호가 어느 단계에든 걸려 �
 ok('만든 칸(장부 first)은 모두 어느 흐름에든 들어 있다', () => {
   const used = new Set(acts.filter(a => a.act.startsWith('cell:')).map(a => a.act.slice(5)));
   for (const id of FIRST) assert.ok(used.has(id), id);
-  assert.deepEqual(stepById('f2').step.acts, ['cell:hy2'], '형2 메기고 받기 = 흐름 f2');
+  assert.deepEqual(stepById('f2').step.acts, ['cell:hy2', 'play:form'], '형2 메기고 받기 = 흐름 f2 · 도막 짜기 판');
+  // 도막 짜기 판(D5) — 따로 선 화면 #/form · 형식 단계 다섯(f1 · f2 · f3 · f6 · f7)
+  assert.equal(actInfo('play:form').href, '#/form');
+  assert.deepEqual(['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8'].filter(id => stepById(id).step.acts.includes('play:form')), ['f1', 'f2', 'f3', 'f6', 'f7']);
 });
 
 ok('걸음 다섯 · 덩어리 셋이 있는 요소만 가리킨다', () => {
