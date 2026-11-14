@@ -2,6 +2,7 @@
 //  악보 판(#/lab): 기호를 고르고 악보를 누르면 들어가고(악보에 그려지고 수가 늘고) 한 번 더 누르면 빠진다 ·
 //    곡 전체에 걸리는 기호(빠르기말 · 악기 · 박자표)는 누르면 바로 바뀐다 · 주소로 기호를 가리킨다 ·
 //    [듣기] · [기호 빼고 듣기] · [다 빼기] · [다른 가락] · 글쇠(Esc · 스페이스 · Enter)
+//    D1 박자 · 길이 기호(8분의 6박자 ↔ 4분의 3박자 이음줄 · 못갖춘마디 마디 길이 · 바뀌는 박자 박자표 · 점음표 · 당김음 · 16분음표 · 셋잇단 넣기/빼기)
 //  찾아 쓰기(#/find): 찾는 말 → 요소의 공부 차례 · 담기 / 빼기 / 목록 복사 · [열기] 주소가 모두 제 화면을 연다 · 선생님 칸에서 드나드는 길
 //  규칙(글자 18px · 주황 하나 · 빈 칭찬 X)은 tests/rules.browser.cjs, 규칙 계산은 tests/marks.test.mjs · tests/flow.test.mjs
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
@@ -158,9 +159,9 @@ server.listen(0, async () => {
     await page.waitForTimeout(200);
     s = await st(); u = await ui();
     T('[다른 가락] → 가락이 바뀌고 그 가락은 기호 0개', s.phrase !== 'ode' && s.count === 0 && u.phname !== name0, { phrase: s.phrase, phname: u.phname });
-    for (let i = 0; i < 20 && (await st()).phrase !== 'ode'; i++) { await click('.sl-next'); await page.waitForTimeout(150); }
+    for (let i = 0; i < s.nPhrases - 1; i++) { await click('.sl-next'); await page.waitForTimeout(150); }
     s = await st();
-    T('가락을 한 바퀴 돌아 처음 가락으로 — 넣어 둔 기호 4개 그대로', s.phrase === 'ode' && s.count === 4, { phrase: s.phrase, count: s.count });
+    T(`가락 ${s.nPhrases}개를 돌아 처음 가락으로 — 넣어 둔 기호 4개 그대로`, s.phrase === 'ode' && s.count === 4, { phrase: s.phrase, count: s.count });
 
     // ── 다 빼기 ──
     await click('.sl-clear');
@@ -270,8 +271,7 @@ server.listen(0, async () => {
     await page.waitForTimeout(200);
     s = await st();
     T('[4/4] → 세 마디', s.meter[0] === 4 && s.bars === 3, { meter: s.meter, bars: s.bars });
-    await click('.sl-next');
-    await page.waitForTimeout(200);
+    for (let i = 0; i < 9 && (await st()).phrase !== 'ode'; i++) { await click('.sl-next'); await page.waitForTimeout(200); }
     await click('.sl-chip[data-sign="m34"]');
     await page.waitForTimeout(200);
     s = await st(); u = await ui();
@@ -422,6 +422,83 @@ server.listen(0, async () => {
     await go('#/');
     T('악보 판을 나가면 시험 손잡이도 사라짐', await page.evaluate(() => typeof window.__labState === 'undefined'));
     noErr('악보 판 주소');
+
+    // ══ D1 박자 · 길이 기호(8분의 6박자 · 못갖춘마디 · 바뀌는 박자 · 점음표 · 당김음 · 16분음표 · 셋잇단) ══
+    const hitsAt = () => page.evaluate(() => [...document.querySelectorAll('.sl-hit.can')].map(e => +e.dataset.at));
+    const tapAt = async at => { await page.locator(`.sl-hit.can[data-at="${at}"]`).click({ timeout: 3000 }); await page.waitForTimeout(160); };
+    const cnt = sel => page.evaluate(x => document.querySelectorAll(x).length, sel);
+    const tsTexts = () => page.evaluate(() => [...document.querySelectorAll('.signlab .st-ts')].map(e => e.textContent).join(''));
+    await go('#/lab/meter/m68');
+    s = await st(); u = await ui();
+    T('#/lab/meter/m68 → 본래 8분의 6박자인 가락이 [8분의 6박자] 눌린 채로 · 뜻 한 줄 · 박자표 6/8', s.phrase === 'rowrow' && s.meter.join('/') === '6/8' && u.chips.includes('m68*') && s.hint === 'm68' && /8분음표가 6개/.test(u.fact) && (await tsTexts()) === '68' && /본래 「8분의 6박자」/.test(await page.locator('.sl-guide').textContent()), { phrase: s.phrase, meter: s.meter, chips: u.chips, fact: u.fact });
+    const beams68 = await cnt('.signlab .st-beam');
+    await click('.sl-chip[data-sign="m34"]');
+    await page.waitForTimeout(200);
+    s = await st();
+    const beams34 = await cnt('.signlab .st-beam');
+    T('[4분의 3박자] → 같은 음이 둘씩 묶여 이음줄이 달라짐 · 박자표 3/4 · 바뀐 앞부분이 들림', s.meter.join('/') === '3/4' && beams68 === 4 && beams34 === 8 && (await tsTexts()) === '34' && s.mode === 'pre', { beams68, beams34, mode: s.mode });
+    await click('.sl-chip[data-sign="m68"]');
+    await page.waitForTimeout(200);
+    s = await st();
+    T('[8분의 6박자]를 다시 → 본래 박자(기호 0개)', s.marks.meter === null && s.count === 0 && (await cnt('.signlab .st-beam')) === beams68, s.marks.meter);
+    await go('#/lab/meter/pickup');
+    s = await st(); u = await ui();
+    T('#/lab/meter/pickup → 못갖춘마디가 맞는 가락(Hänschen klein) · [못갖춘마디] 단추를 가리킴', s.phrase === 'haenschen' && s.hint === 'pickup' && u.chips.includes('pickup?') && s.count === 0, { phrase: s.phrase, hint: s.hint });
+    await click('.sl-chip[data-sign="pickup"]');
+    await page.waitForTimeout(200);
+    s = await st(); u = await ui();
+    T('[못갖춘마디] → 첫 마디 한 박 · 끝 마디 한 박 모자람 · 앞부분이 들림', s.marks.pickup === true && s.barLens.join() === '12,24,24,24,12' && u.chips.includes('pickup*') && s.mode === 'pre' && /못갖춘마디/.test(u.fact), { lens: s.barLens, mode: s.mode });
+    await shot('lab_pickup');
+    await click('.sl-chip[data-sign="pickup"]');
+    await page.waitForTimeout(200);
+    s = await st();
+    T('[못갖춘마디]를 한 번 더 → 빠짐 · 네 마디', !s.marks.pickup && s.bars === 4 && s.count === 0, { lens: s.barLens });
+    await go('#/lab/meter/mixed');
+    s = await st();
+    T('#/lab/meter/mixed → [바뀌는 박자]가 골라져 있고 놓을 마디 셋', s.phrase === 'frere' && s.sign === 'mixed' && (await hitsAt()).join() === '2,3,4', { sign: s.sign, hits: await hitsAt() });
+    await tapAt(3);
+    s = await st(); u = await ui();
+    T('넷째 마디를 누르면 그 마디부터 4분의 3박자 — 박자표가 새로 그려짐 · 마디 너비가 박 수대로', s.marks.mixed && s.marks.mixed.bar === 3 && s.barLens.join() === '24,24,24,36,36' && (await tsTexts()) === '2434' && /4번째 마디부터 4분의 3박자/.test(u.fact), { mixed: s.marks.mixed, ts: await tsTexts(), fact: u.fact });
+    await shot('lab_mixed');
+    await tapAt(3);
+    s = await st();
+    T('같은 마디를 또 누르면 빠짐', s.marks.mixed === null && s.bars === 6 && (await tsTexts()) === '24', s.marks.mixed);
+    noErr('악보 판 박자 기호');
+
+    await go('#/lab/len/dot');
+    s = await st();
+    const dots0 = await cnt('.signlab .st-dot'), heads0 = await cnt('.signlab .st-head');
+    T('#/lab/len/dot → [점음표] 골라져 있음 · 뒤에 같은 길이 음이 있는 음만 놓을 자리', s.sign === 'dot' && (await hitsAt()).join() === '0,1,2,4,6,7,8', await hitsAt());
+    await tapAt(0);
+    s = await st();
+    T('첫 음에 점 — 악보에 점이 생기고 뒤 음은 놓을 자리에서 빠짐 · 그 마디가 들림', s.marks.dot && s.marks.dot[0] && (await cnt('.signlab .st-dot')) === dots0 + 1 && !(await hitsAt()).includes(1) && s.mode === 'pre', { dot: s.marks.dot, hits: await hitsAt() });
+    await tapAt(0);
+    s = await st();
+    T('한 번 더 누르면 빠짐 — 점 없음', s.count === 0 && (await cnt('.signlab .st-dot')) === dots0);
+    await click('.sl-chip[data-sign="sync"]');
+    await page.waitForTimeout(150);
+    T('[당김음] — 박 위의 4분음표 둘(첫째 · 셋째 박)의 앞 음만', (await hitsAt()).join() === '0,2,6,8', await hitsAt());
+    await tapAt(0);
+    s = await st();
+    T('당김음을 넣으면 두 음이 세 음(8분 · 4분 · 8분)으로', s.marks.sync[0] && (await cnt('.signlab .st-head')) === heads0 + 1, { heads: await cnt('.signlab .st-head'), heads0 });
+    await tapAt(0);
+    await click('.sl-chip[data-sign="six"]');
+    await page.waitForTimeout(150);
+    await tapAt(2);
+    s = await st();
+    T('[16분음표] → 4분음표 하나가 넷으로', s.marks.six[2] && (await cnt('.signlab .st-head')) === heads0 + 3 && s.count === 1, { heads: await cnt('.signlab .st-head'), count: s.count });
+    await click('.sl-chip[data-sign="trip"]');
+    await page.waitForTimeout(150);
+    await tapAt(7);
+    s = await st(); u = await ui();
+    T('[셋잇단음표] → 4분음표 하나가 셋 · 묶음 위에 3', s.marks.trip[7] && (await cnt('.signlab .st-head')) === heads0 + 5 && (await page.evaluate(() => [...document.querySelectorAll('.signlab .st-tuplet')].map(e => e.textContent).join())) === '3', { heads: await cnt('.signlab .st-head') });
+    T('기호 넷을 넣어도 스크롤 0 · 주황 하나', u.scroll <= 1 && u.go === 1, { scroll: u.scroll, go: u.go });
+    await shot('lab_len_d1');
+    await click('.sl-clear');
+    await page.waitForTimeout(150);
+    s = await st();
+    T('[다 빼기] → 본래 악보', s.count === 0 && (await cnt('.signlab .st-head')) === heads0);
+    noErr('악보 판 길이 기호');
 
     // ══ 찾아 쓰기 ══
     const fs_ = () => page.evaluate(() => window.__findState());

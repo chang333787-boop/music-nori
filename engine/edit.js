@@ -5,8 +5,8 @@
 //  지우면 모자란다(모자람). 둘 다 '박이 어긋남'으로 화면이 알려 준다 — 엔진은 마디를 저절로 고치지 않는다.
 //  다만 붙임줄로 다음 마디까지 이어진 음은 '한 덩어리'로 다룬다(박자표를 바꾸면 마디선을 넘는 음이 붙임줄로 갈라짐).
 //  고친 곡은 늘 toMel → makeSong으로 다시 만든다 — 그래서 makeSong({ ...곡, mel: toMel(곡) })이 같은 곡이 된다(저장 · 왕복).
-import { makeSong } from './song.js';
-import { barTicks, beatTicks, durCode, letter, pc } from './theory.js';
+import { makeSong, sounding, DYN_VEL } from './song.js';
+import { barTicks, beatTicks, durCode, letter, pc, TPQ } from './theory.js';
 
 export const LENS = [6, 12, 24, 36, 48];          // ◀▶ 길이 차례: 8분 · 4분 · 2분 · 점2분 · 온
 export const RANGE = { lo: 60, hi: 88 };           // 한 칸 오르내림 끝: C4 ~ E6(넘으면 그대로)
@@ -307,4 +307,176 @@ export function appendBars(song, n = 1) {
   const dyn = song.ev.length ? song.ev[song.ev.length - 1].dyn : 'mf';
   const empty = () => pieces(cap, 0, true).map(d => ({ d, p: null, dyn, tie: false }));
   return safe(song, () => rebuild(song, [...G, ...Array.from({ length: n }, empty)]));
+}
+
+// ════ 묶음 D3 — 놀이터 부탁 카드 셋(리듬 지어 보기 · 내 곡 꾸며 보기 · 반주 화음 붙여 보기 · 11-14) ════
+
+// ── 리듬 지어 보기(rmake) ──  높이 하나(솔)로 된 빈 n마디 판(기본 두 마디)
+//  놓은 차례대로 앞 마디부터 채운다. 마디가 다 찼거나 넘쳤으면 다음 음은 다음 마디로 — 넘친 마디는 그대로 둔다(화면이 빗금으로 알려 줌).
+//  마지막 마디까지 다 찼으면(또는 넘쳤으면) 더 놓지 않는다. 붙임줄 없음(한 음 = 한 조각) · 정답 없음.
+//  판 표시: song.board = 'rhythm' · boardBars = 마디 수 · boardP = 높이(makeSong이 그대로 들고 다님 → 고쳐도 남음)
+export const RHYTHM_P = 67;                       // 솔
+export const RHYTHM_NOTE = [6, 12, 24, 36, 48];   // 8분 · 4분 · 2분 · 점2분 · 온
+export const RHYTHM_REST = [6, 12, 24, 48];       // 8분쉼표 · 4분쉼표 · 2분쉼표 · 온쉼표
+export function rhythmBoard({ meter = [4, 4], tempo = 100, p = RHYTHM_P, n = 2 } = {}) {
+  return makeSong({ id: 'rhythm', board: 'rhythm', boardBars: n, boardP: p, mel: '', meter: [...meter], tempo });
+}
+const boardN = song => song.boardBars || 2;
+// 차례대로 마디에 담기(앞 마디가 cap 이상이면 다음 마디 · 마지막 마디는 남은 것을 다 떠안음)
+function packSeq(items, cap, n) {
+  const G = [];
+  for (const it of items) {
+    const last = G[G.length - 1];
+    if (!last || (sum(last) >= cap && G.length < n)) G.push([it]); else last.push(it);
+  }
+  return G;
+}
+// 마디마다 { k, start, ticks, cap, over, left, first, last } — 아직 없는 마디는 빈 마디로 채워 늘 n개
+export function rhythmBars(song) {
+  const B = bars(song), cap = barTicks(song.meter);
+  for (let k = B.length; k < boardN(song); k++) B.push({ k, start: song.total, ticks: 0, cap, over: 0, left: cap, first: song.ev.length, last: song.ev.length - 1 });
+  return B;
+}
+// 다음 음이 들어갈 마디 { k, left(남은 틱) } · 다 찼으면 null
+export function rhythmNext(song) {
+  const b = rhythmBars(song).find(x => x.ticks < x.cap);
+  return b ? { k: b.k, left: b.left } : null;
+}
+// 모든 마디가 박 수에 딱 맞음
+export const rhythmFull = song => rhythmBars(song).every(b => b.ticks === b.cap);
+// 음(rest = false) 또는 쉼표 하나를 끝에 놓기 — 다 찼으면 그대로
+export function rhythmAdd(song, d, rest = false) {
+  if (!(d > 0) || durCode(d) == null || !rhythmNext(song)) return song;
+  const G = groupsOf(song), cap = barTicks(song.meter);
+  const lastIt = song.ev.length ? song.ev[song.ev.length - 1] : null;
+  const it = { d, p: rest ? null : (song.boardP ?? RHYTHM_P), dyn: lastIt ? lastIt.dyn : 'mf', tie: false };
+  return safe(song, () => rebuild(song, packSeq([...G.flat(), it], cap, boardN(song))));
+}
+// 끝의 것 하나 빼기
+export function rhythmPop(song) {
+  if (!song.ev.length) return song;
+  const items = groupsOf(song).flat().slice(0, -1);
+  return safe(song, () => rebuild(song, packSeq(items, barTicks(song.meter), boardN(song))));
+}
+// 다 비우기
+export const rhythmClear = song => (song.ev.length ? safe(song, () => rebuild(song, [])) : song);
+// 판의 박자표 바꾸기 — 놓은 차례 그대로 새 마디 길이로 다시 담는다(쉼표를 덧붙이지 않음 · 붙임줄로 가르지 않음)
+export function rhythmMeter(song, meter) {
+  if (!Array.isArray(meter) || meter.length !== 2 || (song.meter[0] === meter[0] && song.meter[1] === meter[1])) return song;
+  return safe(song, () => rebuild(song, packSeq(groupsOf(song).flat(), barTicks(meter), boardN(song)), { meter: [...meter] }));
+}
+
+// ── 내 곡 꾸며 보기(dress) ──  도막(두 마디)마다 셈여림 · 빠르기 · 악기
+//  셈여림은 음마다 적는다(글 한 줄의 '!f' 표시 → 저장 왕복) · 빠르기 · 악기는 도막 차례 표(secTempo · secInst)로 곡에 붙인다
+//  (칸이 비면 곡 전체 값 · 악기는 화면이 고른 악기). 가락 · 길이 · 박자표는 건드리지 않는다.
+export const SEC_BARS = 2;
+// [{ s, b0, b1(마디), t0, t1(틱) }] — 끝 도막은 한 마디일 수 있음
+export function sections(song, per = SEC_BARS) {
+  const B = bars(song), out = [];
+  for (let k = 0; k < B.length; k += per) {
+    const z = B[Math.min(B.length, k + per) - 1];
+    out.push({ s: out.length, b0: k, b1: z.k, t0: B[k].start, t1: z.start + z.ticks });
+  }
+  return out;
+}
+export const sectionOfBar = (k, per = SEC_BARS) => Math.floor(k / per);
+export const secTempos = song => sections(song).map((_, s) => (song.secTempo && song.secTempo[s]) || song.tempo);
+export const secInsts = (song, inst = 'piano') => sections(song).map((_, s) => (song.secInst && song.secInst[s]) || inst);
+// 도막의 셈여림 — 그 도막 음들이 모두 같으면 그 값, 섞였으면 첫 음 값
+export function secDyns(song) {
+  const G = groupsOf(song);
+  return sections(song).map(S => { const its = G.slice(S.b0, S.b1 + 1).flat(); return its.length ? its[0].dyn : 'mf'; });
+}
+export function setSecDyn(song, s, dyn) {
+  const S = sections(song)[s];
+  if (!S || DYN_VEL[dyn] == null) return song;
+  const G = groupsOf(song);
+  if (G.slice(S.b0, S.b1 + 1).flat().every(it => it.dyn === dyn)) return song;
+  return safe(song, () => rebuild(song, G.map((g, k) => (k >= S.b0 && k <= S.b1 ? g.map(it => ({ ...it, dyn })) : g))));
+}
+function setSecField(song, field, s, v, cur) {
+  const n = sections(song).length;
+  if (s < 0 || s >= n || cur[s] === v) return song;
+  const arr = Array.from({ length: n }, (_, k) => (song[field] && song[field][k]) || null);
+  arr[s] = v;
+  return makeSong({ ...defOf(song), [field]: arr });
+}
+export const setSecTempo = (song, s, bpm) => (bpm > 0 ? setSecField(song, 'secTempo', s, bpm, secTempos(song)) : song);
+export const setSecInst = (song, s, inst, base = 'piano') => (inst ? setSecField(song, 'secInst', s, inst, secInsts(song, base)) : song);
+// 꾸밈(도막 빠르기 · 악기)과 반주 화음을 떼어 낸 곡 — 다른 부탁으로 넘어갈 때(셈여림은 음에 적힌 것이라 남음)
+export function plain(song) {
+  if (!song.secTempo && !song.secInst && !song.chordBars) return song;
+  const d = defOf(song);
+  delete d.secTempo; delete d.secInst; delete d.chordBars;
+  return makeSong(d);
+}
+
+// ── 반주 화음 붙여 보기(chord) ──  마디마다 다장조 주요 3화음 Ⅰ 도미솔 · Ⅳ 파라도 · Ⅴ 솔시레 · 없음
+//  song.chordBars[k] = 'I' | 'IV' | 'V' | 'none'(없음을 고름) | null(아직 안 고름). 어울림을 맞고 틀림으로 따지지 않는다 —
+//  가락 음이 그 마디 화음의 음과 같은 음이름인지(사실)만 알려 준다(chordFit).
+export const CHORD_TONES = { I: [60, 64, 67], IV: [65, 69, 72], V: [67, 71, 74] };   // 화2 칸과 같은 자리(도미솔 · 파라도 · 솔시레)
+export const CHORD_KEYS = ['I', 'IV', 'V', 'none'];
+export const chordBars = song => bars(song).map((_, k) => (song.chordBars && song.chordBars[k]) || null);
+export function setChord(song, k, c) {
+  const B = bars(song);
+  if (k < 0 || k >= B.length || (c != null && !CHORD_KEYS.includes(c))) return song;
+  const cur = chordBars(song);
+  if (cur[k] === c) return song;
+  cur[k] = c;
+  return makeSong({ ...defOf(song), chordBars: cur });
+}
+export const chordPcsOf = c => (CHORD_TONES[c] || []).map(pc);
+// 가락 음마다 { i0, t, d, p, k(마디), c(그 마디 화음 · 없으면 null), in(화음 음과 같은 음이름 · 화음이 없으면 null) }
+export function chordFit(song) {
+  const C = chordBars(song);
+  return unitsOf(song).filter(u => u.p != null).map(u => {
+    const c = C[u.b0] && C[u.b0] !== 'none' ? C[u.b0] : null;
+    return { i0: u.i0, t: u.t, d: u.d, p: u.p, k: u.b0, c, in: c ? chordPcsOf(c).includes(pc(u.p)) : null };
+  });
+}
+// 반주 화음 음(틱) — 박마다 세 음을 함께(마디 첫 박은 down). 소리(playEvents)와 오선 '화음' 줄(MUSIC-HARM-1)이 같은 것을 씀
+export function chordHarm(song) {
+  const C = chordBars(song), bt = beatTicks(song.meter), out = [];
+  bars(song).forEach((b, k) => {
+    if (!CHORD_TONES[C[k]]) return;
+    const end = b.start + b.ticks;
+    for (let t = b.start; t < end; t += bt) for (const p of CHORD_TONES[C[k]]) out.push({ t, d: Math.min(bt, end - t), p, down: t === b.start, k });
+  });
+  return out;
+}
+
+// ── 소리 사건(세 카드 + 예전 놀이터 모두) ──
+// 틱 ↔ 초 — 도막마다 빠르기가 다르면 조각마다 이어 붙인다(secTempo가 없으면 곡 빠르기 하나)
+export function timeMap(song) {
+  const S = sections(song);
+  if (!song.secTempo || !S.length) { const k = 60 / song.tempo / TPQ; return { sec: t => t * k, tick: s => s / k, span: (a, b) => (b - a) * k }; }
+  const T = secTempos(song), segs = [];
+  let acc = 0;
+  S.forEach((x, i) => { const k = 60 / T[i] / TPQ; segs.push({ t0: x.t0, t1: x.t1, s0: acc, s1: acc + (x.t1 - x.t0) * k, k }); acc += (x.t1 - x.t0) * k; });
+  const at = (key, v) => segs.find(g => v < g[key]) || segs[segs.length - 1];
+  const sec = t => { const g = at('t1', t); return g.s0 + (t - g.t0) * g.k; };
+  return { sec, tick: s => { const g = at('s1', s); return g.t0 + (s - g.s0) / g.k; }, span: (a, b) => sec(b) - sec(a) };
+}
+// from ~ to 틱을 소리 사건으로(초 · from이 0초). 가락(도막 악기 · 셈여림) + drums(박마다 북: 센박 큰북 · 나머지 작은 소리)
+//  + 반주 화음(chordBars가 있으면 박마다 세 음 · 마디 첫 박을 조금 세게). 음 길이는 to에서 자른다.
+export function playEvents(song, { inst = 'piano', from = 0, to = song.total, gap = 0.92, drums = false, chordInst = 'keys' } = {}) {
+  const tm = timeMap(song), at = t => tm.span(from, t), out = [];   // 빠르기가 하나면 (t − from) × 초/틱 — 예전 toEvents와 같은 수
+  const S = sections(song), I = secInsts(song, inst);
+  const instAt = t => { let s = S.findIndex(x => t < x.t1); if (s < 0) s = S.length - 1; return I[s] || inst; };
+  for (const n of sounding(song)) {
+    if (n.t < from || n.t >= to) continue;
+    const end = Math.min(n.t + n.d, to);
+    out.push({ t: at(n.t), kind: 'note', inst: instAt(n.t), p: n.p, d: Math.min(tm.span(n.t, n.t + n.d) * gap, tm.span(n.t, end)), vel: n.vel, tick: n.t });
+  }
+  const cap = barTicks(song.meter), bt = beatTicks(song.meter);
+  if (drums) for (let t = Math.ceil(from / bt) * bt; t < to; t += bt) {
+    const down = t % cap === 0;
+    out.push({ t: at(t), kind: 'drum', drum: down ? 'kick' : 'hat', vel: down ? 0.6 : 0.22, tick: t });
+  }
+  for (const x of chordHarm(song)) {
+    if (x.t < from || x.t >= to) continue;
+    out.push({ t: at(x.t), kind: 'note', inst: chordInst, p: x.p, d: tm.span(x.t, Math.min(x.t + x.d, to)) * 0.9, vel: x.down ? 0.34 : 0.24, tick: x.t, chord: true });
+  }
+  out.sort((a, b) => a.t - b.t);
+  return { events: out, total: tm.span(from, to), tm };
 }

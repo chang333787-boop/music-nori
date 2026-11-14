@@ -14,16 +14,16 @@ const INTRO = {
   dyn: '셈여림 — 소리를 얼마나 세게 낼지 알려 주는 기호예요.',
   tempo: '빠르기 — 곡을 얼마나 빠르게 연주할지 알려 주는 말이에요.',
   inst: '악기 소리 — 같은 가락도 악기에 따라 소리의 빛깔이 달라요.',
-  len: '음의 길이 — 소리를 쉬거나, 잇거나, 끊거나, 늘이는 기호예요.',
+  len: '음의 길이 — 소리를 쉬거나, 잇거나, 끊거나, 늘이거나, 잘게 나누는 기호예요.',
   repeat: '되풀이 — 어디로 돌아가고, 어디를 건너뛰고, 어디서 마칠지 연주 차례를 알려 주는 기호예요.',
-  meter: '박자 — 한 마디에 박이 몇 개 들어가는지 알려 주는 숫자예요.',
+  meter: '박자 — 한 마디에 박이 몇 개 들어가는지 알려 주는 숫자예요. 마디가 어디서 시작하는지, 박자가 어디서 바뀌는지도 악보에 적어요.',
   key: '조 — 가락을 다른 조로 옮기거나, 음 하나를 반음 올리고 내리는 기호예요.',
   chord: '화음 — 가락 아래에 다른 소리를 함께 울려 어울리게 하는 것이에요.',
 };
 const PICK = {
   tempo: '빠르기말을 골라요 — 곡 전체의 빠르기가 바뀌어요',
   inst: '악기를 골라요 — 같은 가락을 다른 악기 소리로 들어요 · 북 반주도 넣어 봐요',
-  meter: '박자표를 골라요 — 마디줄 자리와 센박이 달라져요',
+  meter: '박자표나 못갖춘마디를 골라요 — 마디줄 자리와 센박이 달라져요',
   key: '[조 옮기기]를 누르거나, 올림표 · 내림표를 골라 음을 눌러요',
   chord: '[둘째 줄] · [조 옮기기]를 누르거나, 화음을 골라 마디를 눌러요',
 };
@@ -42,6 +42,8 @@ const phraseName = ph => {
 // 단추 안의 작은 기호 그림(글꼴에 없는 기호는 선으로 그림)
 const ico = (w, hgt, ...kids) => svg('svg', { class: 'sl-ico', viewBox: `0 0 ${w} ${hgt}`, width: w, height: hgt, 'aria-hidden': 'true' }, ...kids);
 const head = (x, y) => svg('ellipse', { cx: x, cy: y, rx: 5.6, ry: 4.1, transform: `rotate(-20 ${x} ${y})`, class: 'fl' });
+// 음표 하나(머리 + 기둥 · flag = 8분 깃발) — 기둥 끝 높이 top
+const q = (x, y, flag = 0, top = 3) => [head(x, y), svg('path', { d: `M${x + 5.4} ${y - 1}V${top}`, class: 'ln' }), ...(flag ? [svg('path', { d: `M${x + 5.4} ${top}q1.5 6 8 9`, class: 'ln' })] : [])];
 function symOf(s, ph) {
   switch (s.kind) {
     case 'letter': return h('span', { class: 'sl-dynl' }, s.sym);
@@ -54,6 +56,13 @@ function symOf(s, ph) {
     case 'repeat': return ico(30, 26, svg('circle', { cx: 6, cy: 9, r: 2.4, class: 'fl' }), svg('circle', { cx: 6, cy: 17, r: 2.4, class: 'fl' }), svg('path', { d: 'M14 2V24', class: 'ln' }), svg('path', { d: 'M22 2V24', class: 'ln thick' }));
     case 'tchange': return h('span', { class: 'sl-ital' }, s.sym);
     case 'meter': return h('span', { class: 'sl-ts' }, h('span', {}, String(s.meter[0])), h('span', {}, String(s.meter[1])));
+    // [D1] 박자 · 길이 기호 — 음표 모양을 선으로(점음표 ♩. · 당김음 ♪♩♪ · 16분음표 넷 · 셋잇단 · 못갖춘마디 · 바뀌는 박자)
+    case 'dot': return ico(30, 30, ...q(9, 23), svg('circle', { cx: 23, cy: 21, r: 2.6, class: 'fl' }));
+    case 'sync': return ico(62, 30, ...q(8, 23, 1), ...q(29, 23), ...q(50, 23, 1));
+    case 'six': return ico(56, 30, ...[8, 21, 34, 47].flatMap(x => q(x, 24, 0, 6)), svg('path', { d: 'M13.4 7.5H52.4M13.4 13.5H52.4', class: 'ln beam' }));
+    case 'trip': return ico(46, 34, ...[8, 22, 36].flatMap(x => q(x, 28, 0, 12)), svg('path', { d: 'M13.4 13.5H41.4', class: 'ln beam' }), svg('text', { x: 27.4, y: 9, 'text-anchor': 'middle', class: 'tx' }, '3'));
+    case 'pickup': return ico(58, 30, ...q(8, 23), svg('path', { d: 'M21 3V28', class: 'ln' }), ...q(33, 23), ...q(50, 23));
+    case 'mixed': return h('span', { class: 'sl-mix' }, h('span', { class: 'sl-ts' }, h('span', {}, '3'), h('span', {}, '4')), h('span', { class: 'sl-mixbar' }), h('span', { class: 'sl-ts' }, h('span', {}, '2'), h('span', {}, '4')));
     case 'keyup': return ico(44, 26, ...[3, 8, 13, 18, 23].map(y => svg('path', { d: `M2 ${y}H42`, class: 'ln hair' })), svg('text', { x: 22, y: 9, 'text-anchor': 'middle', class: 'tx acc' }, '♯'));
     case 'acc': return h('span', { class: 'sl-accg' }, s.sym);
     case 'second': return ico(44, 26, head(9, 6), head(23, 3), head(37, 6), head(9, 15), head(23, 12), head(37, 15));
@@ -82,9 +91,11 @@ export default function lab(root, ctx) {
   const lone = g => { const l = signsOf(g); return l.length === 1 && l[0].where !== 'start' ? l[0].id : null; };
   const deep = signById(args[1]);
   if (deep && deep.group === group) {
-    if (deep.phrase) phrase = phraseById(deep.phrase);           // 그 기호가 잘 들리는 가락으로(1 · 2번 괄호 · D.C. · Fine)
-    if (deep.where === 'start') hint = deep.id;
-    else { sign = deep.id; fact = factOf(deep.id, true); }
+    if (deep.phrase && phraseById(deep.phrase)) phrase = phraseById(deep.phrase);   // 그 기호가 맞는 가락으로(8분의 6박자 · 못갖춘마디 · 바뀌는 박자 · 1 · 2번 괄호 · D.C. · Fine)
+    if (deep.where === 'start') {
+      hint = deep.id;
+      if (deep.kind === 'meter' && hasMeter(phrase, emptyMarks(), deep.id)) fact = factOf(deep.id, true);   // 본래 그 박자인 가락 — 뜻을 먼저
+    } else { sign = deep.id; fact = factOf(deep.id, true); }
   } else if (lone(group)) { sign = lone(group); fact = factOf(sign, true); }
   const store = new Map();         // 가락 id → 넣은 기호(이 화면에 있는 동안만)
   const marksNow = () => { if (!store.has(phrase.id)) store.set(phrase.id, emptyMarks()); return store.get(phrase.id); };
@@ -98,7 +109,7 @@ export default function lab(root, ctx) {
   const later = (fn, ms) => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); };
   const noFocus = el => { el.addEventListener('mousedown', e => e.preventDefault()); return el; };
   const press = (el, fn) => noFocus(onPress(el, fn));
-  const beatOn = marks => group === 'meter' || !!marks.meter;      // 박자를 볼 때는 박 소리도 함께
+  const beatOn = marks => group === 'meter' || !!marks.meter || !!marks.pickup || !!marks.mixed || Object.keys(marks.sync || {}).length > 0;      // 박자를 볼 때(당김음도)는 박 소리도 함께
 
   // ── 틀 ──
   const tabs = h('div', { class: 'sl-tabs', role: 'group', 'aria-label': '기호 묶음' },
@@ -144,13 +155,18 @@ export default function lab(root, ctx) {
   }
 
   // ── 자리 계산(그림 단위) ──
-  const xAt = (b, tick) => R.xs.get(b).X((tick - b * M.cap) / 3);
+  const xAt = (b, tick) => R.xs.get(b).X((tick - M.B[b].t0) / M.step);
+  const lead = () => { let b = 0; while (b + 1 < M.bars && M.B[b + 1].t0 < 48) b++; return b; };   // 앞의 네 박쯤이 드는 마디까지
   const xOf = n => xAt(n.bar, n.t);
   const yOf = n => TOP + 40 - (n.step != null ? n.step - 37 : staffPos(n.p)) * 5;      // step = 음이름 자리(조 · 임시표를 입힌 뒤 · engine/marks.js)
 
   function guideText(marks) {
     if (bare) return '기호를 뺀 악보로 듣는 중이에요';
-    if (hint) { const s = signById(hint); return `「${s.name}」${pt(s.name, '을/를')} 눌러 넣어 보세요`; }
+    if (hint) {
+      const s = signById(hint);
+      if (s.kind === 'meter' && hasMeter(phrase, marks, s.id)) return `이 가락은 본래 「${s.name}」예요 · 다른 박자표를 눌러 견주어 보세요`;
+      return `「${s.name}」${pt(s.name, '을/를')} 눌러 넣어 보세요`;
+    }
     if (sign) {
       const s = signById(sign);
       if (!places(phrase, marks, sign).length) {
@@ -161,6 +177,7 @@ export default function lab(root, ctx) {
       if (s.kind === 'dc') return '악보의 끝 마디를 눌러 「D.C.」를 넣어요 · 넣은 곳을 또 누르면 빠져요';
       if (s.kind === 'fine') return '악보에서 「Fine」으로 마칠 마디를 눌러요 · 넣은 곳을 또 누르면 빠져요';
       const tail = ' · 넣은 곳을 또 누르면 빠져요';
+      if (s.tip) return '악보에서 ' + s.tip + tail;
       if (s.where === 'tie') return '악보에서 붙임줄로 이을 두 음 사이를 눌러요' + tail;
       return `악보에서 「${s.name}」${pt(s.name, '을/를')} 넣을 ${s.where === 'bar' ? '마디를' : '음을'} 눌러요` + tail;
     }
@@ -234,7 +251,7 @@ export default function lab(root, ctx) {
       const on = has(marks, sign, at);
       const cls = 'can' + (on ? ' in' : '');
       if (s.where === 'note') {
-        const n = M.notes[at], [a, b] = noteSpan(n);
+        const n = M.notes[at], [a, b] = s.kind === 'sync' && on ? [noteSpan(n)[0], noteSpan(M.notes[at + 1])[1]] : noteSpan(n);   // 넣은 당김음은 두 음 자리를 다 덮음
         hitRect(g, a, b, at, `${at + 1}번째 음 ${solfege(n.p)}`, cls, on, () => tapPlace(at));
       } else if (s.where === 'tie') {
         const a = M.notes[at], b = M.notes[at + 1];
@@ -261,7 +278,7 @@ export default function lab(root, ctx) {
       g.append(svg('path', { d: `M${xa + 4} ${yy}Q${(xa + xb) / 2} ${yy + 7} ${xb - 4} ${yy}`, class: 'st-tie' }));
     }
     for (const k of M.fermatas) {
-      const x = xOf(M.notes[k]), fy = TOP - 22;
+      const lp = M.notes[k].parts[M.notes[k].parts.length - 1], x = xAt(lp.bar, lp.t), fy = TOP - 22;   // 쪼갠 음은 끝 조각 위에
       g.append(svg('path', { d: `M${x - 9} ${fy}a9 8.5 0 0 1 18 0`, class: 'sl-ferm' }), svg('circle', { cx: x, cy: fy - 2.6, r: 1.9, class: 'st-dot' }));
     }
     let right = 0;
@@ -329,7 +346,7 @@ export default function lab(root, ctx) {
     store.set(phrase.id, r.marks);
     fact = factOf(id, r.on, { note: r.note, meter: r.meter });
     draw(); paint();
-    preview(0, Math.ceil(4 / M.meter[0]) - 1);                   // 앞의 네 박쯤을 바뀐 소리로
+    preview(0, lead());                                          // 앞의 네 박쯤을 바뀐 소리로
   }
 
   function tapPlace(at) {
@@ -339,11 +356,12 @@ export default function lab(root, ctx) {
     if (r.blocked) return;
     stopPlay(true);
     store.set(phrase.id, r.marks);
-    fact = factOf(sign, r.on, { marks: r.marks });
+    fact = factOf(sign, r.on, r);
     draw(); paint();
     if (ORDER_KINDS.has(s.kind)) return;                         // 도돌이표 · 괄호 · D.C. · Fine은 [듣기]로 처음부터
     const barOf = k => M.notes[k].bar;
-    if (s.where === 'bar') preview(at, s.kind === 'tchange' ? M.bars - 1 : at);
+    if (s.kind === 'mixed') preview(Math.max(0, at - 1), Math.min(M.bars - 1, at));   // 바뀌기 앞 마디부터 이어서
+    else if (s.where === 'bar') preview(at, s.kind === 'tchange' ? M.bars - 1 : at);
     else if (s.where === 'tie') preview(barOf(at), barOf(at + 1));
     else preview(barOf(at), barOf(at));
   }
@@ -404,8 +422,8 @@ export default function lab(root, ctx) {
     const marks = marksNow();
     const P = perform(phrase, marks, { beat: beatOn(marks) });
     let si = -1;                                                 // 그 마디를 지나가는 마지막 구간(되풀이 · D.C.가 있어도 한 번만)
-    P.segs.forEach((g, i) => { if (g.a <= b0 * M.cap && b0 * M.cap < g.b) si = i; });
-    const evs = P.events.filter(e => e.seg === si && Math.floor(e.tick / M.cap) >= b0 && Math.floor(e.tick / M.cap) <= b1);
+    P.segs.forEach((g, i) => { if (g.a <= M.B[b0].t0 && M.B[b0].t0 < g.b) si = i; });
+    const evs = P.events.filter(e => e.seg === si && M.barOf(e.tick) >= b0 && M.barOf(e.tick) <= b1);
     if (!evs.some(e => e.kind === 'note')) return;
     const t0 = evs[0].t;
     const out = evs.map(e => ({ ...e, t: e.t - t0 }));
@@ -459,6 +477,7 @@ export default function lab(root, ctx) {
   applyFriend(); buildTray(); draw(); paint();
 
   window.__labState = () => ({ group, sign, hint, phrase: phrase.id, marks: marksNow(), count: countMarks(marksNow()), playing: !!(player && player.playing), mode, bare, bars: M.bars, meter: M.meter,
+    barLens: M.B.map(b => b.len), nPhrases: PHRASES.length,
     key: M.key, lower: M.lower, chords: M.chords.map(c => c.bar + c.id), order: orderOf(phrase, marksNow()), staves: R.sys[0].tops.length });
 
   return () => {

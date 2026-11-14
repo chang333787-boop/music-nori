@@ -1,0 +1,5 @@
+/* 반1 되풀이 길 찾기 — 공용 틀(_pick.css) + 마디 상자 카드가 읽히게 단추 묶음을 넓히고 카드 그림을 키움(그림 높이 108px = 뷰박스 높이 → 그림 안 글자 20px) — _pick.css가 이 파일보다 늦게 붙을 수 있어 앞에 .pk .answers를 붙여 이기게 */
+.pk .answers.pk-cards{width:500px}
+.pk .answers.pk-cards .ans{min-height:116px;padding:4px 14px}
+.pk .answers.pk-cards .ans .chip{max-width:380px;height:108px}
+.pk .answers.pk-cards .ans .chip svg{height:108px;width:auto;max-width:380px}

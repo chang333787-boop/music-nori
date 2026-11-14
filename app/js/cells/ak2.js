@@ -36,7 +36,7 @@ export const PLAN = [
 ];
 export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 8, 11] — 섞어도 '9번째부터 몇째' 말이 그대로 맞게
 // 단계 안 섞기(N2) — 차례만(뒤집기 X: 줄 음 ↔ 칸 음을 바꾸면 다른 음이 됨) · 답 수는 판마다 고를 것이 달라 같게 맞추지 않음
-export const SHUF = { answerOf: p => p.right, balance: false };
+export const SHUF = { answerOf: p => p.right, balance: false, chance: plan => GUESS(plan) };   // chance = 앞 판 기억 봇 검사(F5)
 export const GUESS = plan => plan.map(p => (p.twist ? 1 / 4 : 1 / 2));   // 찍기 바닥 — 앞 여덟 판 둘 중 하나 · 비틀기 넷 중 하나
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만
 // TV '틀린 갈래' 막대 이름(X6 둘째) — 아래 tipOf 갈래와 같은 차례 · 짧게(선생님이 다시 짚을 곳)

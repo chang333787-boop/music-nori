@@ -45,7 +45,7 @@ export const CUTS = stageCuts(PLAN);             // 단계 경계 [4, 6, 11]
 const VOL_AT = CUTS[1];                          // 크기 단추가 열리는 판 = 비틀기 첫 판(섞어도 자리는 그대로 — 섞이면 '새 단추 = 답'으로 찍지 못함)
 // 단계 안 섞기(N2) — 뒤집기 = 두 소리 차례를 바꿈(바뀐 것 = 답은 그대로 · 올라가요 ↔ 내려가요) · 답 = 바뀐 것
 //  답 수가 높이 5 · 길이 4 · 크기 3이라 같게 맞추지는 않음(balance X) — 같은 답 세 번 연속 X · 처음 네 판 번갈아 X만
-export const SHUF = { flip: p => ({ ...p, a: p.b, b: p.a }), answerOf: p => p.right, balance: false };
+export const SHUF = { flip: p => ({ ...p, a: p.b, b: p.a }), answerOf: p => p.right, balance: false, chance: plan => GUESS(plan) };   // chance = 앞 판 기억 봇 검사(F5)
 // 찍기 바닥 — 크기 단추가 나오기 전엔 둘 중 하나 · 나온 뒤엔 셋 중 하나
 export const GUESS = plan => plan.map((x, k) => (k < VOL_AT ? 1 / 2 : 1 / 3));
 // 결과 한 줄 — 사실만(N1): 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만

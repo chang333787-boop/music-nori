@@ -21,7 +21,8 @@ export const CELL_KIND = {
 };
 // 나머지 곡 바꾸기 카드는 E · 묶음 D의 따로 서는 카드(flow.js PLAY_SOLO)는 넣고 빼며 듣고(E) 정답 없이 제 것을 지음(M)
 //  흐름에 그 키가 들어가야(= 만든 팀이 PLAY_SOLO 주석을 풀고 단계 acts에 적어야) 세어진다 — 미리 적어 둔 이 표만으로는 0
-export const PLAY_KIND = { make: 'M', rmake: 'EM', dress: 'EM', chord: 'EM', jang: 'EM', form: 'EM' };
+//  장단 판(jang · D4)은 DEM — 칸에 구음을 넣고 빼며 듣고(E) · 내 장단을 정답 없이 짓고(M) · 되풀이되는 장단에 맞춰 손뼉 단추를 누르면 그때 소리가 남(D · 때 판정 없음)
+export const PLAY_KIND = { make: 'M', rmake: 'EM', dress: 'EM', chord: 'EM', jang: 'DEM', form: 'EM' };
 
 export function actKinds(act) {
   const [kind, a] = String(act).split(':');

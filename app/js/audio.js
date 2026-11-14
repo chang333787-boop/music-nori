@@ -5,6 +5,17 @@
 //  [MUSIC-ORCH-1] 오케스트라 악기 15가지 + 팀파니 · 심벌즈 · 큰북 · 트라이앵글 · 서스펜디드 심벌(부풂). 연주법(art): 'swell' = 음 안에서 점점 크게 · 'roll' = 팀파니 굴리기
 import { freq } from '../../engine/theory.js';
 
+// 악기 크기 맞추기 [곱, 옥타브당 dB 기울기(솔4 = 0)] — 같은 세기 · 같은 음(솔4 · vel 0.6 · 0.8초)에서 칸이 쓰는 악기들이
+//  A 가중 크기로 4dB 안에 들게(tests/ear.lab.js level:cells). 기울기 = 높아질수록 귀에 커지는 만큼(플루트 · 리코더 · 바이올린 한 옥타브 +4~5dB(A))을 덜어 냄.
+//  두드리고 뜯는 악기(실로폰 · 피치카토 …)는 곧 사라져 1초 평균 크기가 작게 나온다 — 피크를 너무 키우지 않게 보정은 그 사이에서 멈춘다.
+//  기계로 잰 값이다 — 사람 귀로 맞춘 것이 아니다.
+export const LEVEL = {
+  piano: [1.02, 0], xylo: [1.36, 0], marimba: [1.03, 0], recorder: [0.53, -4.8], flute: [0.8, -4.8], violin: [0.88, -4.8],
+  cello: [0.78, 0], choir: [1.02, 0], strings: [1.23, 0], keys: [0.95, 0], bass: [0.73, 0], celesta: [1.06, 0],
+  glock: [1.25, 0], harp: [1.3, 0],                  // 글로켄슈필은 주제곡을 크기 1로 다 열 때 피크(0.97)를 보고 덜 키움 · 하프는 줄 버퍼가 잡음에서 나와 판마다 ±1dB쯤 다름
+  pizz: [2.2, 0],                                   // 2.66이면 1초 평균이 꼭 맞지만 세기 0.9 피크가 0.93 — 깨짐(0.99)에 너무 가까워 2.2에서 멈춤
+};
+
 export class Engine {
   constructor() { this.ctx = null; this._ks = new Map(); this._pk = new Map(); }
   // 첫 두드림 전에 쉬는 틈에 미리 짓기(멈춘 채로) — 첫 소리 때 소리 장치 · 잔향 준비가 한꺼번에 몰리지 않게(성능 11-07)
@@ -57,6 +68,8 @@ export class Engine {
     out = out || this.live;
     t = Math.max(t, ctx.currentTime);
     vel *= this.pitchGain ? this.pitchGain(p) : 1;   // 음높이별 크기 맞추기(eq.js · 스피커 점검) — 없으면 그대로
+    const lv = LEVEL[inst];                          // 악기 사이 · 높이에 따른 크기 맞추기(기계 귀 tests/ear · 11-14)
+    if (lv) vel *= lv[0] * (lv[1] ? 10 ** (lv[1] * (p - 67) / 240) : 1);
     const f = freq(p), fn = { piano: this._piano, xylo: this._mallet, marimba: this._mallet, recorder: this._recorder, gayageum: this._gayageum, bass: this._bass, pad: this._pad,
       // [MUSIC-ORCH-1] 오케스트라 악기
       violin: this._violin, strings: this._strings, cello: this._cello, contrabass: this._contrabass, pizz: this._pizz,
@@ -163,7 +176,7 @@ export class Engine {
     const kb = this._ksBuffer(f);
     src.buffer = kb.buf; src.playbackRate.value = kb.rate;
     lp.type = 'lowpass'; lp.frequency.value = Math.min(6000, f * 6);
-    g.gain.setValueAtTime(vel * 0.75, t);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel * 0.75, t + 0.002);   // 2ms 오름(뜯는 소리 첫 계단 없앰 · 위 _plucked와 같음)
     if (dur > 0.6) { src.detune.setValueAtTime(0, t + 0.35); src.detune.linearRampToValueAtTime(18, t + 0.55); src.detune.linearRampToValueAtTime(-6, t + 0.8); src.detune.linearRampToValueAtTime(0, t + 1.0); }   // 농현(살짝 떠는 소리)
     src.connect(lp).connect(g).connect(out);
     src.start(t); src.stop(t + 2.2);
@@ -269,7 +282,7 @@ export class Engine {
     const g = this.ctx.createGain(), lp = this._filt('lowpass', Math.min(5200, f * 5), 0.4);
     const os = this._oscs([['sawtooth', 1, 1, -9], ['sawtooth', 1, 1, 0], ['sawtooth', 1, 1, 8]], f, t, lp);
     lp.connect(g).connect(out);
-    const fin = this._bowEnv(g, t, dur, vel * 0.13, 0.16, 0.28, art);
+    const fin = this._bowEnv(g, t, dur, vel * 0.13, Math.min(0.14, Math.max(0.03, dur * 0.1)), 0.28, art);   // 차오름 = 음 길이의 1/10(0.03~0.14초) — 짧은 음은 박에 맞게 빨리(한 박 0.39초 → 39ms) · 긴 음은 예전처럼 천천히(tests/ear 11-14: 예전 피크 절반까지 221 · 87ms)
     const vib = this._vibrato(t, dur, [os[0], os[2]], 9, 5, 0.3, fin);
     for (const o of os) { o.start(t); o.stop(fin); }
     return this._handle(g, [...os, ...vib], 0.28, fin);
@@ -318,7 +331,8 @@ export class Engine {
     src.buffer = pb.buf; src.playbackRate.value = pb.rate;
     if (kind === 'pizz') { lp.frequency.setValueAtTime(Math.min(8000, f * 9), t); lp.frequency.exponentialRampToValueAtTime(Math.max(300, lpHz), t + 0.12); }
     const end = t + pb.len;
-    g.gain.setValueAtTime(vel * gainK, t); g.gain.setTargetAtTime(0, end - 0.3, 0.07);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel * gainK, t + 0.002);   // 2ms 오름 — 첫 표본이 0에서 바로 뛰는 계단(딸깍)을 없앰 · 손가락이 줄을 놓는 때(1~2ms)와 같은 꼴
+    g.gain.setTargetAtTime(0, end - 0.3, 0.07);
     src.connect(lp).connect(g).connect(out); src.start(t); src.stop(end);
     return this._handle(g, [src], 0.08, end);
   }
@@ -419,7 +433,7 @@ export class Engine {
     for (const [fq, q, a] of [[850, 7, 1], [1250, 9, 0.55], [2850, 11, 0.28]]) { const bp = this._filt('bandpass', fq, q), fg = ctx.createGain(); fg.gain.value = a; sum.connect(bp).connect(fg).connect(g); }
     const lp = this._filt('lowpass', Math.min(1200, f * 2.5), 0.5), lg = ctx.createGain(); lg.gain.value = 0.3; sum.connect(lp).connect(lg).connect(g);
     g.connect(out);
-    const fin = this._bowEnv(g, t, dur, vel * 0.6, 0.14, 0.3, art);
+    const fin = this._bowEnv(g, t, dur, vel * 0.6, Math.min(0.14, Math.max(0.03, dur * 0.1)), 0.3, art);   // 차오름 = 음 길이의 1/10(0.03~0.14초) — 짧은 음은 박에 맞게 빨리(한 박 0.39초 → 39ms) · 긴 음은 예전처럼 천천히(tests/ear 11-14: 예전 피크 절반까지 221 · 87ms)
     const vib = this._vibrato(t, dur, os, 12, 5.2, 0.3, fin);
     for (const o of os) { o.start(t); o.stop(fin); }
     return this._handle(g, [...os, ...vib], 0.3, fin);
@@ -461,6 +475,8 @@ export class Engine {
       case 'kick': return this._thump(t, vel, out, 140, 46, 0.3);
       case 'snare': this._hiss(t, vel * 0.55, out, 'bandpass', 1900, 0.14, 0.7); return this._tone(t, vel * 0.3, out, 190, 0.08);
       case 'hat': return this._hiss(t, vel * 0.3, out, 'highpass', 7600, 0.045);
+      // 손뼉(장단 판 · D4) — 짧은 잡음 셋을 아주 가깝게 겹침(손바닥이 여러 군데에서 부딪는 소리) · 장구 덕(2300Hz)보다 낮은 띠
+      case 'clap': for (let i = 0; i < 3; i++) this._hiss(t + i * 0.009, vel * [0.5, 0.42, 0.58][i], out, 'bandpass', 1150, i < 2 ? 0.025 : 0.13, 1.1); return;
       case 'kung': this._thump(t, vel, out, 105, 72, 0.5); return this._hiss(t, vel * 0.18, out, 'lowpass', 420, 0.06);
       case 'deok': this._hiss(t, vel * 0.62, out, 'bandpass', 2300, 0.07, 1.3); return this._tone(t, vel * 0.22, out, 540, 0.06);
       case 'gi': this._hiss(t, vel * 0.4, out, 'bandpass', 2300, 0.05, 1.3); return this._tone(t, vel * 0.14, out, 540, 0.04);

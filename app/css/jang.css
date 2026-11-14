@@ -1,0 +1,85 @@
+/* 장단 판(app/js/screens/jang.js · #/jang) — 화면 약속 docs/ui.md
+   1366×768 스크롤 0: 왼쪽 무대(보기 장단보 · 내 장단보 · 사실 한 줄) · 오른쪽 350(부탁 카드 · 장단 고르기) · 아래 선반 96(구음 여섯 · 손뼉 · 듣기)
+   장단보 모양(docs/gugak.md — 교과서): 가로 한 줄 · 소박 하나가 한 칸 · 박 앞은 실선 · 소박 사이는 점선 · 센 곳 '>'는 칸 위 · 쉼은 빈칸
+   주황은 '듣기' 하나. 고른 것은 잉크로 채움. 도는 칸은 고슴도치(박·리듬) 색 띠 */
+.jang-board{display:grid;grid-template-columns:minmax(0,1fr) 350px;grid-template-rows:minmax(0,1fr) 96px;gap:12px 16px;height:100%}
+
+/* ── 무대 ── */
+.jg-stage{grid-column:1;grid-row:1;display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-width:0;min-height:0;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:10px 18px 12px}
+.jg-stage.solo{justify-content:center;gap:28px}
+.jg-board{display:flex;flex-direction:column;gap:2px;min-width:0}
+.jg-head{display:flex;align-items:center;gap:12px;min-height:64px;min-width:0}
+.jg-head b{flex:none;font-family:var(--head);font-weight:400;font-size:24px;line-height:1.2;padding:4px 14px;border-radius:12px;background:var(--hog-t);border:2px solid var(--ink)}
+.mine .jg-head b{background:var(--ink);color:var(--paper)}
+.jg-name{flex:none;font-family:var(--head);font-size:26px;line-height:1.2}
+.jg-info{min-width:0;font-size:19px;line-height:1.3;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jg-refplay{flex:none;margin-left:auto;min-height:64px;padding:6px 20px;font-size:22px}
+.jg-acc,.jg-cells,.jg-nums{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr))}
+.jg-acc span{text-align:center;font-family:var(--head);font-size:26px;line-height:28px;height:28px}
+.jg-cells{height:96px;border:3px solid var(--ink);border-radius:18px;overflow:hidden;background:var(--surface)}
+.ref .jg-cells{background:var(--panel)}
+.jg-nums span{text-align:center;font-size:18px;line-height:24px;color:var(--ink-2)}
+/* 칸 — 단추(내 장단)와 그림(보기)이 같은 모양 · 칸끼리는 테를 나눠 씀 */
+.jg-cell{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:0;height:100%;margin:0;padding:0;border:0;border-left:2px dashed var(--line2);border-radius:0;box-shadow:none;background:transparent;color:var(--ink);font-family:var(--head);font-size:32px;line-height:1.05;white-space:nowrap}
+.jg-cell:first-child{border-left:0}
+.jg-cell.head:not(:first-child){border-left:3px solid var(--ink)}
+.jg-cell.long{font-size:28px}
+.jg-cell.durr{font-size:24px}
+/* 부탁 ③(내 장단 짓기) — 장단보가 하나라 칸을 크게 */
+.solo .jg-cells{height:136px}
+.solo .jg-cell{font-size:40px}
+.solo .jg-cell.long{font-size:34px}
+.solo .jg-cell.durr{font-size:28px}
+.solo .jg-acc{display:none}
+.jg-cell span{display:block}
+button.jg-cell{cursor:pointer}
+button.jg-cell:hover{background:var(--hog-t)}
+button.jg-cell:active:not(:disabled),button.jg-cell.press:not(:disabled){transform:none;box-shadow:none;background:var(--hog-t)}
+button.jg-cell:focus-visible{outline:4px solid var(--bird);outline-offset:-6px}
+.jg-cell.now{background:var(--hog-t);box-shadow:inset 0 -9px 0 var(--hog)}
+/* 한 칸 바꾸기 — 보기와 다른 칸(두 장단보 같은 자리) */
+.jg-cell.chg::after{content:'';position:absolute;inset:7px;border:3px dashed var(--ink);border-radius:10px;pointer-events:none}
+.jg-line{flex:none;margin:0;min-height:44px;display:flex;align-items:center;padding:6px 14px;border-radius:12px;background:var(--panel);font-size:20px;line-height:1.35}
+
+/* ── 오른쪽: 부탁 카드 · 장단 고르기 ── */
+.jg-side{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:12px;min-height:0}
+.jg-card{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:14px 18px 16px;overflow:hidden}
+.jg-dots{flex:none;display:flex;align-items:center;margin:-14px -18px 0}
+.jg-dots button{flex:none;width:48px;min-width:48px;min-height:48px;height:48px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none}
+.jg-dots button:focus-visible{outline-offset:-6px}
+.jg-dots button:active:not(:disabled),.jg-dots button.press:not(:disabled){transform:none;box-shadow:none}
+.jg-dots button:hover i{transform:scale(1.25)}
+.jg-dots i{display:block;width:16px;height:16px;border-radius:50%;border:2.5px solid var(--ink);background:var(--surface);transition:transform var(--up)}
+.jg-dots .on i{background:var(--ink)}
+.jg-dots .now i{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+.jg-kind{margin-left:auto;padding-right:18px;font-family:var(--head);font-size:19px;color:var(--ink-2)}
+.jg-text{margin:0;font-family:var(--head);font-size:26px;line-height:1.3}
+.jg-hint{margin:0;font-size:19px;line-height:1.4;padding:7px 12px;border-radius:12px;background:var(--panel);border-left:6px solid var(--line2)}
+.jg-hint[data-k="ready"]{border-left-color:var(--ink);font-weight:700}
+.jg-hint[data-k="diff"]{border-left-color:var(--bird)}
+.jg-hint[data-k="done"]{border-left-color:var(--good);color:var(--good);font-weight:700}
+.jg-act{margin-top:auto;display:flex;justify-content:flex-end}
+.jg-act button{min-height:64px;font-size:24px}
+.jg-pick{flex:none;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:8px 14px 16px}
+.jg-pick h3{margin:0 0 6px 2px;font-size:20px;color:var(--ink-2)}
+.jg-pickgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.jg-pickgrid button{min-width:0;min-height:68px;padding:4px 8px;flex-direction:column;gap:0;line-height:1.15;box-shadow:0 3px 0 var(--ink)}
+.jg-pickgrid button b{font-weight:400;font-size:24px}
+.jg-pickgrid button span{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
+.jg-pickgrid button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.jg-pickgrid button[aria-pressed="true"] span{color:var(--paper)}
+
+/* ── 아래 선반 ── */
+.jg-shelf{grid-column:1/3;grid-row:2;display:flex;align-items:stretch;gap:14px;min-width:0;padding-bottom:4px}
+.jg-pal{flex:1;min-width:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.jg-pal button{min-width:0;min-height:0;height:100%;padding:4px 6px;flex-direction:column;gap:2px;line-height:1.1}
+.jg-pal button b{font-weight:400;font-size:30px}
+.jg-pal button span{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.jg-pal button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.jg-pal button[aria-pressed="true"] span{color:var(--paper)}
+.jg-clap{flex:none;width:150px;min-height:0;height:100%;padding:4px 8px;flex-direction:column;gap:2px;line-height:1.1}
+.jg-clap b{font-weight:400;font-size:30px}
+.jg-clap span{font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
+.jg-clap.hit{animation:jg-hit 180ms ease-out}
+@keyframes jg-hit{from{background:var(--hog-t)}to{background:var(--surface)}}
+.jg-play{flex:none;min-width:200px;min-height:0;height:100%;font-size:32px}

@@ -1,0 +1,3 @@
+/* ak4 — 보기 카드에 붙인 작은 오선 그림(_staff.js) · 단추 카드 그림은 틀(.pk-cards)이 크기를 정함 */
+.ak-staff{display:block;margin-top:6px}
+.ak-staff svg{display:block;height:58px;width:auto;max-width:100%}
