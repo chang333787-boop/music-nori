@@ -385,6 +385,7 @@ details.rights summary{cursor:pointer;font-size:18px;min-height:44px;display:fle
 .st-acc{font-size:15px;font-weight:700;fill:#3B2A1E}.st-chord{font-size:15px;font-weight:900;fill:#2F6F4E}
 .st-num{font-size:10px;fill:#8a7a62}.st-sol{font-size:14px;font-weight:900}.st-lyric{font-size:14px;font-weight:700;fill:#3B2A1E}
 .st-voice{font-size:11px;font-weight:800;fill:#8a7a62}
+.st-tuplet{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:13px;fill:#3B2A1E}   /* [D1] 셋잇단 숫자 */
 .st-note.now .st-head{fill:#E0A100;stroke:#8E3A12}.st-note.now .st-head.hollow{fill:#F6D98A}
 
 /* ── 출처 · 표 ── */
