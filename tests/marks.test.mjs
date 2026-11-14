@@ -1,7 +1,9 @@
 // 악보 판 규칙 시험 — 기호를 넣었다 빼면 소리(사건)와 악보가 말한 대로 달라지는가
 import assert from 'node:assert/strict';
-import { GROUPS, SIGNS, PHRASES, LV, LV0, phraseById, signById, signsOf, emptyMarks, countMarks, fitsMeter, meterNow, build, places, has, hasMeter, toggle, perform, scoreOf, factOf } from '../engine/marks.js';
+import { GROUPS, SIGNS, PHRASES, LV, LV0, phraseById, signById, signsOf, emptyMarks, countMarks, fitsMeter, meterNow, build, places, has, hasMeter, toggle, perform, scoreOf, factOf, orderOf, keyShift, CHORD } from '../engine/marks.js';
 import { songById } from '../engine/songs/index.js';
+import { makeSong, sounding } from '../engine/song.js';
+import { chordPcs, pc } from '../engine/theory.js';
 import { LEDGER } from '../engine/songs/ledger.js';
 
 let n = 0;
@@ -14,7 +16,7 @@ const ode = phraseById('ode'), auclair = phraseById('auclair'), haenschen = phra
 const E = emptyMarks;
 
 ok('묶음 · 기호 표', () => {
-  assert.deepEqual(GROUPS.map(g => g.id), ['dyn', 'tempo', 'inst', 'len', 'repeat', 'meter']);
+  assert.deepEqual(GROUPS.map(g => g.id), ['dyn', 'tempo', 'inst', 'len', 'repeat', 'meter', 'key', 'chord']);
   assert.equal(new Set(SIGNS.map(s => s.id)).size, SIGNS.length);
   for (const g of GROUPS) { assert.ok(phraseById(g.phrase), g.id + ' 가락'); assert.ok(signsOf(g.id).length >= 1, g.id + ' 기호'); }
   for (const s of SIGNS) assert.ok(GROUPS.some(g => g.id === s.group), s.id);
@@ -303,6 +305,258 @@ ok('알려 주는 말 — 기호마다 넣을 때 · 뺄 때', () => {
   assert.ok(factOf('m34', false, { meter: [2, 4] }).includes('2개'));
   assert.equal(factOf('m34', false, { note: '까닭' }), '까닭');
   assert.ok(signById('fermata') && signById('nope') === null);
+});
+
+// ════ 묶음 D2 — 조 · 임시표 · 둘째 줄 · 화음 · 1 · 2번 괄호 · D.C. · Fine · 북 반주 ════
+const odev = phraseById('odev'), dcph = phraseById('ahvousdc'), tw = phraseById('ahvous8');
+const melo = r => r.events.filter(e => e.kind === 'note' && !e.part);
+const part = (r, x) => r.events.filter(e => e.part === x);
+const D2 = ['drum', 'volta', 'dc', 'fine', 'up', 'sharp', 'flat', 'second', 'I', 'IV', 'V'];
+
+ok('D2 — 묶음 · 기호 · 도막', () => {
+  assert.deepEqual(signsOf('key').map(s => s.id), ['up', 'sharp', 'flat']);
+  assert.deepEqual(signsOf('chord').map(s => s.id), ['second', 'I', 'IV', 'V']);
+  assert.deepEqual(signsOf('repeat').map(s => s.id), ['repeat', 'volta', 'dc', 'fine']);
+  assert.ok(signsOf('inst').some(s => s.id === 'drum'));
+  for (const id of D2) assert.ok(signById(id), id);
+  assert.equal(odev.N.length, 18); assert.equal(odev.total / 48, 5);
+  assert.equal(dcph.total / 24, 12); assert.equal(tw.total / 24, 8);
+  // 1 · 2번 괄호 도막 = 환희의 송가 1~4마디 + 8마디(마디째 · 음 하나 바꾸지 않음)
+  const bars = songById('ode').mel.split('|').map(x => x.trim());
+  assert.equal(odev.mel, [0, 1, 2, 3, 7].map(i => bars[i]).join(' | '));
+  for (const ph of PHRASES) assert.ok(ph.N.every(n => [0, 2, 4, 5, 7, 9, 11].includes(pc(n.p))), ph.id + ' 다장조 음만');
+  // 화음은 다장조 주요 3화음 그대로(화2 칸과 같은 자리)
+  for (const id of ['I', 'IV', 'V']) assert.deepEqual(CHORD[id].map(pc), chordPcs(id, 0));
+});
+
+ok('D2 — 기호마다 넣으면 소리가 달라지고 · 한 번 더 누르면 원래 소리와 같음', () => {
+  for (const id of D2) {
+    const s = signById(id), ph = phraseById(s.phrase || groupById2(s.group).phrase);
+    let base = E();
+    if (id === 'fine') base = put(ph, base, 'dc', ph.total / barTicks2(ph) - 1);   // Fine은 D.C.와 함께여야 소리가 바뀐다
+    const at = s.where === 'start' ? null : places(ph, base, id)[0];
+    assert.ok(s.where === 'start' || at != null, id + ' 자리');
+    const r = toggle(ph, freeze(base), id, at);
+    assert.ok(!r.blocked && r.on, id + ' 넣기');
+    assert.notDeepEqual(perform(ph, r.marks).events, perform(ph, base).events, id + ' 소리가 달라짐');
+    assert.equal(countMarks(r.marks), countMarks(base) + (id === 'volta' ? 2 : 1), id + ' 수');
+    const back = toggle(ph, freeze(r.marks), id, at);
+    assert.ok(!back.blocked && !back.on, id + ' 빼기');
+    assert.deepEqual(back.marks, base, id + ' 넣은 것 목록이 처음과 같음');
+    assert.deepEqual(perform(ph, back.marks), perform(ph, base), id + ' 소리가 처음과 같음');
+    assert.deepEqual(scoreOf(ph, back.marks).score, scoreOf(ph, base).score, id + ' 악보가 처음과 같음');
+  }
+});
+function groupById2(id) { return GROUPS.find(g => g.id === id); }
+function barTicks2(ph) { return ph.meter[0] * 48 / ph.meter[1]; }
+
+ok('조 옮기기 — 다장조 → 사장조 · 모든 음이 같은 만큼 · 조표 ♯ 하나 · 계이름 그대로', () => {
+  assert.equal(keyShift(ode), 7); assert.equal(keyShift(frere), 7); assert.equal(keyShift(tw), 7);
+  assert.equal(keyShift({ N: [{ p: 72 }, { p: 76 }, { p: 77 }] }), -5, '높은 가락은 4도 아래로');
+  const base = perform(ode, E()), m = put(ode, E(), 'up'), r = perform(ode, m);
+  assert.deepEqual(r.events.map(e => e.p), base.events.map(e => e.p + 7));
+  assert.deepEqual(r.events.map(e => [e.t, e.d, e.vel]), base.events.map(e => [e.t, e.d, e.vel]), '때 · 길이 · 세기는 그대로');
+  const s0 = scoreOf(ode, E()), s1 = scoreOf(ode, m);
+  assert.equal(s0.score.ksig, undefined); assert.deepEqual(s1.score.ksig, [8]);
+  assert.equal(s1.score.staves[0].words, 'lab');
+  const ev = s1.score.staves[0].voices[0].events;
+  assert.deepEqual(ev.map(e => e.lab).join(''), '미미파솔솔파미레도도레미미레레', '사장조 계이름(솔 자리가 도) = 다장조일 때와 같은 이름');
+  assert.ok(ev.every(e => e.sp[0].acc === '' && e.oct === 0));
+  assert.deepEqual(ev.map(e => e.sp[0].pos), ode.N.map(n => [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 6, 6][pc(n.p)] + (Math.floor(n.p / 12) - 5) * 7 - 2 + 4), '오선 자리는 네 칸 위(5도)');
+  // 조표가 붙은 파(F)는 기호 없이 반음 올린 소리 — 사장조의 둘째 줄에서 라 아래 파#
+  const m2 = put(ode, m, 'second'), sec = part(perform(ode, m2), 'second');
+  const fs = sec.filter(e => pc(e.p) === 6);
+  assert.ok(fs.length > 0 && sec.every(e => pc(e.p) !== 5), '사장조에는 파가 아니라 파#');
+  const low = scoreOf(ode, m2).score.staves[1];
+  assert.deepEqual(scoreOf(ode, m2).score.ksig, [8]);
+  assert.ok(low.voices[0].events.every(e => e.sp[0].acc === ''), '조표가 있으니 파# 앞에 ♯을 따로 붙이지 않음');
+  assert.ok(factOf('up', true).includes('조표'));
+  assert.ok(factOf('up', false).includes('다장조'));
+});
+
+ok('올림표 · 내림표 — 그 음 + 같은 마디 뒤의 같은 자리 음 · 다음 마디는 제자리', () => {
+  // ode = 미미파솔 | 솔파미레 | 도도레미 | 미. 레레
+  assert.deepEqual(places(ode, E(), 'sharp'), [2, 3, 4, 5, 7, 8, 9, 10, 13, 14], '미 · 시에는 올림표 X');
+  assert.deepEqual(places(ode, E(), 'flat'), [0, 1, 3, 4, 6, 7, 10, 11, 12, 13, 14], '도 · 파에는 내림표 X');
+  assert.equal(toggle(ode, E(), 'sharp', 0).blocked, true);
+  assert.equal(toggle(ode, E(), 'flat', 8).blocked, true);
+  const base = perform(ode, E()).events.map(e => e.p);
+  let m = put(ode, E(), 'sharp', 8), p = perform(ode, m).events.map(e => e.p);
+  assert.deepEqual(p, base.map((x, k) => (k === 8 || k === 9 ? x + 1 : x)), '도# 도# — 같은 마디의 둘째 도도 올라감');
+  let ev = scoreOf(ode, m).score.staves[0].voices[0].events;
+  assert.equal(ev[8].sp[0].acc, '♯'); assert.equal(ev[9].sp[0].acc, '', '둘째 도에는 ♯을 다시 적지 않음');
+  assert.equal(ev[8].lab, '도#'); assert.equal(ev[9].lab, '도#');
+  assert.ok(!places(ode, m, 'sharp').includes(9), '이미 올라간 음에는 또 넣지 않음');
+  m = put(ode, E(), 'sharp', 2); p = perform(ode, m).events.map(e => e.p);
+  assert.equal(p[2], 66); assert.equal(p[5], 65, '다음 마디의 파는 제자리');
+  m = put(ode, E(), 'flat', 0); p = perform(ode, m).events.map(e => e.p);
+  assert.deepEqual([p[0], p[1], p[6]], [63, 63, 64], '미♭ 미♭ | … 미');
+  ev = scoreOf(ode, m).score.staves[0].voices[0].events;
+  assert.deepEqual([ev[0].sp[0], ev[0].lab], [{ pos: 0, acc: '♭' }, '미♭'], '미 자리에 ♭(레# 자리가 아님)');
+  // 같은 마디에서 올렸다가 내리기 — 뒤의 임시표부터 그 뒤가 바뀜
+  m = put(ode, put(ode, E(), 'sharp', 13), 'flat', 14); p = perform(ode, m).events.map(e => e.p);
+  assert.deepEqual([p[13], p[14]], [63, 61], '레# 레♭');
+  ev = scoreOf(ode, m).score.staves[0].voices[0].events;
+  assert.deepEqual([ev[13].sp[0].acc, ev[14].sp[0].acc, ev[13].sp[0].pos, ev[14].sp[0].pos], ['♯', '♭', -1, -1]);
+  // 같은 음에 다른 쪽 표를 넣으면 바뀜 · 또 누르면 빠짐
+  m = put(ode, put(ode, E(), 'sharp', 13), 'flat', 13);
+  assert.equal(m.acc[13], 'flat'); assert.ok(has(m, 'flat', 13) && !has(m, 'sharp', 13));
+  assert.deepEqual(put(ode, m, 'flat', 13).acc, {});
+  // 다른 오선(둘째 줄)에는 걸리지 않음
+  m = put(ode, put(ode, E(), 'sharp', 2), 'second');
+  assert.equal(part(perform(ode, m), 'second')[2].p, 62, '파# 아래 둘째 줄은 레 그대로');
+  assert.ok(factOf('sharp', true).includes('같은 마디') && factOf('flat', true).includes('다음 마디'));
+});
+
+ok('조 옮기기 + 임시표 · 화음 — 사장조에서 쓰지 않는 것은 쉬었다가 돌아옴', () => {
+  const m0 = put(ode, E(), 'up');
+  assert.deepEqual(places(ode, m0, 'sharp'), [2, 3, 4, 5, 7, 8, 9, 10, 13, 14], '시(미에서 옮긴 음) X');
+  assert.deepEqual(places(ode, m0, 'flat'), [0, 1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14], '도(파에서 옮긴 음) X');
+  // 작은 별 라(넷째 · 다섯째 음)에 올림표 → 사장조에서는 미가 되어 올림표를 쓰지 않음
+  let m = put(tw, put(tw, E(), 'sharp', 4), 'I', 0);
+  const r = toggle(tw, m, 'up');
+  assert.ok(r.on && /다장조 화음/.test(r.note) && /임시표/.test(r.note), r.note);
+  const b = build(tw, r.marks);
+  assert.equal(b.notes[4].mark, null); assert.equal(b.notes[4].p, 69 + 7);
+  assert.deepEqual(part(perform(tw, r.marks), 'chord'), [], '조를 옮기는 동안 다장조 화음은 쉼');
+  assert.deepEqual(places(tw, r.marks, 'I'), [], '사장조 화음은 넣지 않음');
+  assert.ok(factOf('up', true, { note: r.note }).includes('돌아와요'));
+  const back = toggle(tw, r.marks, 'up');
+  assert.deepEqual(back.marks, m);
+  assert.deepEqual(perform(tw, back.marks), perform(tw, m), '조 옮기기를 빼면 임시표 · 화음이 돌아옴');
+});
+
+ok('둘째 줄 — 3도 아래 · 같은 리듬 · 아래 오선', () => {
+  const base = perform(tw, E()), m = put(tw, E(), 'second'), r = perform(tw, m), sec = part(r, 'second');
+  assert.deepEqual(melo(r), base.events, '가락은 그대로');
+  assert.equal(sec.length, base.events.length);
+  // 도도솔솔라라솔 파파미미레레도 → 3도 아래(다장조 음계 두 칸 아래)
+  assert.deepEqual(sec.map(e => e.p), [57, 57, 64, 64, 65, 65, 64, 62, 62, 60, 60, 59, 59, 57]);
+  sec.forEach((e, k) => { assert.ok(near(e.t, base.events[k].t) && near(e.d, base.events[k].d)); assert.ok(near(e.vel, base.events[k].vel * 0.75)); });
+  const sc = scoreOf(tw, m);
+  assert.equal(sc.score.staves.length, 2); assert.equal(sc.score.staves[1].clef, 'treble');
+  assert.deepEqual(sc.score.staves[1].voices[0].events.map(e => e.ps[0]), sec.map(e => e.p));
+  assert.ok(sc.model.second && sc.model.lower);
+  // 붙임줄로 이은 음은 둘째 줄도 한 소리
+  const t = put(ode, put(ode, E(), 'tie', 0), 'second');
+  assert.deepEqual(part(perform(ode, t), 'second')[0].ks, [0, 1]);
+});
+
+ok('화음 Ⅰ · Ⅳ · Ⅴ — 고른 마디 동안 세 음이 길게 · 마디마다 하나', () => {
+  assert.deepEqual(places(tw, E(), 'I'), [0, 1, 2, 3, 4, 5, 6, 7]);
+  const sec = 60 / tw.tempo / 12;
+  let m = put(tw, E(), 'I', 0), ch = part(perform(tw, m), 'chord');
+  assert.deepEqual(ch.map(e => e.p), [60, 64, 67]);
+  assert.ok(ch.every(e => near(e.t, 0) && near(e.d, 24 * sec * 0.92) && e.vel < LV0));
+  assert.deepEqual(melo(perform(tw, m)), perform(tw, E()).events, '가락은 그대로');
+  m = put(tw, m, 'IV', 2); ch = part(perform(tw, m), 'chord');
+  assert.deepEqual(ch.slice(3).map(e => e.p), [65, 69, 72]); assert.ok(near(ch[3].t, 48 * sec));
+  m = put(tw, m, 'V', 2);
+  assert.deepEqual(m.chord, { 0: 'I', 2: 'V' }, '같은 마디에 다른 화음 = 바뀜');
+  assert.deepEqual(part(perform(tw, m), 'chord').slice(3).map(e => e.p), [67, 71, 74]);
+  assert.deepEqual(put(tw, m, 'V', 2).chord, { 0: 'I' });
+  const sc = scoreOf(tw, m);
+  assert.deepEqual(sc.model.chords, [{ bar: 0, id: 'I', sym: 'Ⅰ', ko: '도미솔' }, { bar: 2, id: 'V', sym: 'Ⅴ', ko: '솔시레' }]);
+  assert.deepEqual(sc.score.staves[1].voices[0].events.map(e => [e.s, e.d, e.ps]), [[0, 8, [60, 64, 67]], [16, 8, [67, 71, 74]]]);
+  // 둘째 줄과 함께 — 화음을 넣은 마디는 화음이, 나머지 마디는 둘째 줄이
+  const both = put(tw, put(tw, E(), 'second'), 'IV', 2), r = perform(tw, both);
+  assert.deepEqual(part(r, 'second').map(e => e.k).filter(k => k === 4 || k === 5), [], '셋째 마디(라라)에는 둘째 줄 대신 화음');
+  assert.equal(part(r, 'second').length, 12); assert.equal(part(r, 'chord').length, 3);
+  assert.deepEqual(perform(tw, put(tw, both, 'IV', 2)), perform(tw, put(tw, E(), 'second')), '화음을 빼면 둘째 줄이 돌아옴');
+  // 셈여림을 따라 화음도 여려짐
+  const pm = put(tw, put(tw, E(), 'p', 0), 'I', 0);
+  assert.ok(part(perform(tw, pm), 'chord')[0].vel < ch[0].vel);
+});
+
+ok('1 · 2번 괄호 — 1번은 처음에만 · 되돌아온 뒤에는 2번', () => {
+  assert.deepEqual(orderOf(odev, E()), [0, 1, 2, 3, 4]);
+  let m = put(odev, E(), 'repeat', 3);
+  assert.deepEqual(orderOf(odev, m), [0, 1, 2, 3, 0, 1, 2, 3, 4]);
+  assert.deepEqual(places(odev, m, 'volta'), [3], '도돌이표가 있으면 그 마디에');
+  const v = put(odev, m, 'volta', 3);
+  assert.deepEqual(orderOf(odev, v), [0, 1, 2, 3, 0, 1, 2, 4]);
+  // 괄호를 넣은 다섯 마디 = 환희의 송가 여덟 마디 그대로
+  const full = sounding(makeSong({ mel: songById('ode').mel, meter: [4, 4], tempo: 100 })).map(n => n.p);
+  assert.deepEqual(melo(perform(odev, v)).map(e => e.p), full);
+  assert.deepEqual(put(odev, v, 'volta', 3), m, '괄호만 빠지고 도돌이표는 그대로');
+  // 도돌이표 없이 넣으면 그 마디 끝에 도돌이표도 함께 — 빼면 함께 빠짐
+  assert.deepEqual(places(odev, E(), 'volta'), [1, 2, 3], '첫 마디 · 끝 마디 X');
+  const own = put(odev, E(), 'volta', 3);
+  assert.deepEqual([own.repeat, own.volta], [{ to: 3 }, { own: true }]);
+  assert.deepEqual(orderOf(odev, own), [0, 1, 2, 3, 0, 1, 2, 4]);
+  assert.deepEqual(put(odev, own, 'volta', 3), E());
+  // 도돌이표를 옮기면 괄호가 따라감 · 도돌이표를 빼면 괄호도 빠짐
+  const mv = put(odev, own, 'repeat', 2);
+  assert.deepEqual(orderOf(odev, mv), [0, 1, 2, 0, 1, 3, 4]);
+  assert.equal(put(odev, mv, 'repeat', 2).volta, null);
+  assert.equal(put(odev, own, 'repeat', 4).volta, null, '끝 마디로 옮기면 2번이 없어 빠짐');
+  assert.deepEqual(places(odev, put(odev, E(), 'repeat', 0), 'volta'), [], '첫 마디의 도돌이표에는 X');
+  const sc = scoreOf(odev, v);
+  assert.equal(sc.model.volta, 3); assert.deepEqual(sc.score.repeat, { from: -1, to: 3 });
+  assert.equal(perform(odev, v).passes, 3);
+});
+
+ok('D.C. · Fine — 처음으로 돌아가 Fine에서 마침 · 둘이 함께일 때 뜻이 섬', () => {
+  const all = [...Array(12).keys()];
+  assert.deepEqual(places(dcph, E(), 'dc'), [11], 'D.C.는 끝 마디');
+  assert.deepEqual(places(dcph, E(), 'fine'), all.slice(0, 11));
+  assert.equal(toggle(dcph, E(), 'dc', 5).blocked, true);
+  const dc = put(dcph, E(), 'dc', 11);
+  assert.deepEqual(orderOf(dcph, dc), [...all, ...all], 'D.C.만 = 처음부터 끝까지 한 번 더');
+  const both = put(dcph, dc, 'fine', 7);
+  assert.deepEqual(orderOf(dcph, both), [...all, 0, 1, 2, 3, 4, 5, 6, 7], 'a b a');
+  const fine = put(dcph, E(), 'fine', 7);
+  assert.deepEqual(perform(dcph, fine), perform(dcph, E()), 'Fine만 = 소리 그대로(D.C.로 돌아왔을 때만 쓰임)');
+  // 끝나는 음 — D.C.만이면 레(덜 끝난 느낌) · D.C. + Fine이면 도
+  const last = m => { const ev = melo(perform(dcph, m)); return ev[ev.length - 1].p; };
+  assert.equal(last(E()), 62); assert.equal(last(dc), 62); assert.equal(last(both), 60);
+  // D.C.로 돌아온 뒤에는 도돌이표를 지키지 않음
+  const rp = put(dcph, both, 'repeat', 3);
+  assert.deepEqual(orderOf(dcph, rp), [0, 1, 2, 3, ...all, 0, 1, 2, 3, 4, 5, 6, 7]);
+  // 1 · 2번 괄호와 함께 — D.C. 뒤에는 1번을 건너뛰고 2번
+  let v = put(odev, put(odev, E(), 'volta', 3), 'dc', 4);
+  assert.deepEqual(orderOf(odev, v), [0, 1, 2, 3, 0, 1, 2, 4, 0, 1, 2, 4]);
+  assert.deepEqual(places(odev, v, 'fine'), [0, 1, 2], '1번 괄호 마디에는 Fine X');
+  v = put(odev, v, 'fine', 2);
+  assert.deepEqual(orderOf(odev, v), [0, 1, 2, 3, 0, 1, 2, 4, 0, 1, 2]);
+  const sc = scoreOf(dcph, both).model;
+  assert.deepEqual([sc.dc, sc.fine], [11, 7]);
+  assert.ok(factOf('dc', true, { marks: both }).includes('Fine(피네)까지'));
+  assert.ok(factOf('dc', true, { marks: dc }).includes('한 번 더'));
+  assert.ok(factOf('fine', true, { marks: fine }).includes('D.C.가 없어'));
+  assert.ok(factOf('fine', true, { marks: both }).includes('여기서 마쳐요'));
+});
+
+ok('북 반주 — 센박 큰북 · 여린박 작은북 · 가락은 그대로', () => {
+  const kinds = r => part(r, 'drum').map(e => e.drum);
+  let m = put(ode, E(), 'drum'), r = perform(ode, m);
+  assert.deepEqual(melo(r), perform(ode, E()).events);
+  assert.deepEqual(kinds(r), Array(4).fill(['bassdrum', 'snare', 'bassdrum', 'snare']).flat(), '4분의 4박자 = 쿵 짝 쿵 짝');
+  assert.deepEqual(part(r, 'drum').map(e => e.tick), [...Array(16).keys()].map(i => i * 12));
+  const v = part(r, 'drum').map(e => e.vel);
+  assert.ok(v[0] > v[2] && v[2] > v[1], '첫 박이 가장 세게');
+  assert.deepEqual(kinds(perform(frere, put(frere, E(), 'drum'))).slice(0, 4), ['bassdrum', 'snare', 'bassdrum', 'snare'], '4분의 2박자 = 쿵 짝');
+  const f3 = put(frere, toggle(frere, E(), 'm34').marks, 'drum');
+  assert.deepEqual(kinds(perform(frere, f3)).slice(0, 6), ['bassdrum', 'snare', 'snare', 'bassdrum', 'snare', 'snare'], '4분의 3박자 = 쿵 짝 짝');
+  const bt = perform(frere, f3, { beat: true });
+  assert.equal(bt.events.filter(e => e.drum === 'kick' || e.drum === 'hat').length, 0, '박 소리 대신 북이 박을 침');
+  const pp = perform(ode, put(ode, put(ode, E(), 'pp', 0), 'drum'));
+  assert.ok(part(pp, 'drum')[0].vel < v[0], '여리게 연주하면 북도 여리게');
+  assert.ok(has(m, 'drum') && has(m, 'piano'), '악기와 따로 켜고 끔');
+  const dst = scoreOf(ode, m).score.staves;
+  assert.deepEqual([dst.length, dst[1].clef], [2, 'perc1'], '악보에 북 반주 줄(한 줄 오선)');
+  assert.equal(dst[1].voices[0].events.map(e => e.lab).join(''), '쿵짝쿵짝'.repeat(4));
+  assert.ok(scoreOf(ode, m).model.drum);
+  assert.equal(put(ode, m, 'violin').drum, true);
+});
+
+ok('D2 — 박자표를 바꾸면 마디에 넣은 화음 · 괄호 · D.C. · Fine은 빠짐', () => {
+  let m = put(frere, put(frere, put(frere, E(), 'I', 1), 'dc', 5), 'fine', 2);
+  m = put(frere, m, 'volta', 2);
+  const r = toggle(frere, m, 'm34');
+  assert.ok(r.note && r.note.includes('마디'));
+  assert.deepEqual([r.marks.chord, r.marks.volta, r.marks.dc, r.marks.fine, r.marks.repeat], [{}, null, null, null, null]);
+  assert.equal(countMarks(m), 5, '화음 · D.C. · Fine · 괄호 + 함께 들어간 도돌이표');
 });
 
 console.log(`✓ 악보 판 규칙 시험 통과 — ${n}묶음 · 기호 ${SIGNS.length}개 · 가락 ${PHRASES.length}도막`);
