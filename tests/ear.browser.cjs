@@ -49,6 +49,7 @@ const server = http.createServer((req, res) => {
   console.log('   ppa1 간격 ' + ['slow', 'mid', 'fast'].map(t => `${t} ${R.cells.ppa1[t].heard}/${R.cells.ppa1[t].planned}`).join(' · ') + ` · 비 ${R.cells.ppa1.slowOverMid} · ${R.cells.ppa1.midOverFast}`);
   console.log('   hwa1 soft ' + R.cells.hwa1soft.map(r => `${r.low} ${r.lowP}: 위보다 ${r.belowDbA}dB(A) 작음 · 250Hz 위 ${Math.round(r.lowAbove250 * 100)}%`).join(' · '));
   console.log('   so6 · hy1 ' + R.cells.so6hy1.map(r => `${r.cell} ${r.kind} ${r.a}→${r.second} ${sgn(r.dDbA)}dB(A)`).join(' · '));
+  if (R.checks) { const bad = R.checks.filter(c => !c.ok); console.log(`단언 ${R.checks.length - bad.length}/${R.checks.length} 통과` + (bad.length ? ' — 걸림: ' + bad.map(c => c.id).join(' · ') : '')); }
   if (R.warns.length) { console.log(`⚠ 경고 ${R.warns.length}`); for (const w of R.warns) console.log(`   [${w.k}] ${w.m}`); }
   if (errs.length) console.log('콘솔 오류: ' + errs.join(' | '));
   if (R.fails.length || errs.length) { console.log(`✗ 실패 ${R.fails.length}`); for (const f of R.fails) console.log(`   [${f.k}] ${f.m}`); process.exit(1); }

@@ -11,22 +11,24 @@ import { factTip, stageCuts } from '../cellkit.js';
 
 const MOTIF = [[67, 1], [64, 1], [67, 2]];          // 솔 미 솔 — 주제곡 인사 동기의 앞
 const UP = 7;                                       // 비틀기 '높게' — 다섯 음 위(레 시 레)
-const SOFT = 0.35, MID = 0.6, LOUD = 0.9;
+const SOFT = 0.25, MID = 0.6, LOUD = 0.9;          // 작게 0.35 → 0.25(11-14 · 기계 귀: '크게'가 3.3dB(A)만 커서 · 이제 8dB(A) 넘게)
 
 // 판 — a 첫째 악기 · b 다른 악기일 때의 둘째 악기 · kind: plain(그대로) | pitch(둘째를 높게) | loud(첫째 작게 · 둘째 크게)
 //  close = 소리가 가까운 짝(둘 다 이어지는 소리이거나 둘 다 곧 사라지는 소리) · ans = same | diff(섞을 때 뒤집힘)
+//  짝은 기계 귀가 잰 음색 거리(tests/ear · 무게중심 · 차오름 · 0.5초 뒤 크기 · 홀짝 배음)로 다시 골랐다(11-14) — 가까운 짝 다섯이 모두 0.6~1.5 ·
+//   나머지 짝 일곱이 모두 2.9 넘게(예전엔 피아노–리코더 1.4 · 트럼펫–피아노 1.2가 '뚜렷한 짝'인데 '가까운 짝' 플루트–바이올린 3.1보다 가까웠다).
 export const PLAN = [
-  { stage: 'intro', kind: 'plain', a: 'piano', b: 'recorder', ans: 'diff' },
+  { stage: 'intro', kind: 'plain', a: 'xylo', b: 'flute', ans: 'diff' },
   { stage: 'intro', kind: 'plain', a: 'xylo', b: 'violin', ans: 'same' },
-  { stage: 'intro', kind: 'plain', a: 'trumpet', b: 'harp', ans: 'diff' },
-  { stage: 'grow', kind: 'plain', a: 'flute', b: 'trumpet', close: true, ans: 'same' },
-  { stage: 'grow', kind: 'plain', a: 'xylo', b: 'harp', close: true, ans: 'diff' },
-  { stage: 'grow', kind: 'plain', a: 'violin', b: 'flute', close: true, ans: 'same' },
+  { stage: 'intro', kind: 'plain', a: 'clarinet', b: 'harp', ans: 'diff' },
+  { stage: 'grow', kind: 'plain', a: 'flute', b: 'cello', close: true, ans: 'same' },
+  { stage: 'grow', kind: 'plain', a: 'recorder', b: 'flute', close: true, ans: 'diff' },
+  { stage: 'grow', kind: 'plain', a: 'violin', b: 'trumpet', close: true, ans: 'same' },
   { stage: 'twist', kind: 'pitch', a: 'piano', b: 'xylo', ans: 'same' },
   { stage: 'twist', kind: 'loud', a: 'recorder', b: 'violin', ans: 'diff' },
   { stage: 'twist', kind: 'pitch', a: 'violin', b: 'recorder', ans: 'diff' },
-  { stage: 'twist', kind: 'loud', a: 'trumpet', b: 'piano', ans: 'same' },
-  { stage: 'end', kind: 'pitch', a: 'clarinet', b: 'trumpet', close: true, ans: 'same' },
+  { stage: 'twist', kind: 'loud', a: 'trumpet', b: 'xylo', ans: 'same' },
+  { stage: 'end', kind: 'pitch', a: 'recorder', b: 'cello', close: true, ans: 'same' },
   { stage: 'end', kind: 'plain', a: 'harp', b: 'piano', close: true, ans: 'diff' },
 ];
 export const CUTS = stageCuts(PLAN);

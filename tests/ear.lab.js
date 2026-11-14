@@ -36,9 +36,13 @@ const USE = {
 };
 const CELL_INSTS = ['piano', 'xylo', 'marimba', 'recorder', 'flute', 'violin', 'trumpet', 'harp', 'cello', 'clarinet', 'choir', 'strings',
   'horn', 'keys', 'lead', 'bass', 'celesta', 'glock', 'pizz'];
-// 칸들이 쓰는 세기(vel) 값 — grep으로 모음(so6 0.35 · 0.6 · 0.9 · hy1 0.4 · 0.85 · hwa1 0.52 · 0.45 · sem1 0.2 · 0.9 · so5 0.16 · 0.8 · ppa1 0.18 · 0.55 · ri5 0.26 · 0.42 · 0.75 …)
-const VELS = [0.16, 0.18, 0.2, 0.26, 0.35, 0.4, 0.42, 0.45, 0.5, 0.52, 0.55, 0.6, 0.75, 0.8, 0.85, 0.9];
+// 칸들이 쓰는 세기(vel) 값 — grep으로 모음(so6 0.25 · 0.6 · 0.9 · hy1 0.28 · 0.9 · hwa1 0.52 · 0.45 · sem1 0.2 · 0.9 · so5 0.16 · 0.8 · ppa1 0.18 · 0.55 · ri5 0.26 · 0.42 · 0.75 …)
+const VELS = [0.16, 0.18, 0.2, 0.25, 0.26, 0.28, 0.35, 0.4, 0.42, 0.45, 0.5, 0.52, 0.55, 0.6, 0.75, 0.8, 0.85, 0.9];
 const DRUMS = ['kick', 'snare', 'hat', 'kung', 'deok', 'gi', 'deong', 'roll', 'cymbal', 'bassdrum', 'triangle', 'swell'];
+// 문턱(우리가 정한 값 · 까닭은 docs/ear.md) — 칸이 쓰는 악기 사이 크기 차 · 비틀기 '크게'가 커야 하는 만큼 · 차오름(활 · 목소리는 따로)
+const LEVEL_DB = 4, LOUD_TWIST_DB = 8, REACH_MS = 50, REACH_SLOW_MS = 80;
+// 천천히 차오르는 악기(활을 여럿이 · 목소리)를 짧은 음에 쓰는 칸 — 있으면 80ms 안 · 없으면 검사에서 뺌('칸에서 안 씀')
+const SLOW_SHORT = { strings: 'sem1 · ri4(한 박 0.42초)', choir: 'so3(0.3초) · ri4 · ga1 · ga2 · ga4 · so4' };
 const REF_P = 67, REF_VEL = 0.6, REF_DUR = 0.8;            // 견줄 때 같은 음(솔4) · 같은 세기 · 같은 길이(line 두 박 ≈ 0.77초)
 
 // ── 씨앗 있는 수 ──
@@ -216,12 +220,12 @@ export async function run(log = () => {}) {
     R.levelSpread = { loudest: lv[0].inst, softest: lv[lv.length - 1].inst, dB: r1(lv[0].arms - lv[lv.length - 1].arms),
       cellsLoudest: lv.find(x => CELL_INSTS.includes(x.inst)).inst, cellsSoftest: [...lv].reverse().find(x => CELL_INSTS.includes(x.inst)).inst,
       cellsDB: r1(lv.find(x => CELL_INSTS.includes(x.inst)).arms - [...lv].reverse().find(x => CELL_INSTS.includes(x.inst)).arms), pairs6 };
-    if (R.levelSpread.cellsDB > 6) warn('level', `칸이 쓰는 악기 사이 크기 차 ${R.levelSpread.cellsDB}dB(A) — ${R.levelSpread.cellsLoudest} ↔ ${R.levelSpread.cellsSoftest} · 6dB 넘는 짝 ${pairs6.filter(p => p.bothInCells).length}개`);
+    if (R.levelSpread.cellsDB > LEVEL_DB) warn('level', `칸이 쓰는 악기 사이 크기 차 ${R.levelSpread.cellsDB}dB(A) — ${R.levelSpread.cellsLoudest} ↔ ${R.levelSpread.cellsSoftest} · 6dB 넘는 짝 ${pairs6.filter(p => p.bothInCells).length}개`);
     // 세기 짝 — 칸이 '작게 ↔ 크게'를 묻는 두 값
     const VP = [
       { cell: 'sem1', lo: 0.2, hi: 0.9, insts: ['piano', 'marimba', 'flute', 'strings'] },
-      { cell: 'so6 loud', lo: 0.35, hi: 0.9, insts: ['recorder', 'violin', 'trumpet', 'piano'] },
-      { cell: 'hy1 loud', lo: 0.4, hi: 0.85, insts: ['piano'] },
+      { cell: 'so6 loud', lo: 0.25, hi: 0.9, insts: ['recorder', 'violin', 'trumpet', 'piano'] },
+      { cell: 'hy1 loud', lo: 0.28, hi: 0.9, insts: ['piano'] },
       { cell: 'so5 vol', lo: 0.16, hi: 0.8, insts: ['flute', 'violin', 'recorder'] },
       { cell: 'ppa1 dyn', lo: 0.18, hi: 0.9, insts: ['xylo'] },
     ];
@@ -261,7 +265,14 @@ export async function run(log = () => {}) {
       let pk = 0; for (let i = 0; i < x.length; i++) pk = Math.max(pk, Math.abs(x[i]));
       const d2 = (a, b) => { let m = 0, at = a; for (let i = Math.max(2, a); i < Math.min(x.length, b); i++) { const v = Math.abs(x[i] - 2 * x[i - 1] + x[i - 2]); if (v > m) { m = v; at = i; } } return [m, at]; };
       const [mOn] = d2(on - S(0.001), on + S(0.012)), [mBody] = d2(on + S(0.1), on + S(REF_DUR - 0.05)), [mEnd, atEnd] = d2(on + S(REF_DUR), x.length);
-      R.click.push({ inst, onset: r3(mOn / pk), body: r3(mBody / pk), end: r3(mEnd / pk), endAtMs: Math.round((atEnd - on) / SR * 1000 - REF_DUR * 1000) });
+      // 첫머리가 계단인가 · 타격인가 — 둘째 차이만으로는 가릴 수 없다(잡음이 섞인 말렛 · 줄 뜯는 소리는 본디 뾰족함).
+      //  계단 = 0에서 한 표본 만에 크게 뜀(디지털 딸깍) · 타격 = 몇 표본에 걸쳐 오름. 첫 20ms 가장 큰 값의 절반에 닿는 데 걸린 때(riseMs)로 가린다.
+      //  문턱 0.25ms(12표본) — 단단한 채가 막대에 닿는 때가 0.5~1ms 안팎이라(타악기 음향 교과서 값) 그보다 훨씬 빠른 오름은 실제 악기에서 나지 않는다.
+      let i0 = -1, p20 = 0;
+      for (let i = Math.max(0, on - S(0.001)); i < on + S(0.02); i++) { const v = Math.abs(x[i]); if (i0 < 0 && v > 1e-4) i0 = i; if (i0 >= 0 && v > p20) p20 = v; }
+      let i50 = i0; while (i0 >= 0 && Math.abs(x[i50]) < 0.5 * p20) i50++;
+      const riseMs = i0 < 0 ? null : r3((i50 - i0) / SR * 1000), firstAbs = i0 < 0 ? null : r3(Math.abs(x[i0]) / p20);
+      R.click.push({ inst, onset: r3(mOn / pk), body: r3(mBody / pk), end: r3(mEnd / pk), endAtMs: Math.round((atEnd - on) / SR * 1000 - REF_DUR * 1000), riseMs, firstAbs, natural: riseMs != null && riseMs >= 0.25 });
     }
     // 북 · 타악기 — 크기 · 피크만(소리가 나는지)
     R.drums = [];
@@ -285,13 +296,13 @@ export async function run(log = () => {}) {
     const so6pairs = []; const seen = new Set();
     for (const r of SO6.PLAN) { const k = [r.a, r.b].sort().join('|'); if (seen.has(k)) continue; seen.add(k); so6pairs.push({ a: r.a, b: r.b, close: !!r.close, d: r2(dist(r.a, r.b)), rank: rankOf(r.a, r.b) }); }
     const avg = a => r2(a.reduce((s, x) => s + x.d, 0) / Math.max(1, a.length));
-    R.dist = { of: all.length, closest: all.slice(0, 8), farthest: all.slice(-5).reverse(), so6: so6pairs, so6CloseAvg: avg(so6pairs.filter(p => p.close)), so6ClearAvg: avg(so6pairs.filter(p => !p.close)) };
+    R.dist = { of: all.length, all, closest: all.slice(0, 8), farthest: all.slice(-5).reverse(), so6: so6pairs, so6CloseAvg: avg(so6pairs.filter(p => p.close)), so6ClearAvg: avg(so6pairs.filter(p => !p.close)) };
     const clearMin = Math.min(...so6pairs.filter(p => !p.close).map(p => p.d));
     for (const p of so6pairs.filter(p => p.close)) if (p.d > clearMin) warn('timbre', `so6 '가까운 짝' ${p.a}–${p.b} 거리 ${p.d}가 뚜렷한 짝 가운데 가장 가까운 것(${clearMin})보다 멂`);
     for (const p of so6pairs.filter(p => !p.close)) if (p.d < R.dist.so6CloseAvg) warn('timbre', `so6 '뚜렷한 짝' ${p.a}–${p.b} 거리 ${p.d}가 가까운 짝 평균(${R.dist.so6CloseAvg})보다 가까움`);
     // 딸깍 경고 — 시작 · 끝의 둘째 차이가 몸통의 4배 넘고 피크의 1% 넘음(우리가 정한 값)
     for (const c of R.click) {
-      if (c.onset > 4 * c.body && c.onset > 0.01) warn('click', `${c.inst} 시작에서 튐 ${c.onset}(몸통 ${c.body}) · 피크 대비`);
+      if (c.onset > 4 * c.body && c.onset > 0.01 && !c.natural) warn('click', `${c.inst} 시작에서 튐 ${c.onset}(몸통 ${c.body}) · 피크 대비 · 차오름 ${c.riseMs}ms(계단)`);
       if (c.end > 4 * c.body && c.end > 0.01) warn('click', `${c.inst} 끝(음 끝 뒤 ${c.endAtMs}ms)에서 튐 ${c.end}(몸통 ${c.body}) · 피크 대비`);
     }
 
@@ -355,7 +366,7 @@ export async function run(log = () => {}) {
       }
       R.timing.push({ inst, firstMs: r2(Math.max(...firsts.map(Math.abs))), reachMs: r1(Math.max(...reach)), reachMinMs: r1(Math.min(...reach)) });
     }
-    for (const t of R.timing) { if (t.firstMs > 1) warn('timing', `${t.inst} 첫 소리가 예정보다 ${t.firstMs}ms 어긋남`); if (t.reachMs > 50) warn('timing', `${t.inst} 피크 절반에 닿기까지 ${t.reachMs}ms(차오름이 느려 박보다 늦게 들릴 수 있음)`); }
+    for (const t of R.timing) { t.limit = t.inst in SLOW_SHORT ? REACH_SLOW_MS : REACH_MS; t.usedShort = SLOW_SHORT[t.inst] || null; if (t.firstMs > 1) warn('timing', `${t.inst} 첫 소리가 예정보다 ${t.firstMs}ms 어긋남`); if (t.reachMs > t.limit) warn('timing', `${t.inst} 피크 절반에 닿기까지 ${t.reachMs}ms(차오름이 느려 박보다 늦게 들릴 수 있음)`); }
 
     // 8. 칸이 묻는 차이가 실제로 나는가
     log('8 칸');
@@ -448,11 +459,57 @@ export async function run(log = () => {}) {
       const [A, B] = await segLoud(HY1, { kind: 'loud', a: 'b', b: 'd', right: 'same' });
       rows.push({ cell: 'hy1', kind: 'loud', a: 'piano', second: 'piano', dDbA: r1(B.arms - A.arms), dCentroid: B.centroid - A.centroid });
       R.cells.so6hy1 = rows;
-      for (const r of rows) if (r.kind === 'loud' && r.dDbA < 6) warn('cell', `${r.cell} loud ${r.a}→${r.second}: 크게 쪽이 ${r.dDbA}dB(A)만 큼`);
+      for (const r of rows) if (r.kind === 'loud' && r.dDbA < LOUD_TWIST_DB) warn('cell', `${r.cell} loud ${r.a}→${r.second}: 크게 쪽이 ${r.dDbA}dB(A)만 큼`);
     }
+    R.checks = checksOf(R);
   } finally {
     Math.random = realRandom;
   }
   R.meta.sec = r1((performance.now() - t0) / 1000);
   return R;
 }
+// 잰 단언 하나 = 한 줄 { id, ok, note } — tools/bar.mjs가 「소리(기계)」 %로 읽는다
+function checksOf(R) {
+  const C = [], add = (id, ok, note) => C.push({ id, ok: !!ok, note });
+  const byInst = {};
+  for (const p of R.pitch) (byInst[p.inst] = byInst[p.inst] || []).push(p);
+  for (const [inst, ps] of Object.entries(byInst)) {
+    const bad = ps.filter(p => p.cents == null || Math.abs(p.cents) > 10);
+    const w = ps.filter(p => p.cents != null).reduce((a, b) => Math.max(a, Math.abs(b.cents)), 0);
+    add(`pitch:${inst}`, !bad.length, `음 ${ps.length}개 · 가장 큰 차 ${w}센트(±10 안)${bad.length ? ' · 밖: ' + bad.map(p => p.name).join(' ') : ''}`);
+  }
+  for (const l of R.level) add(`sound:${l.inst}`, l.rms >= -60, `솔4 vel 0.6 RMS ${l.rms}dBFS(−60 위)`);
+  for (const d of R.drums) add(`sound:drum:${d.drum}`, d.rms >= -60, `RMS ${d.rms}dBFS(−60 위)`);
+  for (const c of R.clip) add(`clip:${c.name}`, c.peak <= 0.99, `피크 ${c.peak}(0.99 밑)`);
+  const ls = R.levelSpread;
+  add('level:cells', ls.cellsDB <= LEVEL_DB, `칸이 쓰는 악기 사이 크기 차 ${ls.cellsDB}dB(A) — ${ls.cellsLoudest} ↔ ${ls.cellsSoftest}(${LEVEL_DB} 안)`);
+  for (const v of R.velPairs) {
+    const lim = /loud/.test(v.cell) ? LOUD_TWIST_DB : 6;
+    add(`vel:${v.cell}:${v.inst}`, v.dB >= lim, `세기 ${v.lo} → ${v.hi}: ${v.dB}dB(A)(${lim} 위)`);
+  }
+  for (const c of R.click) {
+    const on = c.onset > 4 * c.body && c.onset > 0.01, end = c.end > 4 * c.body && c.end > 0.01;
+    add(`click:${c.inst}`, (!on || c.natural) && !end,
+      `시작 ${c.onset} · 몸통 ${c.body} · 끝 ${c.end} · 차오름 ${c.riseMs}ms · 첫 표본 ${c.firstAbs}${on && c.natural ? ' — 뾰족하지만 계단이 아닌 타격 첫머리(차오름 ≥ 0.25ms)' : ''}`);
+  }
+  for (const t of R.timing) add(`timing:${t.inst}`, t.firstMs <= 1 && t.reachMs <= t.limit,
+    `첫 소리 어긋남 ${t.firstMs}ms(1 안) · 피크 절반까지 ${t.reachMs}ms(${t.limit} 안)${t.usedShort ? ' · 짧은 음에 쓰는 칸: ' + t.usedShort : ''}`);
+  const closeMax = Math.max(...R.dist.so6.filter(p => p.close).map(p => p.d)), clearMin = Math.min(...R.dist.so6.filter(p => !p.close).map(p => p.d));
+  for (const p of R.dist.so6) add(`timbre:so6:${p.a}-${p.b}`, p.close ? p.d < clearMin : p.d > closeMax,
+    `${p.close ? '가까운' : '뚜렷한'} 짝 거리 ${p.d}(${p.close ? '뚜렷한 짝 가장 가까운 ' + clearMin + '보다 가까움' : '가까운 짝 가장 먼 ' + closeMax + '보다 멂'})`);
+  for (const r of R.cells.sem1) add(`cell:sem1:${r.kind}:${r.inst}`, r.dB >= 6, `큰 쪽이 ${r.dB}dB(A) 큼(6 위)`);
+  R.cells.so3.forEach((r, i) => add(`cell:so3:${i + 1}:${r.inst}${r.p}`, (r.right === 'long') === (r.heard > 0.6), `예정 ${r.d}초(${r.right}) · 들린 길이 ${r.heard}초(0.6초 문턱)`));
+  R.cells.so5.forEach((r, i) => {
+    const okP = r.k === 'pitch' || r.dPitchCents == null || Math.abs(r.dPitchCents) <= 10, okL = r.k === 'len' || Math.abs(r.dLenSec) <= 0.1;
+    const okV = r.k === 'vol' ? Math.abs(r.dLoudDb) >= 6 : Math.abs(r.dLoudDb) <= 3;
+    add(`cell:so5:${i + 1}:${r.k}:${r.inst}`, okP && okL && okV, `높이 ${r.dPitchCents}센트 · 길이 ${r.dLenSec}초 · 크기 ${r.dLoudDb}dB(A)(답 ${r.k} 말고는 ±10센트 · ±0.1초 · ±3dB)`);
+  });
+  for (const t of ['slow', 'mid', 'fast']) { const r = R.cells.ppa1[t]; add(`cell:ppa1:${t}`, r.found === r.notes, `음 ${r.notes}개 · 시작 ${r.found}개 찾음 · 간격 ${r.heard}/${r.planned}초`); }
+  for (const r of R.cells.hwa1soft) add(`cell:hwa1:soft${r.m}`, r.lowAbove250 >= 0.5, `${r.low} ${r.lowP} 250Hz 위 ${Math.round(r.lowAbove250 * 100)}%(50 위) · 위 가락보다 ${r.belowDbA}dB(A) 작음`);
+  for (const r of R.cells.so6hy1.filter(r => r.kind === 'loud')) add(`cell:${r.cell}:loud:${r.a}-${r.second}`, r.dDbA >= LOUD_TWIST_DB, `크게 쪽이 ${r.dDbA}dB(A) 큼(${LOUD_TWIST_DB} 위)`);
+  for (const r of R.cells.so6hy1.filter(r => r.kind === 'pitch')) add(`cell:${r.cell}:pitch:${r.a}-${r.second}`, Math.abs(r.dDbA) <= 3, `높게 쪽 크기 차 ${r.dDbA}dB(A)(±3 안)`);
+  return C;
+}
+
+// 다른 시험 · 실험이 같은 재는 법을 쓰게(고친 뒤 견주기)
+export { render, ch0, db, rms, loud, peakLoud, soundLen, envelope, spectrum, specStats, playLine, playSegs, segsOf, S, SR, USE, CELL_INSTS };
