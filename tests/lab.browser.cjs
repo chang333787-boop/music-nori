@@ -547,12 +547,13 @@ server.listen(0, async () => {
     await page.waitForTimeout(250);
     f = await fs_(); g = await fu();
     T("'박자' → 박·박자의 공부 차례 일곱 단계가 통째로 · 요소 단추가 눌린 모양 · 주소도 따라감", g.secs.join() === 'beat' && g.steps === 7 && g.els.join() === 'beat' && g.hash === '#/find/박자' && g.cave && !g.intro, { secs: g.secs, steps: g.steps, els: g.els, hash: g.hash });
-    T('쓸 것마다 [담기] · 아직 없는 칸은 따로 표시', g.adds.length >= 5 && g.adds.every(a => a.endsWith(':담기')) && g.offs >= 1, { adds: g.adds.length, offs: g.offs });
+    T('쓸 것마다 [담기] · 박·박자는 칸이 다 있어 「아직 없음」 표시 0', g.adds.length >= 5 && g.adds.every(a => a.endsWith(':담기')) && g.offs === 0, { adds: g.adds.length, offs: g.offs });   // 묶음 C · D로 박·박자 칸이 다 생김(아직 없는 칸 표시는 아래 셈여림에서)
     await shot('find_beat');
     await page.locator('.fd-sample', { hasText: '점점 세게' }).click();
     await page.waitForTimeout(250);
     g = await fu();
     T("예 [점점 세게] → 셈여림 흐름 안에서 그 단계만 '찾은 곳' · 그 자리로 밀어 올려 보임", g.secs.join() === 'dyn' && g.hits.join() === 'd4' && g.found === '찾은 곳 1단계' && g.hitInView === true && g.steps === 6, { secs: g.secs, hits: g.hits, found: g.found, inView: g.hitInView });
+    T('아직 없는 칸(셈여림 d1의 소1)은 따로 표시', g.offs >= 1, g.offs);
     await page.locator('.fd-in').fill('6학년');
     await page.waitForTimeout(250);
     g = await fu();
