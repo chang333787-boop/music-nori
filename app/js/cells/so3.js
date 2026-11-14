@@ -24,12 +24,13 @@ const EXAMPLES = [
 ];
 // 확인 게임 문항 표(X2 · 단계 꼬리표) — 줄 하나 = { stage, d(길이 초), inst, p(높이), right('long' | 'short') } · 긴 소리 여섯 · 짧은 소리 여섯(칸마다 자리 여섯)
 //  길이는 단계마다 정한 짝(LEN)에서만 — 뒤집으면 같은 단계의 반대 길이(차이 크기 · 악기 · 높이는 그대로)
-const LEN = { intro: [1.2, 0.25], grow: [0.8, 0.35], twist: [0.9, 0.3], end: [1.0, 0.3] };
+const LEN = { intro: [1.2, 0.25], grow: [0.8, 0.3], twist: [0.9, 0.3], end: [1.0, 0.3] };
+//  발전 짧은 소리 0.35 → 0.3초(11-14 · 기계 귀: 리코더 0.35초가 울림 꼬리까지 0.6초 넘게 들려 '긴 소리' 쪽으로 넘어감 · 0.3초 = 0.55초)
 const row = (stage, long, inst, p) => { const d = LEN[stage][long ? 0 : 1]; return { stage, d, inst, p, right: isLong(d) ? 'long' : 'short' }; };
 export const PLAN = [
   // 소개 — 아주 긴 소리 ↔ 아주 짧은 소리(플루트 · 같은 솔)
   row('intro', true, 'flute', 67), row('intro', false, 'flute', 67), row('intro', false, 'flute', 67), row('intro', true, 'flute', 67),
-  // 발전 — 차이를 줄임(0.8초 ↔ 0.35초) · 리코더
+  // 발전 — 차이를 줄임(0.8초 ↔ 0.3초) · 리코더
   row('grow', false, 'flute', 67), row('grow', true, 'flute', 67), row('grow', true, 'recorder', 67), row('grow', false, 'recorder', 67),
   // 비틀기 — 악기 · 높이가 바뀌어도 길이만(높고 긴 · 낮고 짧은 · 높고 짧은)
   row('twist', true, 'violin', 79), row('twist', false, 'choir', 60), row('twist', false, 'violin', 81),
@@ -47,7 +48,7 @@ export const TIPS_TV = ['악기 · 높이가 바뀐 소리', '길이 차이가 �
 // 헷갈리는 두 소리(X11) — 별 0일 때 결과 화면에서 번갈아 듣기(점수 없음) · 길이 차이가 가장 작은 짝(발전 단계)
 export const NEAR = [
   { label: '긴 소리', play: nearSeq([{ p: 67, d: LEN.grow[0] }], { inst: 'flute' }) },
-  { label: '짧은 소리', play: nearSeq([{ p: 67, d: LEN.grow[1] }], { inst: 'flute' }) },
+  { label: '짧은 소리', play: nearSeq([{ p: 67, d: LEN.grow[1], gap: 0.2 }], { inst: 'flute' }) },   // 뒤 쉼 0.2초 — 울림 꼬리까지 듣고 끝나게(0.3초 + 0.2)
 ];
 export function tipOf(plan, results) {
   const miss = f => plan.filter((p, k) => results[k] === false && f(p)).length;
