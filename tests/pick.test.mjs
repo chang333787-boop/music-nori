@@ -32,12 +32,17 @@ const kitOf = band => ({ band, stageShuffle: K.stageShuffle, rng: K.rng });
 const SPEC = Object.fromEntries(Object.keys(M).map(id => [id, M[id].tvsSpec({ tell() {}, say() {} }, kitOf('mid'))]));
 
 // 도막마다 실제로 나는 음 목록(쉼은 뺌) — 줄마다 처음부터 차례로 · t는 그 도막 처음부터 잰 초
+//  북 음(음 객체에 drum)은 { drum, t, d, vel } · 연주법(art)이 있는 음은 art도
 const notesOf = (id, row) => SPEC[id].segs(row).map(sg => sg.lines.flatMap(ln => {
   let t = 0;
   const out = [];
-  for (const n of ln) { if (n.p != null) out.push({ inst: n.inst, p: n.p, t: +t.toFixed(4), d: +n.d.toFixed(4), vel: n.vel }); t += n.d + n.gap; }
+  for (const n of ln) {
+    if (n.drum) out.push({ drum: n.drum, t: +t.toFixed(4), d: +n.d.toFixed(4), vel: n.vel });
+    else if (n.p != null) out.push({ inst: n.inst, p: n.p, t: +t.toFixed(4), d: +n.d.toFixed(4), vel: n.vel, ...(n.art ? { art: n.art } : {}) });
+    t += n.d + n.gap;
+  }
   return out;
-}).sort((a, b) => a.t - b.t || a.p - b.p));
+}).sort((a, b) => a.t - b.t || (a.p ?? 0) - (b.p ?? 0)));
 const overlap = ns => ns.some((a, i) => ns.some((b, j) => j > i && b.t < a.t + a.d - 1e-6 && a.t < b.t + b.d - 1e-6));
 const seq = ns => ns.map(n => `${n.p}:${n.d}`).join(' ');
 const rel = ns => ns.map(n => +(n.t - ns[0].t).toFixed(3));
