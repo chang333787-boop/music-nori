@@ -26,7 +26,7 @@ assert.deepEqual(MEL[0].map(n => n.p), [67, 64, 67, 64]);
 assert.equal(MEL[7][MEL[7].length - 1].p, 60);
 assert.equal(chordAt(7), 'C'); assert.equal(chordAt(6, 0), 'F'); assert.equal(chordAt(6, 3), 'G');
 
-// 계단 — 줄 다섯 · 첫 판 21칸 = 21계단(거북 줄 = 악보 갈래 + 형식·화음 갈래)
+// 계단 — 줄 다섯 · 계단 21(11-14 첫 판 21칸에 맞춰 일부러 고정 · 거북 줄 = 악보 갈래 + 형식·화음 갈래)
 assert.deepEqual(PARTS.map(p => p.key), ['bear', 'bunny', 'bird', 'hog', 'turtle']);
 const STAIRS = PARTS.reduce((s, p) => s + (p.lane ? p.max - (p.base || 0) : 0), 0);
 assert.equal(STAIRS, 21, '계단 수 = 21 — 칸이 더 늘어도 그대로(줄마다 그 갈래 칸을 계단 수만큼 지나면 다 열림 · 11-14)');

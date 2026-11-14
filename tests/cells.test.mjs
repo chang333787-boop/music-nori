@@ -1,6 +1,7 @@
-// 개념 칸 지도 시험 — 먼저 필요한 칸이 모두 있는지 · 고리(순환) 없음 · 첫 판 13칸 · 추천 차례가 앞 칸을 지키는지
+// 개념 칸 지도 시험 — 먼저 필요한 칸이 모두 있는지 · 고리(순환) 없음 · 만든 칸(first) · 추천 차례가 앞 칸을 지키는지
+//  칸 목록은 손으로 적지 않는다 — 장부(engine/cells.js)의 first · frame과 칸 모듈이 내보내는 것(TVS · NEAR …)에서 읽음(11-14)
 import assert from 'node:assert/strict';
-import { CELLS, LANES, FIRST, ORDER, cellById, nextCell, missingPre, passed, cellName, easyText, EASY_WORDS, stdText, PLAY_STD, PLAY_CARD } from '../engine/cells.js';
+import { CELLS, LANES, FIRST, ORDER, ORDER_ALL, cellById, nextCell, missingPre, passed, cellName, easyText, EASY_WORDS, stdText, PLAY_STD, PLAY_CARD } from '../engine/cells.js';
 
 const ids = new Set(CELLS.map(c => c.id));
 assert.equal(ids.size, CELLS.length, '칸 id 겹침');
@@ -21,7 +22,23 @@ const visit = (id, path = []) => {
 for (const c of CELLS) visit(c.id);
 // 첫 판
 assert.ok(FIRST.length >= 21, '만든 칸 수(first) — 11-14 첫 판 21칸에서 더해 감');
-assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 칸 모두');
+assert.deepEqual([...ORDER].sort(), [...FIRST].sort(), '추천 차례 = 첫 판 칸 모두(새 칸은 ORDER_ALL에 자리가 있어야 함)');
+assert.equal(new Set(ORDER_ALL).size, ORDER_ALL.length, 'ORDER_ALL 겹침');
+for (const id of ORDER_ALL) assert.ok(cellById(id), 'ORDER_ALL에 장부에 없는 칸 ' + id);
+// 장부 줄의 frame · kinds 꼴(frame은 틀 이름 · kinds는 L D E M만)
+for (const c of CELLS) {
+  if (c.frame != null) assert.ok(['pick', 'snd', 'mel', 'beat', 'own'].includes(c.frame), c.id + ' frame ' + c.frame);
+  if (c.kinds != null) assert.ok(typeof c.kinds === 'string' && /^[LDEM]*$/.test(c.kinds), c.id + ' kinds ' + c.kinds);
+}
+// 활동 깊이 갈래(engine/depth.js) — 만든 칸은 모두 갈래가 정해져 있다: 11-14 표(CELL_KIND)에 있거나 장부 줄에 kinds(새 칸은 장부 줄에만 · 둘 다 X)
+{
+  const { CELL_KIND } = await import('../engine/depth.js');
+  for (const id of FIRST) {
+    const inTable = Object.hasOwn(CELL_KIND, id), inRow = cellById(id).kinds != null;
+    assert.ok(inTable !== inRow, `${id} 활동 갈래 — 장부 줄의 kinds 하나로 적어요(지금 표 ${inTable} · 장부 ${inRow})`);
+  }
+  for (const id of Object.keys(CELL_KIND)) assert.ok(FIRST.includes(id), 'CELL_KIND에 만든 칸이 아닌 ' + id);
+}
 for (const id of FIRST) assert.ok(cellById(id).game, id + ' 확인 게임 설명');
 // 추천 차례 안에서는 앞 칸(첫 판에 있는 것)이 먼저 온다
 for (const [i, id] of ORDER.entries()) for (const p of cellById(id).pre) if (FIRST.includes(p)) assert.ok(ORDER.indexOf(p) < i, `${id}보다 ${p}가 먼저`);
@@ -51,7 +68,7 @@ const EZ = [
 for (const [a, b] of EZ) assert.equal(easyText(a), b, a);
 assert.equal(easyText(null), null);
 for (const [a] of EASY_WORDS) assert.ok(!/마디/.test(a), "'마디'는 바꾸지 않음");
-// 성취기준 — 첫 판 13칸 모두 · 기호 꼴
+// 성취기준 — 만든 칸(first) 모두 · 기호 꼴
 for (const id of FIRST) {
   const c = cellById(id);
   assert.ok(Array.isArray(c.std) && c.std.length, id + ' 성취기준');
@@ -354,16 +371,59 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   for (const [name, n] of got) assert.ok(n / 1000 < 0.10, `리3 ${name} 봇 별 비율 ${n / 10}%`);
   delete globalThis.localStorage;
 }
-// ── 소리는 TV 하나 · 답은 각자(X2 둘째 커밋) — TVS 칸 열둘의 시간표 · 답 글자(소리 · 화면 없이 표만) ──
+// ── 만든 칸 모듈 — 장부의 first 칸 가운데 app/js/cells/<id>.js가 있는 것 모두(리1은 징검다리 화면 screens/tap.js라 파일 없음) ──
+const { existsSync } = await import('node:fs');
+const CELL_FILE = id => new URL(`../app/js/cells/${id}.js`, import.meta.url);
+globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+const MODS = {};
+for (const id of FIRST) if (existsSync(CELL_FILE(id))) MODS[id] = await import(CELL_FILE(id).href);
+delete globalThis.localStorage;
+const ALL_CELLS = Object.keys(MODS);
+// 브라우저 시험(CJS)이 장부를 글로 읽는 tests/ledger.cjs가 이 장부와 같게 읽는지
+{
+  const { createRequire } = await import('node:module');
+  const L = createRequire(import.meta.url)('./ledger.cjs');
+  assert.deepEqual(L.firstCells(), FIRST, 'tests/ledger.cjs firstCells = FIRST');
+  assert.deepEqual(L.builtCells(), ALL_CELLS, 'tests/ledger.cjs builtCells = 칸 파일이 있는 만든 칸');
+  for (const c of CELLS) assert.equal(L.frameOf(c.id), c.frame ?? null, c.id + ' tests/ledger.cjs frame');
+}
+assert.deepEqual(FIRST.filter(id => !MODS[id]), ['ri1'], '칸 파일이 없는 만든 칸은 리1(징검다리 화면)뿐');
+for (const id of ALL_CELLS) assert.ok(existsSync(new URL(`../app/css/cells/${id}.css`, import.meta.url)), id + ' — app/css/cells/<id>.css가 없음(비어 있어도 꼭 · 칸 화면이 불러옴)');
+// 11-14에 이 시험에 손 목록으로 있던 칸 — 장부에서 읽어도 빠지면 안 됨
+for (const id of ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'jd1', 'ak1', 'ak2', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6']) assert.ok(MODS[id], id + ' — 만든 칸 모듈 목록에 있음');
+// 공용 고르기 틀 칸(frame: 'pick')은 시험 · TV · 결과가 읽는 것을 모두 내보낸다
+for (const c of CELLS.filter(x => x.frame === 'pick')) {
+  const m = MODS[c.id];
+  assert.ok(m, c.id + ' — frame: pick 칸은 first이고 칸 파일이 있음');
+  for (const k of ['TVS', 'NEAR', 'TIPS_TV', 'PLAN', 'CUTS', 'SHUF', 'tipOf', 'tvsSpec']) assert.ok(m[k] != null, `${c.id}(frame: pick)가 ${k}를 내보내지 않음`);
+  assert.equal(m.TVS, true, c.id + ' TVS = true');
+  assert.equal(typeof m.tipOf, 'function', c.id + ' tipOf');
+}
+// TV 대본 — 만든 칸은 모두 engine/tvscript.js TV_SCRIPT에 단계 넷의 발문이 있다 · TVS 칸은 방이 열렸을 때 발문(game_tvs)도
+{
+  const { TV_SCRIPT, TV_STEPS } = await import('../engine/tvscript.js');
+  for (const id of FIRST) {
+    const sc = TV_SCRIPT[id];
+    assert.ok(sc, id + ' — TV 대본(engine/tvscript.js TV_SCRIPT)이 없음');
+    for (const st of TV_STEPS) assert.ok(typeof sc[st.key] === 'string' && sc[st.key].length >= 10, `${id} TV 대본 ${st.key}`);
+    if (MODS[id]?.TVS) assert.ok(typeof sc.game_tvs === 'string' && sc.game_tvs.length >= 10, id + ' TVS 칸 — TV 대본 game_tvs');
+  }
+  for (const id of Object.keys(TV_SCRIPT)) assert.ok(cellById(id), 'TV 대본에 장부에 없는 칸 ' + id);
+}
+
+// ── 소리는 TV 하나 · 답은 각자(X2 둘째 커밋) — TVS 칸(TVS = true를 내보내는 칸 모두)의 시간표 · 답 글자(소리 · 화면 없이 표만) ──
 {
   globalThis.localStorage = { getItem: () => null, setItem: () => {} };
   const K = await import('../app/js/cellkit.js'), TV = await import('../app/js/cells/_tvs.js');
+  const TVS_CELLS = ALL_CELLS.filter(id => MODS[id].TVS === true);
+  for (const id of ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1']) assert.ok(TVS_CELLS.includes(id), id + ' — TVS 칸(11-14 손 목록)이 빠짐');
   const fakeH = (tag, attrs, ...kids) => ({ tag, attrs, kids, nodeType: 1, cloneNode() { return this; } });
   const kit = { h: fakeH, band: 'mid', stageShuffle: K.stageShuffle, rng: K.rng, engine: null, playSeq: () => ({}), friendImg: () => fakeH('img'), setPose: () => {} };
   const num = (x, row) => (typeof x === 'function' ? x(row) : x);
-  for (const id of ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1']) {
-    const mod = await import(`../app/js/cells/${id}.js`);
+  for (const id of TVS_CELLS) {
+    const mod = MODS[id];
     assert.equal(mod.TVS, true, id + ' TVS = true');
+    assert.equal(typeof mod.tvsSpec, 'function', id + ' TVS 칸은 tvsSpec');
     const S = mod.tvsSpec({ tell() {}, say() {} }, kit);
     const keys = S.items.map(it => it.key), codes = S.items.map((it, j) => it.code || 'ABCD'[j]);
     assert.equal(new Set(codes).size, codes.length, id + ' 답 글자가 겹치지 않음');
@@ -475,9 +535,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   K.factTip([false, false, true, true], [{ n: 2, text: 'a' }], '완벽'); assert.equal(K.tipPick.b, -1, '틀린 판 셋 미만이면 갈래 X');
   K.factTip([false, false, false, false, false, false], [{ n: 3, text: 'a' }], '완벽'); assert.equal(K.tipPick.b, -1, '갈래가 2/3를 못 넘으면 X');
   // 칸마다 TIPS_TV(TV 막대 이름) — 열 개 안(t 첫 글자 0~9) · 짧게 · factTip을 쓰는 칸은 갈래 수와 같아야(차례가 밀리면 TV가 다른 이름을 그림)
-  const ALL = ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'jd1', 'ak1', 'ak2', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6'];
-  const M = {};
-  for (const id of ALL) M[id] = await import(`../app/js/cells/${id}.js`);
+  const ALL = ALL_CELLS, M = MODS;
   let viaTip = 0;
   for (const id of ALL) {
     const T = M[id].TIPS_TV;
@@ -494,13 +552,15 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     viaTip++;
   }
   assert.ok(viaTip >= 9, 'factTip 갈래 수를 견준 칸 ' + viaTip);
-  // 헷갈리는 두 소리(NEAR) — 듣는 칸 열세 곳만 · 꼭 둘 · 받은 소리 길(out)로만 틀고(멈출 수 있게) 끝날 때까지 초를 돌려줌
+  // 헷갈리는 두 소리(NEAR) — NEAR를 내보내는 칸(듣는 칸) 모두 · 꼭 둘 · 받은 소리 길(out)로만 틀고(멈출 수 있게) 끝날 때까지 초를 돌려줌
   const calls = [], OUT = { bus: 1 };
   const eng = { ctx: { currentTime: 2 }, ensure() { return this.ctx; },
     note: (inst, p, t, d, vel, out) => calls.push({ k: 'n', inst, p, t, d, vel, out }),
     drum: (kind, t, vel, out) => calls.push({ k: 'd', kind, t, vel, out }) };
   const run = it => { calls.length = 0; const sec = it.play({ engine: eng }, OUT); return { sec, c: calls.map(x => ({ ...x })) }; };
-  const HEAR = ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'jd1'];
+  const HEAR = ALL.filter(id => M[id].NEAR != null);
+  for (const id of ['so3', 'so4', 'so5', 'so6', 'sem1', 'ga1', 'ga2', 'ga3', 'ga4', 'ppa1', 'hy1', 'hwa1', 'jd1']) assert.ok(HEAR.includes(id), id + ' — NEAR 칸(11-14 손 목록)이 빠짐');
+  for (const id of ALL.filter(x => M[x].TVS)) assert.ok(HEAR.includes(id), id + ' — TV 소리 모드 칸(듣고 고르기)은 NEAR가 있어야 함');
   const R = {};
   for (const id of HEAR) {
     const N = M[id].NEAR;
@@ -517,7 +577,7 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
     });
     assert.notEqual(JSON.stringify(R[id][0].c), JSON.stringify(R[id][1].c), id + ' 두 소리가 서로 다름');
   }
-  for (const id of ALL.filter(x => !HEAR.includes(x))) assert.ok(!M[id].NEAR, id + '(눈으로 풀거나 치는 칸)에는 NEAR X');
+  for (const id of ['ak1', 'ak2', 'ri2', 'ri3', 'ri4', 'ri5', 'ri6']) assert.ok(!M[id].NEAR, id + '(눈으로 풀거나 치는 칸)에는 NEAR X');
   const notes = x => x.c.filter(c => c.k === 'n'), only = (a, b, key) => ['inst', 'p', 'd', 'vel'].filter(f => a[f] !== b[f]).join() === key;
   // 짝마다 그 칸이 가르치는 한 가지만 다름
   assert.ok(only(notes(R.so3[0])[0], notes(R.so3[1])[0], 'd'), '소3 — 길이만 다름');
@@ -544,4 +604,4 @@ assert.equal(stdText(PLAY_STD), '[4음03-02]◎ [4음03-03]◎ [6음03-02]○ [6
   }
   console.log('✓ 칸 → 곡 바꾸기 부탁 ' + Object.keys(PLAY_CARD).length + '칸');
 }
-console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 일곱 칸 문항 표(X2) · TV 소리 모드 열두 칸 · 장1 장단 표기`);
+console.log(`✓ 칸 지도 시험 통과 — ${CELLS.length}칸 · 첫 판 ${FIRST.length}칸 · 1~2학년 이름 · 쉬운 말 ${EZ.length} · 성취기준 · 결과 기록 · 사실만 말하는 결과(N1) · 찍기 바닥 · 단계 안 섞기(N2) · 고르기 일곱 칸 문항 표(X2) · TV 소리 모드 ${ALL_CELLS.filter(id => MODS[id].TVS).length}칸 · TV 대본 ${FIRST.length}칸 · 장1 장단 표기`);

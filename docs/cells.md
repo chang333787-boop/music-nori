@@ -2,6 +2,20 @@
 
 칸 하나 = 파일 둘: `app/js/cells/<칸>.js` + `app/css/cells/<칸>.css`(비어 있어도 꼭 있어야 함 — 칸 화면이 불러옴). 칸 id·이름·먼저 필요한 칸·확인 게임 설명은 `engine/cells.js`가 정본.
 
+## 새 칸을 더하는 법(11-14 · 고칠 곳 = 장부 한 줄 + 그 칸 파일들)
+시험 목록 · 개수 글 · 추천 차례 · TV 소리 모드 목록 · 헷갈리는 두 소리 목록 · 브라우저 시험 칸 목록은 모두 장부와 칸 모듈이 내보내는 것에서 저절로 읽는다. 다른 시험 파일 · `engine/depth.js` · 손 목록은 고치지 않는다.
+1. **장부 한 줄** `engine/cells.js` `C('id', '라벨', 'lane', '이름', [먼저 필요한 칸], '까닭', '학년', { … })`의 끝 칸에:
+   - `first: true`(만든 칸 — 이것을 붙이면 지도 · 추천 차례 · 시험에 들어감) · `game`(확인 게임 한 줄) · `std`(성취기준) · `easy`(1~2학년 판 이름 · 있으면)
+   - `kinds`(활동 깊이 갈래 `'L' 'D' 'E' 'M'`을 이어 씀 · 예 `'L'` — `engine/depth.js` CELL_KIND는 11-14 칸만, 새 칸은 여기에만)
+   - `frame: 'pick'`(공용 고르기 틀 `_pick.js`의 `pickCell`로 만든 칸이면 — 아래 4번 검사 파일이 꼭 있어야 하고 `TVS` · `NEAR` · `TIPS_TV` · `PLAN` · `CUTS` · `SHUF` · `tipOf`를 내보내야 함)
+   - 추천 차례 자리: 같은 파일 `ORDER_ALL`에 id가 있어야 한다(아직 안 만든 칸도 미리 넣어 둘 수 있음 · `ORDER`는 그 가운데 `first`만 · 난이도가 내려가면 `tests/load.test.mjs`가 떨어짐)
+2. **칸 파일** `app/js/cells/<id>.js`(이 문서의 약속 · 고르기 틀이면 아래 `_pick.js` 절) + `app/css/cells/<id>.css`(비어 있어도 꼭)
+3. **흐름** `engine/flow.js` 그 단계의 `acts`에 `'cell:<id>'`(만든 칸은 모두 어느 흐름에든 들어 있어야 함 — `tests/flow.test.mjs`)
+4. **고르기 틀 칸이면** `tests/pick/<id>.mjs` — `export function right(row, ns, ctx)`(그 줄의 답 = 실제로 나는 소리) · `export const opts = (p, k, ctx) => [단추 키…]` · `export const norm = p => '같은 문항 열쇠'` + 있으면 `bots(ctx)`(그 칸만의 듣지 않는 봇) · `seedCheck(plan, ctx)`(씨앗마다) · `extra(ctx)`(덧검사). ctx = `{ id, mod, spec, notesOf, overlap, seq, rel, kitOf, K, P, assert, STAGES, ansOf, rr }`. 공통 검사(답 = 소리 · 소리 길이 · 봇 · 같은 답 세 번 · 1~2학년 글)는 `tests/pick.test.mjs`가 한다
+5. **TV 대본** `engine/tvscript.js` `TV_SCRIPT.<id>` = `show` · `follow` · `game` · `predict`(TVS 칸은 `game_tvs`도) — 만든 칸은 모두 있어야 함(`tests/cells.test.mjs`)
+6. 곡 바꾸기로 이어지면 `PLAY_CARD`에 한 줄(없어도 됨)
+7. 끝에 `node tools/flowdoc.mjs`(docs/flow.md 표) · `node tools/ver.mjs`(version.json) → `npm test` · `node tests/cells.browser.cjs <id>` · `node tests/rules.browser.cjs`
+
 ```js
 export default {
   show(ui, kit)   { … return 정리함수 },   // 보기
@@ -67,9 +81,8 @@ export default {
 - **보이는 고르기 시계**: 시간이 있는 고르기 칸은 답이 열릴 때 `A.timer(초)` — 답 단추 묶음 아래 줄이 줄어든다(깜빡임 · 소리 · 숫자 X). 고르면 `A.timer(0)`. 다시 듣기는 시계를 다시 채운다(횟수 제한 X).
 - **결과 한 줄(tip)**: 칸 파일이 `export function tipOf(plan, results, …)`로 떼어 내고 `kit.factTip(results, 갈래들, 완벽 글)`을 쓴다. 갈래 말은 그 갈래가 틀린 판(시간 지남 뺌)의 2/3를 넘고 3번 이상일 때만, 그 밖엔 "7 · 10번째 판을 틀렸어요" · 시간 지남은 따로 한 줄.
 - **찍기 바닥**: 고르기 칸은 `kit.scoreChoices(results, 5, { chance: 판마다 찍어 맞힐 확률 })` — 별 ① = 찍어서는 10%도 안 나오는 수 이상(`minKeepP`), 별 ② = ①을 받은 뒤 이어서 n번. 문항 꼴을 아는 찍기(번갈아 누르기)가 더 잘 맞는 칸은 확률을 넉넉히(가1 `GUESS`). 박 칸은 chance 없이 예전 규칙.
-- **단계 안 섞기 · 씨앗**: `kit.stageShuffle(PLAN, CUTS, kit.rng(kit.seed()), SHUF)` — 단계 경계는 그대로, 단계 안에서만 섞고 반쯤 뒤집음(같은 답 세 번 연속 X · 처음 네 판 ABAB X · 답 수 같게). 씨앗은 `kit.seed()`(시험 `?seed=N` > 방 아이 기기 = 방 · 칸 · 알림 시각 > 방이 열린 TV > 혼자). `kit.finish({ …, sd })`로 기록에 남겨 같은 판을 다시 만든다. 지금 소4 · 가1 — 나머지 다섯 칸은 다음 차례(문항 표로 통일).
 - **두드림 어긋남 기록(X4)**: 박 칸은 `kit.finish({ …, t: tapStats(맞힌 두드림 어긋남들, 놓친 수, { lat, band, bpm }) })` — 기기 기록에만 남고 화면에는 안 나옴(`docs/measure.md` §6). 칸 화면이 기록에 `r`(solo · room · tvs)을 붙인다.
-- **단계 안 섞기 · 씨앗**: `kit.stageShuffle(PLAN, CUTS, kit.rng(kit.seed()), SHUF)` — 단계 경계는 그대로, 단계 안에서만 섞고 반쯤 뒤집음(같은 답 세 번 연속 X · 처음 네 판 ABAB X · 답 수 같게). 씨앗은 `kit.seed()`(시험 `?seed=N` > 방 아이 기기 = 방 · 칸 · 알림 시각 > 방이 열린 TV > 혼자). `kit.finish({ …, sd })`로 기록에 남겨 같은 판을 다시 만든다. 고르기 칸 여덟(소3 · 소4 · 소5 · 셈1 · 가1 · 가2 · 가3 · 악2) 모두.
+- **단계 안 섞기 · 씨앗**: `kit.stageShuffle(PLAN, CUTS, kit.rng(kit.seed()), SHUF)` — 단계 경계는 그대로, 단계 안에서만 섞고 반쯤 뒤집음(같은 답 세 번 연속 X · 처음 네 판 ABAB X · 답 수 같게). 씨앗은 `kit.seed()`(시험 `?seed=N` > 방 아이 기기 = 방 · 칸 · 알림 시각 > 방이 열린 TV > 혼자). `kit.finish({ …, sd })`로 기록에 남겨 같은 판을 다시 만든다. 듣고 고르는 칸은 모두(소3 · 소4 · 소5 · 셈1 · 빠1 · 가1 · 가2 · 가3 · 가4 · 악2 · 공용 고르기 틀 `_pick.js` 칸).
 - **단계 꼬리표 문항 표(X2)**: 칸 파일이 `export const PLAN`(줄 하나 = `{ stage, …들려줄 것 · 보여 줄 것, right(답) }` · stage = `intro` 소개 · `grow` 발전 · `twist` 비틀기 · `end` 마무리) · `CUTS = kit.stageCuts(PLAN)`(표에서 경계를 읽음) · `SHUF`(flip · answerOf · 필요하면 balance: false) · `GUESS(plan)`(판마다 찍어 맞힐 확률) · `tipOf(plan, results, picks)`를 내보낸다. 섞어 듣기 · TV 소리 모드 · 새 칸은 이 표 하나만 읽는다. 소4 · 가1 · 셈1은 예전 꼴(배열 · ans) 그대로.
   - 뒤집기는 뜻이 그대로일 때만: 소3 = 같은 단계 짝의 반대 길이 · 소5 = 두 소리 차례 바꿈. 가2(라 ↔ 미는 쉬운 문항이 됨) · 가3(답 = 그림 자리 · `arrange`가 같은 씨앗으로 그림 차례를 섞음) · 악2(줄 음 ↔ 칸 음은 다른 음)는 차례만.
   - 찍기 바닥: 소3 1/2 · 소5 1/2 → 크기 단추 뒤 1/3 · 가3 그림 수 · 악2 1/2 → 비틀기 1/4 · **가2 = 1/3과 '늘 가장 흔한 답'(라 5/12) 중 큰 것 → 별 ① 8/12**(11-10 — 처음엔 단계마다 가장 흔한 답의 몫으로 10/12였음) 

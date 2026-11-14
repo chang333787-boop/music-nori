@@ -79,7 +79,7 @@ ok('악보 판의 모든 묶음 · 모든 기호가 어느 단계에든 걸려 �
     assert.ok(used.has(`lab:${s.group}:${s.id}`) || used.has(`lab:${s.group}`), s.id);
 });
 
-ok('만든 칸 스물하나는 모두 어느 흐름에든 들어 있다', () => {
+ok('만든 칸(장부 first)은 모두 어느 흐름에든 들어 있다', () => {
   const used = new Set(acts.filter(a => a.act.startsWith('cell:')).map(a => a.act.slice(5)));
   for (const id of FIRST) assert.ok(used.has(id), id);
 });
