@@ -36,7 +36,12 @@ for (const [b, beats, notes, rests, beams, flags, beam2, ties] of CASES) {
   assert.ok(!/NaN|undefined/.test(s), k + ' 수가 다 있음');
 }
 // 셋잇단 — 한 박에 셋 · 묶음 하나 · 위에 3
-{ const t = glyph([1 / 3, 1 / 3, 1 / 3, 1, 2]); assert.equal(attr(t, 'beats'), 4); assert.equal(attr(t, 'beams'), 1); assert.equal(count(t, 'g-trip'), 1, '셋잇단 3'); }
+{ const t = glyph([1 / 3, 1 / 3, 1 / 3, 1, 2]); assert.equal(attr(t, 'beats'), 4); assert.equal(attr(t, 'beams'), 1); assert.equal(count(t, 'g-trip'), 1, '셋잇단 3');
+  // 셋잇단 3은 64px 그림에서 18px 넘게(글자 36 · 위 띠 30 → 높이 114 · rules.browser.cjs 카드 글자 검사)
+  const fs = Number(t.match(/class="g-trip"[^>]*font-size="(\d+)"/)[1]), vh = Number(t.match(/viewBox="0 -?\d+ \d+ (\d+)"/)[1]);
+  assert.ok(fs * 64 / vh >= 18, `셋잇단 3 화면 ${(fs * 64 / vh).toFixed(1)}px`);
+  assert.equal(vh, 114); assert.ok(/viewBox="0 -28 /.test(t), '위 띠 30');
+  assert.ok(/viewBox="0 -28 \d+ 114"/.test(glyph([1, 1, 1, 1], { band: 30 })), 'band를 주면 셋잇단 없이도 같은 높이'); }
 // 6/8 묶음(unit 1.5) — 8분 셋이 한 묶음 · ♩♪(4분 + 8분)은 묶지 않음 · 기본 unit에서는 8분 셋이 둘 + 하나(11-14 묶음 C)
 { const s = glyph([0.5, 0.5, 0.5, 0.5, 0.5, 0.5], { unit: 1.5 }); assert.equal(attr(s, 'beams'), 2, '6/8 8분 셋 묶음 둘'); assert.equal(count(s, 'g-flag'), 0); }
 { const s = glyph([1, 0.5, 1.5], { unit: 1.5 }); assert.equal(attr(s, 'beams'), 0); assert.equal(count(s, 'g-flag'), 1, '6/8 ♩♪ 깃발 하나'); assert.equal(count(s, 'g-dot'), 1, '6/8 ♩. 점'); }

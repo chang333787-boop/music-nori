@@ -46,8 +46,9 @@ export function tipOf(plan, results) {
   ], '쪼갠 수와 이은 자리를 듣고 같은 카드를 골랐어요.');
 }
 
-const card = (text, k, lo) => ({ key: KEYS[k], label: NTH[k], chip: glyph(beatsOf(text), { label: `${NTH[k]} 카드` }), tv: NTH[k] });
-export const cards = (row, lo) => row.set.map((t, k) => card(t, k, lo));
+// 한 판에 셋잇단 카드가 있으면 세 카드 모두 같은 위 띠(음표 크기가 같게 — 셋잇단 '3'이 18px 넘게 커진 자리)
+const card = (text, k, band) => ({ key: KEYS[k], label: NTH[k], chip: glyph(beatsOf(text), { label: `${NTH[k]} 카드`, band }), tv: NTH[k] });
+export const cards = row => { const band = row.set.some(t => /trip/.test(t)) ? 30 : 0; return row.set.map((t, k) => card(t, k, band)); };
 const one = t => ({ set: [t], ans: 0 });
 
 // 헷갈리는 두 소리 — ♬♪(16-16-8) ↔ ♪♬(8-16-16)

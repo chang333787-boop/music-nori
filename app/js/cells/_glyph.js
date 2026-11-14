@@ -7,6 +7,7 @@
 //     쓸 수 있는 길이: 4 온 · 3 점2분 · 2 2분 · 1.5 점4분 · 1 4분 · 0.75 점8분 · 0.5 8분 · 0.25 16분 · 1/3 셋잇단 8분(셋이 한 박 · 위에 3)(그 밖은 오류)
 //     예) [1, 0.5, 0.5, 2] = 4분 · 8분 둘(묶음) · 2분 / [1.5, 0.5, -1, 1] = 점4분 · 8분 · 4분쉼표 · 4분 / [{ d: 1, tie: true }, 1]
 //   8분 · 16분은 한 박(4분음표 하나) 안에서 꼬리를 묶는다 — 혼자 남으면 깃발. 16분은 두 줄 묶음(점8분 + 16분은 짧은 둘째 줄)
+//   band = 위 띠 높이(셋잇단 '3' 자리 · 없으면 셋잇단이 있을 때만 30) — 11-14 '카드 글자 18px'(64px 카드에서 3 = 36 × 64/114 ≈ 20px)
 //   unit = 꼬리를 묶는 박 길이(기본 1 = 4분음표 · 6/8은 1.5 = 점4분음표 한 박에 8분 셋을 한 묶음 — 11-14 묶음 C 리13이 더함)
 //   hi = 강조할 음 차례(쉼표를 뺀 음표 차례 · 0부터) → 초록 · size = 높이 px(단추 카드 64px에서도 읽히게 굵게)
 //   뿌리 svg에 data-beats · data-notes · data-rests · data-beams(묶음 수) · data-ties를 적어 둔다(시험이 읽음)
@@ -25,7 +26,7 @@ export const qRestSVG = (color = INK, x = 0, cls = '') => `<path${cls ? ` class=
 const SHAPE = { 4: ['w', 0], 3: ['h', 1], 2: ['h', 0], 1.5: ['q', 1], 1: ['q', 0], 0.75: ['e', 1], 0.5: ['e', 0], 0.25: ['s', 0] };
 // 차지하는 가로(박에 곧게 비례하지 않음 — 짧은 음도 머리 · 기둥이 겹치지 않게)
 const ADV = { 4: 84, 3: 80, 2: 64, 1.5: 58, 1: 44, 0.75: 42, 0.5: 34, 0.25: 30 }, ADV3 = 32;   // 머리(기운 타원 가로 약 25)가 겹치지 않는 가장 좁은 값 30
-const EPS = 1e-6, Y_TRIP = 4;
+const EPS = 1e-6, Y_TRIP = 1, TRIP_BAND = 30, TRIP_FONT = 36;
 
 // 박 목록 → 낱 하나하나 { d, rest, tie, shape, dot, t(시작 박) }
 export function parseBeats(beats) {
@@ -41,8 +42,10 @@ export function parseBeats(beats) {
   });
 }
 
-export function glyph(beats, { size = 64, hi = [], color = INK, label = '', unit = 1 } = {}) {
+export function glyph(beats, { size = 64, hi = [], color = INK, label = '', unit = 1, band = null } = {}) {
   const items = parseBeats(beats), hiSet = new Set(hi);
+  // 위 띠 — 셋잇단 '3'을 묶음 꼬리 위에 크게 쓸 자리(카드 64px에서도 18px 넘게) · 셋잇단이 없으면 0(예전과 같은 출력) · band를 주면 그 값(한 판 카드 셋의 크기를 맞출 때)
+  const top = band ?? (items.some(it => it.trip) ? TRIP_BAND : 0);
   let x = 10, ni = 0;
   for (const it of items) {                       // 자리 — 머리 cx · 기둥 x
     it.x = x; it.cx = x + 13; it.sx = it.cx + 10.5;
@@ -50,7 +53,7 @@ export function glyph(beats, { size = 64, hi = [], color = INK, label = '', unit
     it.col = !it.rest && hiSet.has(it.n) ? GREEN : color;
     x += (it.trip ? ADV3 : ADV[it.d]) + (it.dot ? 6 : 0);
   }
-  const W = Math.round(x + 4), H = 84, Y0 = 2;
+  const W = Math.round(x + 4), H = 84 + top, Y0 = 2 - top;
   // 묶음 — 한 박 안에서 이어지는 8분 · 16분(점8분 포함) 음표(쉼표가 끼면 끊김)
   const groups = [];
   let g = null;
@@ -98,7 +101,7 @@ export function glyph(beats, { size = 64, hi = [], color = INK, label = '', unit
   for (const q of beamG) {
     const a = q.items[0], z = q.items[q.items.length - 1], c = q.items.every(it => it.col === GREEN) ? GREEN : color;
     out.push(`<path class="g-beam" d="M${a.sx - 2} 9 H${z.sx + 2}" stroke="${c}" stroke-width="8" stroke-linecap="butt"/>`);
-    if (q.items.every(it => it.trip)) out.push(`<text class="g-trip" x="${((a.sx + z.sx) / 2).toFixed(1)}" y="${Y_TRIP}" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-weight="700" font-size="15" fill="${c}">3</text>`);
+    if (q.items.every(it => it.trip)) out.push(`<text class="g-trip" x="${((a.sx + z.sx) / 2).toFixed(1)}" y="${Y_TRIP}" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-weight="700" font-size="${TRIP_FONT}" fill="${c}">3</text>`);
     q.items.forEach((it, k) => {
       if (it.shape !== 's') return;
       const nx = q.items[k + 1], px = q.items[k - 1];
