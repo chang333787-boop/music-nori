@@ -1,0 +1,47 @@
+/* 듣고 고르기 칸 공용 모양 — 소6 · 형1 · 화1(app/js/cells/_pick.js가 처음 불릴 때 한 번 붙임)
+   색은 칸이 정한 친구 색(--pk · --pk-t) — 주황은 쓰지 않음 */
+.pk{position:relative;width:100%;min-height:0;display:grid;gap:22px;align-items:center}
+.pk-show{grid-template-rows:auto auto;align-content:center}
+.pk-play{grid-template-columns:minmax(0,1fr) auto;gap:24px}
+.pk-top,.pk-left{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:16px;align-items:center;min-width:0}
+.pk-pal{display:flex;align-items:center;justify-content:center}
+/* 친구 그림은 키가 저마다 다르다(토끼가 가장 큼) — 높이를 막아 TV 화면(설명 띠가 한 줄 더 있음)에서도 보기 카드가 잘리지 않게 */
+.pk-pal .pal{width:auto;height:auto;max-width:140px;max-height:210px;object-fit:contain}
+
+/* 소리 그림 띠 — 도막마다 상자 하나(이름 · 그림 · 악기와 한 줄 말) */
+.pk-strip{display:flex;gap:14px;min-width:0}
+.pk-seg{flex:1 1 0;min-width:0;display:grid;grid-template-rows:auto 96px auto;gap:6px;background:var(--surface);border:3px solid var(--ink);border-radius:18px;padding:10px 14px}
+.pk-seg.now{box-shadow:0 0 0 4px var(--paper),0 0 0 7px var(--ink)}
+.pk-name{font-family:var(--head);font-size:22px;font-weight:400;line-height:1.2}
+.pk-pic{position:relative;overflow:hidden;border-radius:10px;background:var(--panel)}
+.pk-head{position:absolute;inset:0;background:var(--pk-t);border-right:3px solid var(--ink);transform:translateX(-100%)}
+/* 음 하나 = 막대 하나(가로 = 길이 · 세로 = 높이 · 굵기 = 세기) — 고르기 전에는 숨김 */
+.pk-n{position:absolute;box-sizing:border-box;border-radius:6px;visibility:hidden}
+.pk-seg.open .pk-n{visibility:visible}
+.pk-n.k0,.pk-sw.k0{background:var(--pk);border:2.5px solid var(--ink)}
+.pk-n.k1,.pk-sw.k1{background:var(--surface);border:3px solid var(--pk)}
+.pk-n.k2,.pk-sw.k2{background:var(--ink-2);border:2.5px solid var(--ink)}
+.pk-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:26px;visibility:hidden}
+.pk-seg.open .pk-foot{visibility:visible}
+.pk-leg{display:flex;flex-wrap:wrap;gap:4px 12px;min-width:0;font-family:var(--body);font-size:18px;font-weight:700;line-height:1.2}
+.pk-in{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pk-sw{display:inline-block;box-sizing:border-box;width:22px;height:14px;border-radius:5px;flex:none}
+.pk-cap{flex:none;font-family:var(--head);font-size:20px;line-height:1.2;color:var(--ink-2);white-space:nowrap}
+
+/* 보기 카드 */
+.pk-exgrid{grid-template-columns:repeat(var(--pk-n,4),minmax(0,1fr));gap:12px}
+.pk-ex{min-height:104px}
+.pk-note{margin-left:auto;font-family:var(--body);font-size:18px;font-weight:700;color:var(--ink-2)}
+
+/* '눌러서 들어 봐요' 머리와 스피커 표시(셈1 · 빠1과 같은 모양 — _snd.js exGroup) */
+.snd-exwrap{display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:0}
+.snd-exhead{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:18px;line-height:1.2;color:#3B2A1E}
+.snd-spk{position:absolute;top:10px;right:12px;width:30px;height:30px;pointer-events:none}
+.snd-spk.in{position:static;width:26px;height:26px}
+.snd-spk svg{display:block;width:100%;height:100%}
+.snd-exwrap .excard{position:relative;padding-right:48px}
+
+/* TV */
+.tvmode .pk-name{font-size:26px}
+.tvmode .pk-seg{grid-template-rows:auto 112px auto}
+.tvmode .pk-show{gap:16px}

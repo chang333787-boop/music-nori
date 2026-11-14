@@ -230,6 +230,20 @@
 .fd-g{font-size:18px;font-weight:700;color:var(--ink-2)}
 .fd-why{margin:6px 0 10px;font-size:18px}
 .fd-ev,.fd-src{color:var(--ink-2)}
+/* 난이도(앱이 따져 본 것) — 단계 머리의 칩 · 어려운 점 · 먼저 하면 좋은 것 · 사다리 */
+.fd-lv{font-size:18px;font-weight:700;border:2px solid var(--ink);border-radius:8px;padding:0 8px;background:var(--surface);white-space:nowrap}
+.fd-load{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 10px;font-size:18px;color:var(--ink-2)}
+.fd-lt{font-weight:700;color:var(--ink)}
+.fd-hv b{font-weight:700;color:var(--ink)}
+.fd-need{font-family:var(--body);font-weight:700;font-size:18px;min-height:44px;padding:0 12px;border-width:2px;border-left:6px solid var(--f,var(--ink));border-radius:10px;box-shadow:none;white-space:nowrap}
+.fd-step.aim{outline:3px solid var(--ink);outline-offset:3px}
+.fd-lad,.fd-gap{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.fd-lad li,.fd-gap li{border:2px solid var(--line2);border-radius:14px;padding:10px 12px;background:var(--paper);display:flex;flex-direction:column;gap:8px;font-size:18px;line-height:1.4}
+.fd-lh{display:flex;align-items:baseline;gap:12px}
+.fd-lh b,.fd-gap b{font-family:var(--head);font-weight:400;font-size:21px}
+.fd-lh span{color:var(--ink-2)}
+.fd-lrow{display:grid;grid-template-columns:150px minmax(0,1fr);align-items:center;gap:8px}
+.fd-lel{font-weight:700}
 .fd-acts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .fd-act{display:flex;align-items:center;gap:10px;min-height:58px;padding:4px 8px 4px 10px;background:var(--surface);border:2px solid var(--line2);border-radius:12px}
 .fd-act.off{min-height:44px;background:none;border-style:dashed;color:var(--ink-2)}

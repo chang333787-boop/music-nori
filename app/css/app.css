@@ -240,7 +240,7 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 
 /* ── 마을 지도 — 갈래 넷 ── */
-.map{display:grid;grid-template-rows:repeat(5,minmax(0,1fr));gap:10px;height:100%}   /* 11-08 곰 줄(셈여림·빠르기)이 열려 다섯 줄 */
+.map{display:grid;grid-template-rows:repeat(6,minmax(0,1fr));gap:8px;height:100%}   /* 11-08 곰 줄(셈여림·빠르기) · 11-14 형식·화음 줄이 열려 여섯 줄 */
 .mrow.later{opacity:.6;padding:2px 18px}
 .mrow.later .mlane img,.mrow.later .mlane svg{width:44px;height:44px}
 .mrow.later .mlane b{font-size:19px;white-space:nowrap}
@@ -291,6 +291,10 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .tvcells{display:flex;gap:12px;flex-wrap:nowrap;min-width:0}
 .tvcell{flex:0 1 auto;min-width:0;flex-direction:column;align-items:flex-start;gap:0;min-height:72px;padding:6px 16px;font-size:22px;text-align:left}
 .tvcell small{font-family:var(--body);font-size:16px;font-weight:700;color:var(--ink-2)}
+.tvrow .mlane b span{display:block}
+.tvrow .mlane.two b{font-size:22px;line-height:1.2}   /* 거북 줄 = 갈래 둘(악보 · 형식·화음) */
+.tvcell.gap{margin-left:14px}
+.tvcells.dense .tvcell{flex:1 1 0;padding-left:12px;padding-right:12px}   /* 칸이 일곱인 줄 — 너비를 똑같이 나눠 성취기준 글이 칸 밖으로 안 나가게(11-14) */
 .tvcell .tvstd{max-width:214px;font-family:var(--body);font-size:18px;font-weight:700;line-height:1.25;color:var(--ink-2);text-align:left;white-space:normal}
 .sc{white-space:nowrap}
 .tvhead p.tvstd-note{font-size:18px;font-weight:700}

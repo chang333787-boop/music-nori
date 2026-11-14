@@ -92,7 +92,7 @@ export const BAND = [
   { key: 'hog', name: '고슴도치', lane: '박·리듬', draw: hedgehog },
   { key: 'bird', name: '참새', lane: '가락', draw: sparrow },
   { key: 'bunny', name: '토끼', lane: '소리', draw: bunny },
-  { key: 'turtle', name: '거북', lane: '악보', draw: turtle },
+  { key: 'turtle', name: '거북', lane: '악보 · 형식·화음', draw: turtle },
   { key: 'bear', name: '곰', lane: '셈여림·빠르기', draw: bear },
 ];
 export const friendOf = key => BAND.find(b => b.key === key) || BAND[0];

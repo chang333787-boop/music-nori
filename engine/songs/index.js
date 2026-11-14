@@ -52,7 +52,7 @@ export const SONGS = [
 
   // ── 외국 전래 7곡(가락만 · 노랫말 X · 판본 대조 끝) ──
   { id: 'ahvous', title: '작은 별 가락(프랑스 민요 「Ah! vous dirai-je, maman」)', meter: [2, 4], tempo: 100, key: 0,
-    cells: ['형2', '반2'],
+    cells: ['형3', '반2'],
     mel: 'C4q C4q | G4q G4q | A4q A4q | G4h | F4q F4q | E4q E4q | D4q D4q | C4h | G4q G4q | F4q F4q | E4q E4q | E4q D4q | G4q G4q | F4q F4q | E4q E4q | E4q D4q | C4q C4q | G4q G4q | A4q A4q | G4h | F4q F4q | E4q E4q | D4q D4q | C4h',
     use: 'aba 꼴 — 앞 도막이 끝에 돌아온다 · D.C. al Fine로 줄여 적기 알맞음' },
   { id: 'auclair', title: 'Au clair de la lune 앞 도막(프랑스 민요)', meter: [4, 4], tempo: 96, key: 0,

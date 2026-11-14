@@ -4,6 +4,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { ELEMENTS, EV, WALK, CLUSTERS, actInfo, elementById } from '../engine/flow.js';
 import { GROUPS, PHRASES, signsOf } from '../engine/marks.js';
+import { FACTORS, loadOf, needNames, ladder, earlyOk, gradeGaps } from '../engine/load.js';
 
 const P = new URL('../docs/flow.md', import.meta.url).pathname;
 const A = '<!-- flow:begin -->', Z = '<!-- flow:end -->';
@@ -37,10 +38,11 @@ for (const el of ELEMENTS) {
   out.push('');
   out.push(`교육과정(2022 개정) 요소: ${el.curr}`);
   out.push('');
-  out.push('| 차례 | 단계 | 학년 | 근거 | 앱에서 쓸 것 | 까닭 |');
-  out.push('|---|---|---|---|---|---|');
+  out.push('| 차례 | 단계 | 학년 | 난이도(앱 분석) | 먼저 하면 좋은 것 | 근거 | 앱에서 쓸 것 | 까닭 |');
+  out.push('|---|---|---|---|---|---|---|---|');
   for (const s of el.steps) {
-    out.push(`| ${s.id} | ${cell(s.name)} | ${cell(s.g)} | ${s.ev.map(k => EV[k]).join(' · ')} | ${s.acts.length ? s.acts.map(actText).join(' · ') : '(없음)'} | ${cell(s.why)} |`);
+    const l = loadOf(s.id), needs = needNames(s.id).map(x => `${x.id} ${cell(x.step.name)}`).join(' · ') || '—';
+    out.push(`| ${s.id} | ${cell(s.name)} | ${cell(s.g)} | ${l.lv} ${l.word}(${l.f.join('·')} = ${l.sum}) | ${needs} | ${s.ev.map(k => EV[k]).join(' · ')} | ${s.acts.length ? s.acts.map(actText).join(' · ') : '(없음)'} | ${cell(s.why)} |`);
   }
   if (el.mix.length) {
     out.push('');
@@ -49,6 +51,25 @@ for (const el of ELEMENTS) {
   }
 }
 
+// 난이도 — engine/load.js(앱이 스스로 따져 본 것 · 뜻은 문서 8장)
+const stepText = x => `${x.id} ${cell(x.step.name)}`;
+out.push('');
+out.push('### 난이도 사다리(앱 분석 — 연구나 아이들 자료로 확인한 것이 아님)');
+out.push('');
+out.push(`난이도 칸의 괄호는 여섯 가지 점수(${FACTORS.map(f => f.name).join('·')})와 합계다. 난이도는 먼저 하면 좋은 단계보다 낮을 수 없다.`);
+out.push('');
+out.push('| 난이도 | 단계 수 | 단계(요소마다) |');
+out.push('|---|---|---|');
+for (const r of ladder()) out.push(`| ${r.lv} ${r.word} | ${r.els.reduce((n, x) => n + x.steps.length, 0)} | ${r.els.map(x => `${x.el.name}: ${x.steps.map(s => `${s.id} ${cell(s.name)}`).join(', ')}`).join(' / ')} |`);
+out.push('');
+out.push('점수 기준');
+for (const f of FACTORS) out.push(`- ${f.name}(${f.full}) — ${f.at.map((t, i) => `${i} ${t}`).join(' / ')}`);
+out.push('');
+const GG = gradeGaps();
+out.push('교과서 자리와 난이도가 다른 곳');
+out.push(`- 4학년이나 그 뒤에 처음 나오지만 난이도 2 이하: ${GG.soon.map(stepText).join(' · ')}`);
+out.push(`- 3학년이나 그 앞에 처음 나오지만 난이도 4 이상: ${GG.slow.map(stepText).join(' · ')}`);
+out.push(`- 요소 안 차례는 뒤인데 앞 단계보다 난이도가 낮은 단계: ${earlyOk().map(x => `${x.step.id} ${cell(x.step.name)}(${x.lv}) ← ${x.after.id}(${x.afterLv})`).join(' · ')}`);
 out.push('');
 out.push('### 악보 판의 묶음 · 기호 · 가락');
 out.push('');

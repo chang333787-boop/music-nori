@@ -84,3 +84,18 @@ export default {
 - **별 0 이어짐**: `kit.zeroRun(hist, since)` = 기록 끝에서부터 별 0인 줄 수. 기록 화면(#/records)은 2 이상일 때 칸 이름 아래 "별 0이 n번 이어졌어요" 한 줄 · 복사 표 끝 열 '별 0 이어짐'. 방에서는 오늘 것만 세어 보냄.
 - **일부러 틀리는 시험 길**: `window.__cellAuto(true)` — 소4 · 악2 확인 게임만 틀린 답을 고른다(별 0 화면 시험용 · 다른 칸은 그대로 맞는 답). `tests/rules.browser.cjs` '별 0 결과'.
 - 시험: `tests/cells.test.mjs`(찍기 · 번갈아 · 같은 답 봇 · 씨앗 1000개) · `tests/truth.browser.cjs`(시계 · 시간 지남 · TV 징검다리 기록 X · 소3 답 열림 시각 · 씨앗).
+
+## 듣고 고르기 공용 틀 — `_pick.js` (11-14 · 소6 · 형1 · 화1)
+소리 도막(하나 또는 둘)을 듣고 단추 둘(셋) 가운데 하나를 고르는 칸은 모양이 같다. 그래서 칸 파일은 **무엇을 들려주고 무엇이 답인가**(문항 표 · 도막 만들기 · 글)만 적고, 보기 · 연습 · 확인 게임 · TV 소리 모드 화면은 `app/js/cells/_pick.js`가 만든다(모양 `app/css/cells/_pick.css` — 처음 불릴 때 한 번 붙임). 같은 꼴의 새 칸(예: 긴 소리·짧은 소리 견주기)은 이 틀로 만든다.
+
+- `pickCell(C)` → `{ mod, tvsSpec }`. 칸 파일 끝: `export const TVS = true; export const tvsSpec = cell.tvsSpec; export default cell.mod;`
+- `C` = `{ friend, keys, label(key, lo), chip(key)?, lock?, rightOf(row), build(row, lo), names(row, lo), say: { show, follow, game, kid }, wrong(row, lo), note(lo)?, EX(lo), pool, passText, game: { title, sub }, PLAN, CUTS, SHUF, GUESS?, tipOf }`
+  - `keys` = 답 키 차례(단추 차례 = 키보드 1 2 3) · `label` = 단추 글(lo = 1~2학년 판) · `chip` = 단추 그림(svg 글)
+  - `build(row)` → 도막 `[{ lines: [음 줄, …], cap }]`. 도막이 둘이면 사이에 0.5초 쉼. 한 도막 안의 줄들은 같은 때에 함께 난다(화1 '함께'). **화면 · 소리 없이 표만 만들어야 한다**(node 시험이 부른다)
+  - `line(가락, { inst, vel, shift, beat })` = `[[음 높이(없으면 쉼), 박 수], …]` → 음 줄 · `nearSegs(도막들)` = `NEAR`의 `play` · `instName(악기)` = 악기의 우리말 이름
+  - `lock: { key, at, tell(lo) }` = 확인 게임에서 `at`번째 판부터 나타나는 단추(형1 '비슷한 가락' — 연습에서는 처음부터 보임). 단추 수가 바뀌는 칸은 `GUESS`로 판마다 찍기 확률을 적는다
+  - `note(lo)` = 보기 화면의 작은 알림(소6 '컴퓨터로 만든 악기 소리예요')
+- **소리 그림**: 가로 = 시간 · 세로 = 높이 · 굵기 = 세기 · 무늬 = 악기(첫째 악기 채움 · 둘째 테두리만 · 셋째 회색). 듣는 동안에는 지나가는 띠만 보이고 고른 뒤에 열린다(그림으로 답을 읽지 못하게). 보기 단계는 처음부터 열려 있다.
+- **지킬 것**: 같은 꼴의 판은 답과 상관없이 소리 길이가 같다(답이 열리는 때로 새지 않게) · 같은 답이 세 번 이어지지 않는다 · 맞고 틀림은 귀로 가릴 수 있는 사실만 묻는다(화1은 '어울린다 · 안 어울린다'를 묻지 않음) · 틀렸을 때 글은 사실 한 줄(`wrong`).
+- 친구 그림은 높이 210px까지(그림이 커지면 1366×768에서 아래 단추가 밀린다) · TV 보기에서는 소리 그림 줄 높이 112px.
+- 시험: `node tests/pick.test.mjs`(답 = 실제로 나는 소리 · 뒤집어도 · 소리 길이 같음 · 듣지 않고 누르는 봇이 별을 못 받음 · 같은 답 세 번 연속 0 · 1~2학년 글) · `node tests/cells.browser.cjs so6 hy1 hwa1`(화면에서 끝까지).

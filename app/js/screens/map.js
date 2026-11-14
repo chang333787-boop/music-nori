@@ -1,10 +1,10 @@
-// 음악 마을 지도 — 갈래 넷(소리 · 가락 · 박·리듬 · 악보)의 첫 판 14칸(박·리듬 길 끝 = 장1 장단보 · 국악 첫걸음). 잠그지 않음 · 추천 다음 칸만 크게
+// 음악 마을 지도 — 갈래 여섯(소리 · 가락 · 박·리듬 · 악보 · 형식·화음 · 셈여림·빠르기)의 첫 판 21칸(박·리듬 길 끝 = 장1 장단보 · 국악 첫걸음). 잠그지 않음 · 추천 다음 칸만 크게
 import { h, onPress, lsGet, lsSet } from '../util.js';
 import { friendImg } from '../band.js';
 import { CELLS, LANES, ORDER, cellById, nextCell, cellName } from '../../../engine/cells.js';
 import { getProg, STAR_SVG } from '../cellkit.js';
 
-const ROWS = ['sound', 'melody', 'rhythm', 'score', 'any'];   // any = 곰 갈래(셈여림·빠르기) — 11-08 셈1 · 11-10 빠1
+const ROWS = ['sound', 'melody', 'rhythm', 'score', 'meet', 'any'];   // meet = 형식·화음(거북 · 11-14 형1 · 화1) · any = 곰 갈래(셈여림·빠르기) — 11-08 셈1 · 11-10 빠1
 // 곰 줄 끝 한 줄 — 아직 첫 판에 없는 셈여림 · 빠르기 칸 이름(지금 = 셈여림의 변화 · 빠르기의 변화 · 첫 판에 들면 저절로 빠짐)
 const LATER = CELLS.filter(c => c.lane === 'any' && !c.first && /^(sem|ppa)\d/.test(c.id)).map(c => c.name);
 

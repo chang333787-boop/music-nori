@@ -9,7 +9,9 @@ import * as room from '../room.js';
 import { stdEl } from '../cellkit.js';
 
 export default function mount(root, ctx) {
-  const lanes = ['sound', 'melody', 'rhythm', 'score'];
+  // 줄 넷 — 거북 줄은 갈래 둘(악보 + 형식·화음 · 11-14 형1 · 화1)을 한 줄에. 줄을 하나 더 두면 1366×768에서 넘친다
+  //  ⚠ 셈여림·빠르기(곰) 두 칸은 이 화면에 아직 없다(높이가 모자람) — 찾아 쓰기의 'TV' 단추로 연다
+  const rows = [['sound'], ['melody'], ['rhythm'], ['score', 'meet']];
   const band = ctx.device.band;                               // 1~2학년 판(band low)이면 칸 이름이 쉬운 말
   const ctl = h('div', { class: 'tvroomctl' });
   const big = h('div', { class: 'overlay rbigwrap', hidden: true });
@@ -21,15 +23,15 @@ export default function mount(root, ctx) {
         // 칸 ↔ 성취기준(선생님 화면만 · 성취기준 점검 11-08)
         h('p', { class: 'tvstd-note' }, `놀이 아래 = 성취기준(${STD_NOTE}) · 곡 바꾸기 `, stdEl(PLAY_STD))),
       ctl),
-    ...lanes.map(lane => h('div', { class: 'tvrow', style: { '--a-t': `var(--${LANES[lane].friend}-t)` } },
-      h('div', { class: 'mlane' }, friendImg(LANES[lane].friend, 'face', { label: false }), h('b', {}, LANES[lane].name)),
-      h('div', { class: 'tvcells' }, ...ORDER.filter(id => cellById(id).lane === lane).map((id, k) => {
+    ...rows.map(lanes => h('div', { class: 'tvrow', style: { '--a-t': `var(--${LANES[lanes[0]].friend}-t)` } },
+      h('div', { class: 'mlane' + (lanes.length > 1 ? ' two' : '') }, friendImg(LANES[lanes[0]].friend, 'face', { label: false }), h('b', {}, ...lanes.map(lane => h('span', {}, LANES[lane].name)))),
+      h('div', { class: 'tvcells' + (lanes.reduce((n, lane) => n + ORDER.filter(id => cellById(id).lane === lane).length, 0) > 6 ? ' dense' : '') }, ...lanes.flatMap((lane, li) => ORDER.filter(id => cellById(id).lane === lane).map((id, k) => {
         const c = cellById(id);
-        const b = h('button', { type: 'button', class: 'tvcell' }, h('small', {}, `${LANES[lane].name} ${k + 1}`), cellName(c, band),   /* 지도와 같은 번호(평가 3차) */
+        const b = h('button', { type: 'button', class: 'tvcell' + (li && !k ? ' gap' : '') }, h('small', {}, `${LANES[lane].name} ${k + 1}`), cellName(c, band),   /* 지도와 같은 번호(평가 3차) */
           c.std ? stdEl(c.std, 'tvstd') : null);
         onPress(b, () => ctx.go('tvcell/' + id));
         return b;
-      })))),
+      }))))),
     big);
   root.append(wrap);
 
