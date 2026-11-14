@@ -46,6 +46,7 @@ export const PLAY_NAME = {
   pitch: '높이 바꿔 보기', long: '길이 바꿔 보기', tempo: '빠르기 바꿔 보기', dyn: '셈여림 바꿔 보기',
   rest: '쉼표 넣어 보기', make: '가락 지어 보기', meter: '박자표 바꿔 보기', fix: '마디 고쳐 보기',
   rmake: '리듬 지어 보기', dress: '내 곡 꾸며 보기', chord: '반주 화음 붙여 보기', jang: '장단 놓아 보기', form: '도막 짜 보기',
+  staff: '오선 보고 놓기', name: '음이름 보고 놓기',
 };
 // 칸 결과 카드에 매이지 않고 따로 서는 놀이터 카드(11-14 묶음 D · docs/plan100_batchD.md) — 만든 팀이 제 줄의 주석을 푼다(그 전에는 흐름에 못 씀)
 //  줄마다 한 키 · 줄 사이를 띄워 둔 것은 여러 가지를 합칠 때 부딪히지 않게
@@ -59,6 +60,10 @@ export const PLAY_SOLO = [
   'jang',      // D4 장단 판(#/jang)
 
   'form',      // D5 도막 짜기 판(#/form)
+
+  'staff',     // D8 오선 보고 놓기(놀이터 부탁 카드)
+
+  'name',      // D8 음이름 보고 놓기(놀이터 부탁 카드)
 ];
 // 놀이터(#/play/<키>)가 아닌 따로 선 화면
 export const PLAY_ROUTE = { jang: '#/jang', form: '#/form' };
@@ -182,7 +187,7 @@ export const ELEMENTS = [
         ['curr', 'book'], ['cell:ga7', 'play:pitch'], '7음 파 시 단음계'),
       S('m8', '음이름 · 계이름을 오선에서 읽기', '5학년(교과서)', [5, 6],
         '교육과정 5~6학년 요소가 「음이름, 계이름, 율명」이다. 3~4학년에는 계이름을 몸과 손기호로 익힌다.',
-        ['book', 'curr'], ['cell:ak4'], '율명 다라마바사가나'),
+        ['book', 'curr'], ['cell:ak4', 'play:staff', 'play:name'], '율명 다라마바사가나'),
       S('m9', '조 — 다장조에서 바장조 · 가단조, 사장조 · 라단조로', '5~6학년(교과서)', [5, 6],
         '교과서는 5학년에 다장조 · 바장조 · 가단조, 6학년에 사장조 · 라단조를 둔다.',
         ['book'], ['cell:ga8', 'cell:ak5'], '조 바꾸기 조옮김 장조 단조'),
@@ -332,7 +337,7 @@ export const ELEMENTS = [
         ['method', 'design'], ['lab:dyn', 'lab:tempo', 'lab:len', 'lab:repeat', 'lab:meter', 'lab:inst', 'cell:ak6'], '악보 기호 기호'),
       S('s5', '음이름(다라마바사가나)', '5학년(교과서)', [5, 6],
         '교육과정 5~6학년 요소가 「음이름, 계이름, 율명」이다.',
-        ['book', 'curr'], ['cell:ak4']),
+        ['book', 'curr'], ['cell:ak4', 'play:name']),
       S('s6', '조표 · 임시표', '5~6학년(교과서)', [5, 6],
         '조를 다루는 5~6학년에 함께 나온다.',
         ['book'], ['cell:ak5'], '올림표 내림표'),

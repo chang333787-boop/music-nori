@@ -135,6 +135,25 @@
 .pin-k{display:inline-block;flex:none}
 .pstaff-empty{align-self:center;font-size:20px}
 
+/* ── 보고 놓기 카드(묶음 D8 · 11-14) ── */
+/* 판: 칸 3~4개를 크게 · 지금 놓을 칸 = 옅은 파랑 띠 + 위 굵은 파랑 줄(카드 보기의 같은 차례 음도 파랑) · 블록 글자 크게 */
+.pslot{position:absolute;top:32px;bottom:0;pointer-events:none}
+.pslot.on{background:rgba(47,109,181,.09);box-shadow:inset 0 5px 0 var(--bird)}
+.pcanvas.rd .pblk{font-size:24px}
+/* 카드 보기 — 오선 그림(카드 폭) · 음이름 글(흰 칸 — 색을 칠하면 줄 색만 보고 맞추게 되어 칠하지 않음) */
+.prd-staff{flex:none;padding:2px 4px 0}
+.prd-staff svg{display:block;width:100%;height:auto;max-height:150px}
+.prd-staff .prd-item{transition:fill 120ms}
+.prd-staff .prd-item.cur{fill:var(--bird)}
+.prd-staff .prd-item.now{fill:#E0A100}
+.prd-names{flex:none;display:flex;justify-content:center;gap:12px;padding:6px 0 4px}
+.prd-name{display:flex;align-items:center;justify-content:center;min-width:64px;height:64px;border:3px solid var(--ink);border-radius:16px;background:var(--surface);font-family:var(--head);font-size:34px;line-height:1;transition:background-color 120ms}
+.prd-name.cur{border-color:var(--bird);box-shadow:inset 0 -6px 0 var(--bird)}
+.prd-name.now{background:var(--sun-t)}
+/* 선반: 줄 이름(계이름 ↔ 음이름) 둘은 고르기 · 다 비우기는 조금 떨어뜨림 */
+.ptool.pname{flex-direction:column;gap:0;line-height:1.15;box-shadow:0 3px 0 var(--ink)}
+.ptool.pclear{margin-left:14px}
+
 /* ── 아래 선반 ── */
 .pshelf{grid-column:1;grid-row:2;display:flex;align-items:center;gap:16px;min-width:0}
 .ptools{flex:1;min-width:0;display:flex;gap:10px}

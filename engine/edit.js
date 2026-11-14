@@ -445,6 +445,79 @@ export function chordHarm(song) {
   return out;
 }
 
+// ════ 묶음 D8 — 보고 놓기 카드 둘(오선 보고 놓기 · 음이름 보고 놓기 · 11-14) ════
+//  보기(오선에 그린 가락 · 음이름 글)를 보고 그림 악보 판의 같은 높이에 놓는다 — 정답이 있는 놓기(넣고 빼기 E).
+//  판 = 4분음표 칸 n개(3 · 4)짜리 한 마디(n/4) · 처음엔 모두 4분쉼표(빈 칸). 칸 하나 = song.ev 하나(붙임줄 없음).
+//  판 표시: song.board = 'read' · readKind = 'staff' | 'name' · readPs = 보기 음 높이(MIDI) — makeSong이 그대로 들고 다님(고쳐도 남음)
+//  맞음: 오선 = 높이가 같음(같은 줄 · 칸 자리) · 음이름 = 이름이 같음(다장조 고정 — 다 = C … 나 = B · 옥타브와 상관없음)
+//  가락은 모두 이 앱에서 지은 것(있는 노래 X) · 오선 가락은 가온 도(C4) ~ 높은 미(E5) — 덧줄은 가온 도 하나뿐
+export const NOTE_NAMES = ['다', '라', '마', '바', '사', '가', '나'];                // 다장조 음계 차례(도 레 미 파 솔 라 시)
+export const NAME_PC = { 다: 0, 라: 2, 마: 4, 바: 5, 사: 7, 가: 9, 나: 11 };       // 음악 사실: 다 = C · 라 = D · 마 = E · 바 = F · 사 = G · 가 = A · 나 = B
+export const noteName = p => (p == null ? null : NOTE_NAMES[MAJOR.indexOf(pc(p))] ?? null);
+// 판의 줄(위 → 아래) — 오선: 가온 도 ~ 높은 미 열 줄 · 음이름: 다 ~ 높은 다 여덟 줄(한 옥타브)
+export const READ_ROWS = { staff: [76, 74, 72, 71, 69, 67, 65, 64, 62, 60], name: [72, 71, 69, 67, 65, 64, 62, 60] };
+// 보기 가락 — 쉬운 것(차례가기 · 줄 안)부터 · 셋째에 가온 도(덧줄) · 높은 미까지. 끝낼 때마다 다음 가락(화면이 차례 번호를 기억)
+export const READ_TUNES = {
+  staff: [
+    [67, 69, 71, 72],   // 솔 라 시 도
+    [64, 69, 67],       // 미 라 솔
+    [60, 64, 67, 64],   // 도 미 솔 미(가온 도 = 덧줄)
+    [72, 71, 67, 69],   // 도 시 솔 라
+    [62, 65, 64, 60],   // 레 파 미 도
+    [76, 72, 74, 71],   // 미 도 레 시(높은 미 = 넷째 칸)
+    [71, 74, 72],       // 시 레 도
+    [65, 67, 64, 62],   // 파 솔 미 레
+  ],
+  name: [
+    ['다', '마', '사', '마'],
+    ['사', '가', '나', '다'],
+    ['마', '바', '사'],
+    ['라', '바', '마', '다'],
+    ['가', '사', '바', '마'],
+    ['바', '라', '다'],
+    ['다', '사', '가', '사'],
+    ['나', '가', '사', '바'],
+  ],
+};
+// 음이름 → 음이름 판(60~72)의 높이 — 다는 낮은 다(60)
+export const nameToPitch = nm => (NAME_PC[nm] == null ? null : 60 + NAME_PC[nm]);
+// k번째(0부터 · 차례가 돌아감) 보기 → { kind, ps } · 음이름 보기의 ps는 이름을 판 높이로 바꾼 것(맞음은 이름으로 봄)
+export function readTarget(kind, k = 0) {
+  const T = READ_TUNES[kind];
+  if (!T) return null;
+  const t = T[((k % T.length) + T.length) % T.length];
+  return { kind, ps: kind === 'name' ? t.map(nameToPitch) : [...t] };
+}
+// 빈 판 — 보기 음 수만큼 4분쉼표 칸(n/4 한 마디)
+export function readBoard(target, { tempo = 100 } = {}) {
+  const n = target.ps.length;
+  return makeSong({ id: 'read', board: 'read', readKind: target.kind, readPs: [...target.ps], mel: Array(n).fill('Rq').join(' '), meter: [n, 4], tempo });
+}
+// k번째 칸에 높이 p를 놓음(p = null이면 비움) — 같으면 그대로
+export function readPlace(song, k, p = null) {
+  const e = song.ev[k];
+  if (!e || (e.p ?? null) === (p ?? null)) return song;
+  return safe(song, () => rebuild(song, groupsOf(song).map(g => g.map(it => (it.i === k ? { ...it, p: p ?? null, tie: false } : it)))));
+}
+export const readClear = song => (song.ev.some(e => e.p != null) ? safe(song, () => rebuild(song, groupsOf(song).map(g => g.map(it => ({ ...it, p: null, tie: false }))))) : song);
+// 칸 k에 놓아야 할 높이(오선 = 그 높이 · 음이름 = 판 위 그 이름의 낮은 자리)
+export const readWant = (song, k) => (song.readPs || [])[k] ?? null;
+// 다장조 음계 안 자리 번호(한 칸 = 한 계이름) — 두 음 사이 '몇 칸'을 셀 때
+const diaIdx = p => Math.floor(p / 12) * 7 + MAJOR.indexOf(pc(p));
+// 판 살피기 → { n, slots(놓은 높이 · 빈 칸 null), ok(칸마다 같은가), placed, same, next(처음 빈 칸 · 없으면 -1),
+//   first(놓았는데 다른 첫 칸 · 없으면 -1), steps(first 칸: 보기 − 놓은 것, 음계 칸 수 · 위 = +), all(모두 같음) }
+export function readCheck(song) {
+  const want = song.readPs || [], name = song.readKind === 'name';
+  const slots = want.map((_, k) => (song.ev[k] ? song.ev[k].p ?? null : null));
+  const same = (p, w) => p != null && w != null && (name ? pc(p) === pc(w) : p === w);
+  const ok = slots.map((p, k) => same(p, want[k]));
+  const first = slots.findIndex((p, k) => p != null && !ok[k]);
+  return {
+    n: want.length, slots, ok, placed: slots.filter(p => p != null).length, same: ok.filter(Boolean).length,
+    next: slots.findIndex(p => p == null), first, steps: first >= 0 ? diaIdx(want[first]) - diaIdx(slots[first]) : 0, all: want.length > 0 && ok.every(Boolean),
+  };
+}
+
 // ── 소리 사건(세 카드 + 예전 놀이터 모두) ──
 // 틱 ↔ 초 — 도막마다 빠르기가 다르면 조각마다 이어 붙인다(secTempo가 없으면 곡 빠르기 하나)
 export function timeMap(song) {

@@ -509,4 +509,85 @@ ok('소리 사건 — 꾸밈 · 화음이 없으면 예전 toEvents와 같은 �
   }
 });
 
+// ── 묶음 D8 · 보고 놓기(오선 보고 놓기 · 음이름 보고 놓기) ──
+ok('음이름 표 — 다장조 고정(다 C · 라 D · 마 E · 바 F · 사 G · 가 A · 나 B) · 옥타브와 상관없음 · 반음은 이름 없음', () => {
+  assert.deepEqual([60, 62, 64, 65, 67, 69, 71].map(E.noteName), ['다', '라', '마', '바', '사', '가', '나']);
+  assert.deepEqual([48, 72, 76, 83].map(E.noteName), ['다', '다', '마', '나']);
+  assert.equal(E.noteName(61), null); assert.equal(E.noteName(null), null);
+  assert.deepEqual(Object.entries(E.NAME_PC).map(([k, v]) => [k, v]), [['다', 0], ['라', 2], ['마', 4], ['바', 5], ['사', 7], ['가', 9], ['나', 11]]);
+  assert.equal(E.nameToPitch('나'), 71); assert.equal(E.nameToPitch('도'), null);
+});
+
+ok('보기 가락 — 오선은 가온 도 ~ 높은 미(덧줄은 가온 도 하나) · 음이름 판 안 · 3~4음 · 판 줄에 모두 있음', () => {
+  for (const kind of ['staff', 'name']) {
+    const T = E.READ_TUNES[kind];
+    assert.ok(T.length >= 6, kind);
+    T.forEach((_, k) => {
+      const t = E.readTarget(kind, k);
+      assert.ok(t.ps.length >= 3 && t.ps.length <= 4, kind + k);
+      assert.ok(t.ps.every(p => E.READ_ROWS[kind].includes(p)), `${kind} ${k}: ${t.ps}`);
+      if (kind === 'staff') assert.ok(t.ps.every(p => p >= 60 && p <= 76));
+    });
+    assert.deepEqual(E.readTarget(kind, T.length), E.readTarget(kind, 0), '차례가 돌아감');
+  }
+  assert.deepEqual(E.readTarget('name', 0).ps, [60, 64, 67, 64], '다 마 사 마');
+  assert.equal(E.readTarget('zz', 0), null);
+  assert.deepEqual(E.READ_ROWS.staff, [76, 74, 72, 71, 69, 67, 65, 64, 62, 60]);
+  assert.deepEqual(E.READ_ROWS.name.map(E.noteName), ['다', '나', '가', '사', '바', '마', '라', '다']);
+});
+
+ok('빈 판 · 놓기 · 비우기 — 칸 하나 = 4분음표 하나 · 박은 그대로 · 판 표시가 남음', () => {
+  const t = E.readTarget('staff', 1), s = E.readBoard(t);
+  assert.deepEqual([s.board, s.readKind, s.readPs, s.meter], ['read', 'staff', [64, 69, 67], [3, 4]]);
+  assert.deepEqual(s.ev.map(e => [e.t, e.d, e.p]), [[0, 12, null], [12, 12, null], [24, 12, null]]);
+  assert.equal(s.errors.length, 0);
+  const a = E.readPlace(s, 1, 69);
+  assert.deepEqual(pitches(a), [null, 69, null]);
+  assert.deepEqual(durs(a), [12, 12, 12]);
+  assert.deepEqual([a.board, a.readKind, a.readPs], ['read', 'staff', [64, 69, 67]], '고쳐도 판 표시가 남음');
+  assert.deepEqual(pitches(s), [null, null, null], '원래 판은 안 바뀜');
+  assert.equal(E.readPlace(a, 1, 69), a, '같은 높이 = 그대로');
+  assert.equal(E.readPlace(a, 9, 60), a, '없는 칸 = 그대로');
+  assert.deepEqual(pitches(E.readPlace(a, 1, null)), [null, null, null], '비우기');
+  const b = E.readPlace(E.readPlace(a, 0, 64), 2, 64);
+  assert.deepEqual(pitches(b), [64, 69, 64]);
+  assert.equal(E.unitsOf(b).length, 3, '같은 높이가 이웃해도 한 덩어리로 붙지 않음');
+  assert.deepEqual(pitches(E.readClear(b)), [null, null, null]);
+  assert.equal(E.readClear(s), s);
+  roundTrip(b);
+  assert.equal(E.playEvents(b).events.length, 3);
+  assert.equal(E.readWant(b, 2), 67); assert.equal(E.readWant(b, 5), null);
+});
+
+ok('살피기(오선) — 놓은 칸 · 빈 칸 · 다른 첫 칸 · 몇 칸 위아래(음계 칸)', () => {
+  let s = E.readBoard(E.readTarget('staff', 2));   // 도 미 솔 미
+  let r = E.readCheck(s);
+  assert.deepEqual([r.n, r.placed, r.same, r.next, r.first, r.all], [4, 0, 0, 0, -1, false]);
+  s = E.readPlace(s, 0, 60); s = E.readPlace(s, 1, 65);
+  r = E.readCheck(s);
+  assert.deepEqual([r.placed, r.same, r.next, r.first, r.steps], [2, 1, 2, 1, -1], '파에 놓음 → 오선은 한 칸 아래(미)');
+  s = E.readPlace(E.readPlace(s, 2, 67), 3, 64);
+  r = E.readCheck(s);
+  assert.deepEqual([r.placed, r.same, r.next, r.first, r.all], [4, 3, -1, 1, false]);
+  s = E.readPlace(s, 1, 64);
+  r = E.readCheck(s);
+  assert.deepEqual([r.same, r.first, r.all], [4, -1, true]);
+  // 오선은 높이째 같아야 — 옥타브가 다르면 다름 · 칸 수는 음계 칸(도 → 높은 도 = 일곱 칸)
+  r = E.readCheck(E.readPlace(s, 0, 72));
+  assert.deepEqual([r.first, r.steps, r.all], [0, -7, false]);
+  r = E.readCheck(E.readPlace(E.readBoard(E.readTarget('staff', 5)), 0, 69));   // 높은 미 자리에 라
+  assert.deepEqual([r.first, r.steps], [0, 4]);
+});
+
+ok('살피기(음이름) — 이름이 같으면 같음(낮은 다 · 높은 다 모두 다)', () => {
+  let s = E.readBoard(E.readTarget('name', 1));    // 사 가 나 다
+  assert.deepEqual(s.readPs, [67, 69, 71, 60]);
+  s = E.readPlace(E.readPlace(E.readPlace(E.readPlace(s, 0, 67), 1, 69), 2, 71), 3, 72);
+  assert.ok(E.readCheck(s).all, '높은 다도 다');
+  assert.ok(E.readCheck(E.readPlace(s, 3, 60)).all, '낮은 다도 다');
+  const r = E.readCheck(E.readPlace(s, 1, 65));
+  assert.deepEqual([r.same, r.first, r.all], [3, 1, false]);
+  assert.equal(E.noteName(r.slots[r.first]), '바');
+});
+
 console.log(`✓ 놀이터 편집 엔진 시험 ${n}개 통과`);
