@@ -219,7 +219,7 @@ button:focus-visible,.btn:focus-visible,a:focus-visible,[tabindex]:focus-visible
 .steps.labeled .st .d{width:18px;height:18px;border-radius:50%;border:3px solid var(--ink);background:var(--surface)}
 .steps.labeled .st.done .d{background:var(--ink)}
 .steps.labeled .st.now .d{box-shadow:0 0 0 3px var(--paper),0 0 0 6px var(--ink)}
-.bar-r>button{min-height:52px;font-size:20px;padding:4px 18px}
+.bar-r>button,.bar-r>a.barlink{min-height:52px;font-size:20px;padding:4px 18px}
 .acard .kicker{font-family:var(--head);font-size:20px;color:var(--go-d)}
 
 

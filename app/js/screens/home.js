@@ -66,7 +66,7 @@ export default function mount(root, ctx) {
       h('span', { class: 'art' }, friendImg('hog', 'happy', { label: false })),
       h('span', { class: 'txt' }, h('b', {}, `${ORDER.length}칸을 모두 지났어요`), h('small', {}, '마을 지도에서 별을 더 모아 봐요'), h('span', { class: 'gotag' }, '지도')));
   }
-  const cards = h('div', { class: 'cards', style: { gridTemplateColumns: 'repeat(5,minmax(0,1fr))' } },
+  const cards = h('div', { class: 'cards', style: { gridTemplateColumns: 'repeat(6,minmax(0,1fr))' } },
     main,
     h('a', { class: 'btn acard', href: '#/map', style: { '--a-t': 'var(--bird-t)' } },
       h('span', { class: 'art' }, h('span', { class: 'faces' }, ...['bunny', 'bird', 'hog', 'turtle'].map(k => friendImg(k, 'face', { label: false })))),
@@ -74,6 +74,9 @@ export default function mount(root, ctx) {
     h('a', { class: 'btn acard', href: '#/play', style: { '--a-t': 'var(--bear-t)' } },
       h('span', { class: 'art' }, friendImg('bear', 'play', { label: false })),
       h('span', { class: 'txt' }, h('b', {}, '곡 바꾸기'), h('small', {}, '음을 바꿔 보며 들어요'))),
+    h('a', { class: 'btn acard', href: '#/lab', style: { '--a-t': 'var(--bunny-t)' } },
+      h('span', { class: 'art' }, friendImg('bunny', 'play', { label: false })),
+      h('span', { class: 'txt' }, h('b', {}, '악보 판'), h('small', {}, '기호를 넣었다 빼며 들어요'))),
     h('a', { class: 'btn acard', href: '#/songs', style: { '--a-t': 'var(--turtle-t)' } },
       h('span', { class: 'art' }, friendImg('turtle', 'idle', { label: false })),
       h('span', { class: 'txt' }, h('b', {}, '곡 듣기'), h('small', {}, '노래를 듣고 악보를 따라가요'))));

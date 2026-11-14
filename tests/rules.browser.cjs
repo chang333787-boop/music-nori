@@ -2,6 +2,7 @@
 //  ① 보이는 글자 18px 이상(SVG 글은 화면 배율을 곱함) ② 답 단추가 다른 것에 덮이지 않음(가운데를 누르면 그 단추)
 //  ③ 보이는 주황(.go) 단추 하나 이하(지금 누를 것 하나) ④ 빈 칭찬 낱말 X(AI 슬롭 X)
 //  선생님 화면(#/teacher · records · calib · speaker · credits · tv)은 글이 많아 ①을 보지 않음
+//  악보 판(#/lab · 묶음 여섯 · 기호를 올린 모습)과 찾아 쓰기(#/find)는 네 가지 모두 봄(11-14)
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 let pw;
 try { pw = require('playwright'); } catch { pw = require('/Users/dobuk/Projects/school-metaverse/node_modules/playwright'); }
@@ -65,6 +66,26 @@ function audit() {
       if (keep.length) bad(`${name}: ${keep.join(' | ')}`); else ok(`${name} 규칙 지킴`);
     };
     for (const name of ['', 'map', 'tap', 'songs', 'play']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(900); await check('#/' + (name || '(처음)')); }
+    // 악보 판(아이 화면 · 규칙 그대로) — 묶음 여섯 · 기호를 올린 모습도(악보 위 글자·늘임표·빠르기 글이 18px 아래로 내려가지 않게)
+    for (const name of ['lab', 'lab/tempo', 'lab/inst', 'lab/len', 'lab/repeat', 'lab/meter']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(700); await check('#/' + name); }
+    {
+      const press = sel => page.evaluate(q => { const e = document.querySelector(q); if (e) e.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); return !!e; }, sel);
+      const put = async (hash, signs) => {
+        await page.evaluate(n => { location.hash = '#/' + n; }, hash); await page.waitForTimeout(700);
+        for (const sg of signs) { await press(`.sl-chip[data-sign="${sg}"]`); await page.waitForTimeout(150); await press('.sl-hit.can:not(.in)'); await page.waitForTimeout(150); }
+        await page.waitForTimeout(1400);                          // 넣은 마디를 들려주는 동안을 넘긴 뒤
+        const n = await page.evaluate(() => window.__labState().count);
+        if (n < signs.length) bad(`#/${hash} 기호 ${signs.join('·')}를 올리지 못함(${n}개)`);
+        await check(`#/${hash} 기호 ${n}개 올린 모습`);
+      };
+      await put('lab/dyn', ['p', 'cresc', 'accent']);
+      await put('lab/tempo', ['fast', 'rit']);
+      await put('lab/len', ['rest', 'fermata', 'stacc']);
+      await put('lab/meter', ['m34']);
+    }
+    // 찾아 쓰기(선생님 화면이지만 글자 규칙도 지키게 만들었음)
+    for (const name of ['find', 'find/박자', 'find/점점 세게', 'find/없는말쿵']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(700); await check('#/' + name); }
+    await page.evaluate(() => { try { sessionStorage.removeItem('mn.find.q'); } catch { /* 없어도 됨 */ } });
     // 이 기기 기록(선생님 화면 · 글자 크기 X) — 접힌 '자세히'를 열면 '두드림' 열(X4) · 예전 줄(t 없음)도 오류 없이 · 스크롤 0
     {
       const perr = [];

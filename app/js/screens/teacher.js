@@ -17,14 +17,16 @@ export default function mount(root, ctx) {
     h('b', {}, title), h('span', {}, desc), h('span', { class: 'st' + (need ? ' need' : '') }, st));
   root.append(h('div', { class: 'teacher' },
     card('tv', 'TV로 다같이', 'TV 하나로 반 전체 수업 — 시범 → 몸으로 따라 하기 → 반 전체 게임 → 먼저 예측하기. 단계마다 발문이 떠요.', '기기를 나눠 주지 않아도 돼요', false),
+    card('find', '찾아 쓰기', '음악 요소를 찾으면 공부 차례대로 칸 · 악보 판 · 곡 바꾸기가 나와요. 필요한 것만 골라 써요.', '예: 박자 · 점점 세게 · 4학년 리듬', false),
     card('calib', '지연 맞추기', '딸깍 소리에 맞춰 8번 두드려 이 기기의 두드림 지연을 재요. 박 판정에서 이만큼 빼요.',
       lat ? `맞춤 · ${lat.ms}ms · 판정 ${band.name} 기준` : '아직 안 맞췄어요 — 처음 한 번 꼭', !lat),
     card('speaker', '스피커 점검', '크롬북 작은 스피커는 낮은 음이 작게 들려요. 음높이마다 크기를 맞춰요.',
       sp ? '맞춤 · 음높이별 크기 저장됨' : '안 맞춰도 돼요 — 높낮이 놀이 전에 권해요', false),
     card('records', '이 기기 기록 보기', '칸마다 최근 10번 — 날짜 · 별 · 맞힌 수 · 틀린 갈래. 표로 복사해 과정 평가 자료로 써요.',
       nRec ? `기록 ${nRec}개 · 이름 없이 이 기기에만` : '아직 기록이 없어요', false),
-    card('credits', '출처와 저작권', '곡마다 권리 근거, 옮겨 온 코드, 글꼴 이용 조건.', `곡 ${SONGS.length}곡 · 노랫말 없음`, false),
     lowCard(), startPick(), deviceCard()));
+  // 출처와 저작권 — 카드 대신 머리띠 오른쪽(11-14 · '찾아 쓰기' 카드가 들어와도 카드 여덟 · 두 줄 · 스크롤 0)
+  ctx.bar.right(h('a', { class: 'btn barlink', href: '#/credits', title: `곡 ${SONGS.length}곡 · 노랫말 없음 — 곡마다 권리 근거, 옮겨 온 코드, 글꼴 이용 조건` }, '출처와 저작권'));
 
   // 1~2학년 안내 — 누르는 카드 아님(판정 너그러움은 '지연 맞추기' 결과 화면에서 바꿈)
   function lowCard() {

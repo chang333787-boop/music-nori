@@ -378,6 +378,7 @@ export function renderScore(score, o = {}) {
   const noteEls = new Map(), xs = new Map();
   const addEl = (i, el) => { if (!noteEls.has(i)) noteEls.set(i, []); noteEls.get(i).push(el); };
   const ties = [], carries = staves.map(st => st.voices.map(() => new Map()));
+  const sys = [];                                   // 줄(시스템)마다 세로 자리 — 악보 판이 기호를 덧그릴 때 씀
 
   for (let L = 0; L < lines; L++) {
     const b0 = L * perLine, b1 = Math.min(bars, b0 + perLine);
@@ -385,6 +386,7 @@ export function renderScore(score, o = {}) {
     const marksY = marksAt(L) ? (y += 20) - 6 : null;
     const chordY = hasChords ? (y += chordH) - (hasKo ? 15 : A ? 2 : 4) : null;
     const staffTop = staves.map((st, k) => { y += ext[k].above; const t = y; y += 40 + ext[k].below + (A ? 2 : 8); return t; });
+    sys.push({ b0, b1, top: staffTop[0], tops: staffTop, marksY, y0: tops[L], y1: y });
     const left = A ? A.left : left0 + (L === 0 ? TSW : 0);
     let barW = A ? bs * A.stepW : (W - left - 8) / perLine;
     if (!A) barW = Math.min(barW, bs * 44 + 30);
@@ -488,7 +490,7 @@ export function renderScore(score, o = {}) {
     }
   }
   drawTies(root, ties);
-  return { el: root, noteEls, height: H, width: totalW, perLine, xs };
+  return { el: root, noteEls, height: H, width: totalW, perLine, xs, sys };
 }
 //  음자리표 — 높은음(𝄞) · 낮은음(𝄢) · 북(두 막대) · 작은 8 / 15(옥타브 높게 · 낮게 소리남)
 function drawClef(root, st, x, top) {
