@@ -124,7 +124,7 @@ export const STD_NOTE = '◎ 직접 · ○ 요소 기초';
 export const PLAY_STD = ST('4음03-02◎ 4음03-03◎ 6음03-02○ 6음03-03○');
 // 칸 결과 → 곡 바꾸기의 그 부탁으로 바로(11-10 · 배운 요소를 곡에서 직접 바꿔 보기) — 키 = play.js CARDS의 key · 없는 칸(장1 등)은 단추를 내지 않음
 export const PLAY_CARD = {
-  so3: ['long', '길게 바꿔 보기'], so4: ['pitch', '높이 바꿔 보기'], so5: ['tempo', '빠르기만 바꿔 보기'], sem1: ['dyn', '셈여림 바꿔 보기'], ppa1: ['tempo', '빠르기 바꿔 보기'],
+  so3: ['long', '길게 바꿔 보기'], so4: ['pitch', '높이 바꿔 보기'], so5: ['pitch', '높이만 바꿔 보기'], sem1: ['dyn', '셈여림 바꿔 보기'], ppa1: ['tempo', '빠르기 바꿔 보기'],
   ga1: ['pitch', '높이 바꿔 보기'], ga2: ['pitch', '높이 바꿔 보기'], ga3: ['make', '가락 지어 보기'], ga4: ['pitch', '높이 바꿔 보기'],
   ri1: ['tempo', '빠르기 바꿔 보기'], ri2: ['rest', '쉼표 넣어 보기'], ri4: ['long', '두 박으로 늘여 보기'], ri5: ['meter', '박자표 바꿔 보기'], ri6: ['fix', '마디 고쳐 보기'],
   ak1: ['long', '길게 바꿔 보기'], ak2: ['pitch', '높이 바꿔 보기'],
