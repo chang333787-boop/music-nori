@@ -27,6 +27,7 @@ const ROUTES = {
   records: { load: () => import('./screens/records.js'), title: '이 기기 기록', parent: 'teacher' },
   lab: { load: () => import('./screens/lab.js'), title: '악보 판', friend: 'turtle' },
   form: { load: () => import('./screens/form.js'), title: '도막 짜 보기', friend: 'turtle' },
+  jang: { load: () => import('./screens/jang.js'), title: '장단 놓아 보기', friend: 'hog' },   // D4 장단 판(engine/flow.js PLAY_ROUTE)
   find: { load: () => import('./screens/find.js'), title: '찾아 쓰기', parent: 'teacher' },
 };
 

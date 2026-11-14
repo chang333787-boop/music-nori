@@ -1,5 +1,5 @@
 {
- "v": "48211d179ab9",
+ "v": "34bd41ef520d",
  "files": [
   "app/css/app.css",
   "app/css/cells/_mel.css",
@@ -52,6 +52,7 @@
   "app/css/cells/so5.css",
   "app/css/cells/so6.css",
   "app/css/form.css",
+  "app/css/jang.css",
   "app/css/measure.css",
   "app/css/play.css",
   "app/css/room.css",
@@ -127,6 +128,7 @@
   "app/js/screens/find.js",
   "app/js/screens/form.js",
   "app/js/screens/home.js",
+  "app/js/screens/jang.js",
   "app/js/screens/join.js",
   "app/js/screens/lab.js",
   "app/js/screens/map.js",
@@ -143,6 +145,7 @@
   "engine/edit.js",
   "engine/flow.js",
   "engine/form.js",
+  "engine/jang.js",
   "engine/judge.js",
   "engine/load.js",
   "engine/marks.js",
