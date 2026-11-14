@@ -1,4 +1,4 @@
-// 화면 규칙 검사기(11-08 토론 X1 · docs/ui.md) — 아이 화면마다:
+// 화면 규칙 검사기(11-08 토론 X1 · docs/ui.md) — 아이 화면마다(쓰는 법: node tests/rules.browser.cjs [칸 id …] · 없으면 만든 칸 모두):
 //  ① 보이는 글자 18px 이상(SVG 글은 화면 배율을 곱함) ② 답 단추가 다른 것에 덮이지 않음(가운데를 누르면 그 단추)
 //  ③ 보이는 주황(.go) 단추 하나 이하(지금 누를 것 하나) ④ 빈 칭찬 낱말 X(AI 슬롭 X)
 //  선생님 화면(#/teacher · records · calib · speaker · credits · tv)은 글이 많아 ①을 보지 않음
@@ -215,7 +215,8 @@ function audit() {
       await page.evaluate(() => localStorage.setItem('mn.prog', JSON.stringify({ so3: { stars: 2 } })));
     }
     // 칸마다 보기 · 연습 · 확인 게임 첫 판 · 결과 — 장부의 만든 칸(first) 가운데 칸 파일이 있는 것 모두(tests/ledger.cjs · 리1은 징검다리라 위에서 따로)
-    for (const id of require('./ledger.cjs').builtCells()) {
+    //  node tests/rules.browser.cjs [칸 …] — 인자가 있으면 그 칸만(팀은 자기 칸만 · 전체는 합칠 때 한 번)
+    for (const id of (process.argv.slice(2).length ? process.argv.slice(2) : require('./ledger.cjs').builtCells())) {
       await page.evaluate(i => { window.__cellResult = null; location.hash = '#/cell/' + i; }, id);
       await page.waitForTimeout(800);
       await check(`${id} 보기`);
