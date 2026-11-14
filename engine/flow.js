@@ -45,8 +45,24 @@ export const CLUSTERS = [
 export const PLAY_NAME = {
   pitch: '높이 바꿔 보기', long: '길이 바꿔 보기', tempo: '빠르기 바꿔 보기', dyn: '셈여림 바꿔 보기',
   rest: '쉼표 넣어 보기', make: '가락 지어 보기', meter: '박자표 바꿔 보기', fix: '마디 고쳐 보기',
+  rmake: '리듬 지어 보기', dress: '내 곡 꾸며 보기', chord: '반주 화음 붙여 보기', jang: '장단 놓아 보기', form: '도막 짜 보기',
 };
-export const PLAY_KEYS = [...new Set(Object.values(PLAY_CARD).map(v => v[0]))];
+// 칸 결과 카드에 매이지 않고 따로 서는 놀이터 카드(11-14 묶음 D · docs/plan100_batchD.md) — 만든 팀이 제 줄의 주석을 푼다(그 전에는 흐름에 못 씀)
+//  줄마다 한 키 · 줄 사이를 띄워 둔 것은 여러 가지를 합칠 때 부딪히지 않게
+export const PLAY_SOLO = [
+  // 'rmake',   // D3 리듬 지어 보기(놀이터 부탁 카드)
+
+  // 'dress',   // D3 내 곡 꾸며 보기(놀이터 부탁 카드)
+
+  // 'chord',   // D3 반주 화음 붙여 보기(놀이터 부탁 카드)
+
+  // 'jang',    // D4 장단 판(#/jang)
+
+  // 'form',    // D5 도막 짜기 판(#/form)
+];
+// 놀이터(#/play/<키>)가 아닌 따로 선 화면
+export const PLAY_ROUTE = { jang: '#/jang', form: '#/form' };
+export const PLAY_KEYS = [...new Set([...Object.values(PLAY_CARD).map(v => v[0]), ...PLAY_SOLO])];
 
 const S = (id, name, g, gr, why, ev, acts, keys = '') => ({ id, name, g, gr, why, ev, acts, keys });
 const E = (id, name, friend, keys, curr, steps, mix = []) => ({ id, name, friend, keys, curr, steps, mix });
@@ -67,7 +83,7 @@ export const ELEMENTS = [
         ['method', 'book'], ['cell:ri5', 'lab:meter', 'play:meter'], '마디 마디줄 2박자 3박자 4박자 2/4 3/4 4/4 4분의 2박자 4분의 3박자 4분의 4박자'),
       S('b4', '한 마디를 박 수에 맞게 채우기', '3학년', [3, 4],
         '박자표의 뜻을 알아야 한 마디에 음표가 얼마나 들어가는지 셀 수 있다.',
-        ['logic'], ['cell:ri6', 'play:fix'], '마디 채우기'),
+        ['logic'], ['cell:ri6', 'play:fix', 'cell:ri11'], '마디 채우기'),
       S('b5', '6/8박자', '4학년(교과서 8종 가운데 6종)', [4, 6],
         '한 박을 셋으로 나누는 느낌은 3학년 자진모리장단에서 먼저 겪는다. 교육과정은 박자의 종류를 학년별로 정해 두지 않았다.',
         ['book'], ['cell:ri13'], '8분의 6박자'),
@@ -92,16 +108,16 @@ export const ELEMENTS = [
         ['mid', 'curr'], ['cell:so3', 'play:long'], '긴 소리 짧은 소리'),
       S('r2', '4분음표 · 4분쉼표', '3학년(교과서)', [1, 3],
         '한 박짜리 음표와 한 박 쉼표부터 읽는다. 일정박에 맞출 수 있어야 한다.',
-        ['book', 'logic'], ['cell:ri2', 'lab:len:rest', 'play:rest']),
+        ['book', 'logic'], ['cell:ri2', 'lab:len:rest', 'play:rest', 'cell:ri11']),
       S('r3', '8분음표 둘', '3학년(교과서)', [1, 3],
         '한 박을 둘로 나눈다. 4분음표와 견주어 듣는다.',
-        ['book', 'logic'], ['cell:ri3']),
+        ['book', 'logic'], ['cell:ri3', 'cell:ri11']),
       S('r4', '2분음표', '3학년(교과서)', [2, 3],
         '두 박 동안 이어지는 소리. 길게 · 짧게를 가려 들을 수 있어야 한다.',
-        ['book', 'logic'], ['cell:ri4', 'play:long']),
+        ['book', 'logic'], ['cell:ri4', 'play:long', 'cell:ri11']),
       S('r5', '간단한 리듬꼴 — 한 마디 채우기', '3~4학년', [3, 4],
         '배운 음표를 한 마디 안에서 섞어 쓴다. 교육과정 3~4학년 요소가 「간단한 리듬꼴」이다.',
-        ['curr', 'logic'], ['cell:ri6', 'play:fix']),
+        ['curr', 'logic'], ['cell:ri6', 'play:fix', 'cell:ri11']),
       S('r6', '점음표', '3~4학년(교과서 · 점4분음표와 점2분음표)', [3, 4],
         '음표에 그 반을 더한 길이. 앞의 음표들을 읽을 수 있어야 한다.',
         ['book'], ['cell:ri9'], '점4분음표 점2분음표'),
@@ -163,7 +179,7 @@ export const ELEMENTS = [
         ['book'], ['cell:ga5', 'cell:ga6', 'play:pitch'], '5음'),
       S('m7', '일곱 음 — 장음계', '5~6학년(교육과정 「장음계, 단음계」)', [5, 6],
         '파와 시가 들어오면 일곱 음이 다 모인다.',
-        ['curr', 'book'], ['cell:ga7'], '7음 파 시 단음계'),
+        ['curr', 'book'], ['cell:ga7', 'play:pitch'], '7음 파 시 단음계'),
       S('m8', '음이름 · 계이름을 오선에서 읽기', '5학년(교과서)', [5, 6],
         '교육과정 5~6학년 요소가 「음이름, 계이름, 율명」이다. 3~4학년에는 계이름을 몸과 손기호로 익힌다.',
         ['book', 'curr'], ['cell:ak4'], '율명 다라마바사가나'),
@@ -304,13 +320,13 @@ export const ELEMENTS = [
     [
       S('s1', '그림 악보', '1~2학년', [1, 2],
         '소리를 먼저 겪고, 그림으로 적어 본 뒤에 약속된 기호로 간다.',
-        ['method'], ['cell:ak1', 'play:long'], '그림으로 적기'),
+        ['method'], ['cell:ak1', 'play:long', 'cell:ak7'], '그림으로 적기'),
       S('s2', '오선의 줄과 칸', '3학년', [3, 4],
         '높낮이를 줄과 칸의 자리로 읽는다.',
-        ['method', 'logic'], ['cell:ak2', 'play:pitch'], '오선보'),
+        ['method', 'logic'], ['cell:ak2', 'play:pitch', 'cell:ak7'], '오선보'),
       S('s3', '높은음자리표 · 가온 도 · 덧줄', '3~4학년', [3, 4],
         '줄과 칸을 읽을 수 있어야 음자리표가 정하는 자리가 보인다.',
-        ['method', 'logic'], ['cell:ak3'], '음자리표'),
+        ['method', 'logic'], ['cell:ak3', 'play:pitch', 'play:make'], '음자리표'),
       S('s4', '악보 기호를 넣었다 빼며 듣기', '3~6학년', [3, 6],
         '기호를 넣기 전과 넣은 뒤를 이어 들어서, 기호 하나가 소리를 어떻게 바꾸는지 귀로 확인한다.',
         ['method', 'design'], ['lab:dyn', 'lab:tempo', 'lab:len', 'lab:repeat', 'lab:meter', 'lab:inst', 'cell:ak6'], '악보 기호 기호'),
@@ -351,7 +367,7 @@ export function actInfo(act) {
   if (kind === 'play') {
     if (!PLAY_NAME[a] || !PLAY_KEYS.includes(a)) return null;
     return { act, kind, kindName: '곡 바꾸기', ref: a, sign: null, label: PLAY_NAME[a], friend: 'bear', built: true,
-      href: '#/play/' + a, tv: null, std: null };
+      href: PLAY_ROUTE[a] || '#/play/' + a, tv: null, std: null };
   }
   return null;
 }
