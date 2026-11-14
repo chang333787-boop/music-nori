@@ -37,6 +37,17 @@ for (const [b, beats, notes, rests, beams, flags, beam2, ties] of CASES) {
 }
 // 셋잇단 — 한 박에 셋 · 묶음 하나 · 위에 3
 { const t = glyph([1 / 3, 1 / 3, 1 / 3, 1, 2]); assert.equal(attr(t, 'beats'), 4); assert.equal(attr(t, 'beams'), 1); assert.equal(count(t, 'g-trip'), 1, '셋잇단 3'); }
+// 6/8 묶음(unit 1.5) — 8분 셋이 한 묶음 · ♩♪(4분 + 8분)은 묶지 않음 · 기본 unit에서는 8분 셋이 둘 + 하나(11-14 묶음 C)
+{ const s = glyph([0.5, 0.5, 0.5, 0.5, 0.5, 0.5], { unit: 1.5 }); assert.equal(attr(s, 'beams'), 2, '6/8 8분 셋 묶음 둘'); assert.equal(count(s, 'g-flag'), 0); }
+{ const s = glyph([1, 0.5, 1.5], { unit: 1.5 }); assert.equal(attr(s, 'beams'), 0); assert.equal(count(s, 'g-flag'), 1, '6/8 ♩♪ 깃발 하나'); assert.equal(count(s, 'g-dot'), 1, '6/8 ♩. 점'); }
+assert.equal(attr(glyph([0.5, 0.5, 0.5]), 'beams'), 1, '기본 unit은 그대로(8분 셋 = 묶음 하나 + 깃발)');
+assert.equal(glyph([1, 0.5, 0.5, 2], { unit: 1 }), glyph([1, 0.5, 0.5, 2]), 'unit 1 = 기본과 같은 출력');
+// 이 묶음에 쓰는 꼴(16분 섞임 · 셋잇단 · 붙임줄 · 당김음) — 박 합 · 붙임줄 · 셋잇단 표시
+assert.equal(attr(glyph([0.25, 0.25, 0.5]), 'beams'), 1, '♬♪ 묶음 하나');
+assert.equal(count(glyph([0.5, 0.25, 0.25]), 'g-beam2'), 1, '♪♬ 16분 둘째 줄');
+assert.equal(attr(glyph([0.5, -0.5, -0.5, 0.5]), 'rests'), 2, '8분쉼표 둘');
+assert.equal(attr(glyph([1, 0.5, { d: 0.5, tie: true }, 1, 1]), 'ties'), 1, '♪‿♩ 붙임줄');
+{ const s = glyph([0.5, 1, 0.5, 1, 1]); assert.equal(attr(s, 'beats'), 4); assert.equal(count(s, 'g-flag'), 2, '당김음 ♪♩♪ 깃발 둘'); }
 // 점음표 · 박 위치
 assert.deepEqual(parseBeats([1.5, 0.5, -1]).map(it => [it.shape, it.dot, it.t, it.rest]), [['q', 1, 0, false], ['e', 0, 1.5, false], ['q', 0, 2, true]]);
 assert.equal(count(glyph([1.5, 0.5, 3]), 'g-dot'), 2, '점 둘');
