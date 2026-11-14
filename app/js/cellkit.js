@@ -63,6 +63,7 @@ export function minKeepP(ps, alpha = 0.10) {
   for (let k = dist.length - 1; k >= 0; k--) { tail += dist[k]; if (tail >= alpha) return Math.min(ps.length, k + 1); }
   return 0;
 }
+export const minKeep = (total, choices, alpha = 0.10) => minKeepP(Array(total).fill(1 / choices), alpha);
 // 판마다 맞을 확률 ps → 맞힌 수 분포(포아송 이항 · dist[k] = 꼭 k개 맞힐 확률)
 function hitDist(ps) {
   let dist = [1];
@@ -100,7 +101,6 @@ export function blindBots(plan, cuts, answerOf, flip = null) {
   bots.push(k => mode[k]);
   return bots;
 }
-export const minKeep = (total, choices, alpha = 0.10) => minKeepP(Array(total).fill(1 / choices), alpha);
 // 씨앗(N2) — 글 조각을 이어 32비트 FNV-1a(같은 방 · 같은 칸 · 같은 판 시각이면 TV와 아이 기기가 같은 판)
 export function seedOf(...parts) {
   let x = 0x811c9dc5;
@@ -110,10 +110,12 @@ export function seedOf(...parts) {
 // 단계 안 섞기(N2) — 단계 경계(cuts)는 그대로 두고 단계 안에서만 차례를 섞고, 판마다 반쯤 답을 뒤집음(flip).
 //  조건: 같은 답 maxRun+1번 연속 X · 처음 네 판이 ABAB로 번갈아 X · balance면 답 수가 같게. 못 채우면 다시 뽑고 tries 넘으면 원판
 //  → 번갈아 누르기 · 늘 같은 답으로 별을 받지 못하게(11-08 토론: 소4는 번갈아 누르면 12번 중 10번이었음)
-//  chance(plan → 판마다 찍기 확률)를 주면 하나 더(F5): 앞 판 기억 봇 셋(memoryOdds)이 그 판에서 별을 받을 확률이 MEMO_CAP(10%) 아래인 판만.
-//   (같은 답 세 번 X · 답 수 맞추기 때문에 앞 판과 같은 답이 우연보다 적게 나와 '앞 판 답 피하기'가 둘 고르기 칸에서 33%였음)
-//   위 조건은 맞는데 이 검사를 tries 안에 못 넘으면 넘은 판 가운데 셋의 가장 큰 확률이 가장 작은 판(원판으로 돌아가지 않음).
-//   무작위는 r 하나만 써서 같은 씨앗이면 같은 판(TV · 아이 기기)
+//  chance(plan → 판마다 찍기 확률)를 주면 하나 더(F5): 앞 판 기억 봇 셋(memoryOdds)이 그 판에서 별을 받을 확률이 모두 MEMO_CAP(10%) 아래이고
+//   미리 정한 차례 봇(blindBots — 늘 같은 답 · 번갈아 · 단계 꼴)이 별을 못 받는 판만(시도는 1000번까지).
+//   (같은 답 세 번 X · 답 수 맞추기 때문에 앞 판과 같은 답이 우연보다 적게 나와 '앞 판 답 피하기'가 둘 고르기 칸에서 33%였음 — 앞 판 기억 봇만 막으면
+//    판이 좁아져 단계 꼴 봇이 17%까지 올라 고정 봇도 함께 셈)
+//   위 조건은 맞는데 이 검사를 못 넘으면 넘은 판 가운데 가장 덜 새는 판(셋의 가장 큰 확률이 가장 작은 판 · 원판으로 돌아가지 않음).
+//   무작위는 r 하나만 써서 같은 씨앗이면 같은 판(TV · 아이 기기) · chance가 없으면 예전과 똑같은 판
 export function stageShuffle(plan, cuts, r, { flip = null, answerOf = null, maxRun = 2, noAlt4 = true, balance = true, chance = null, tries = chance ? 1000 : 300 } = {}) {
   const bounds = [0, ...cuts, plan.length];
   const good = arr => {
