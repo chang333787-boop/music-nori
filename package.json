@@ -8,6 +8,7 @@
     "ver": "node tools/ver.mjs",
     "test:browser": "node tests/app.test.cjs && node tests/cells.browser.cjs && node tests/play.browser.cjs && node tests/sound.browser.cjs && node tests/truth.browser.cjs && node tests/rules.browser.cjs && node tests/lab.browser.cjs && node tests/pitch.test.cjs",
     "test:db": "node tests/room.rules.cjs && node tests/room.browser.cjs",
+    "test:ear": "node tests/ear.browser.cjs",
     "serve": "python3 -m http.server 8040"
   },
   "license": "MIT"

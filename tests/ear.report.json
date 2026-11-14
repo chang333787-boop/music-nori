@@ -1,0 +1,4054 @@
+{
+ "meta": {
+  "sr": 48000,
+  "insts": 25,
+  "refP": 67,
+  "refVel": 0.6,
+  "refDur": 0.8,
+  "sec": 28.9
+ },
+ "fails": [],
+ "warns": [
+  {
+   "k": "level",
+   "m": "칸이 쓰는 악기 사이 크기 차 11.9dB(A) — recorder ↔ pizz · 6dB 넘는 짝 27개"
+  },
+  {
+   "k": "timbre",
+   "m": "so6 '가까운 짝' flute–trumpet 거리 1.85가 뚜렷한 짝 가운데 가장 가까운 것(1.18)보다 멂"
+  },
+  {
+   "k": "timbre",
+   "m": "so6 '가까운 짝' xylo–harp 거리 2.53가 뚜렷한 짝 가운데 가장 가까운 것(1.18)보다 멂"
+  },
+  {
+   "k": "timbre",
+   "m": "so6 '가까운 짝' violin–flute 거리 3.14가 뚜렷한 짝 가운데 가장 가까운 것(1.18)보다 멂"
+  },
+  {
+   "k": "timbre",
+   "m": "so6 '가까운 짝' clarinet–trumpet 거리 2.31가 뚜렷한 짝 가운데 가장 가까운 것(1.18)보다 멂"
+  },
+  {
+   "k": "timbre",
+   "m": "so6 '가까운 짝' harp–piano 거리 1.28가 뚜렷한 짝 가운데 가장 가까운 것(1.18)보다 멂"
+  },
+  {
+   "k": "timbre",
+   "m": "so6 '뚜렷한 짝' piano–recorder 거리 1.44가 가까운 짝 평균(2.22)보다 가까움"
+  },
+  {
+   "k": "timbre",
+   "m": "so6 '뚜렷한 짝' trumpet–harp 거리 2.18가 가까운 짝 평균(2.22)보다 가까움"
+  },
+  {
+   "k": "timbre",
+   "m": "so6 '뚜렷한 짝' trumpet–piano 거리 1.18가 가까운 짝 평균(2.22)보다 가까움"
+  },
+  {
+   "k": "click",
+   "m": "xylo 시작에서 튐 0.088(몸통 0.003) · 피크 대비"
+  },
+  {
+   "k": "click",
+   "m": "marimba 시작에서 튐 0.036(몸통 0.005) · 피크 대비"
+  },
+  {
+   "k": "click",
+   "m": "gayageum 시작에서 튐 0.129(몸통 0.032) · 피크 대비"
+  },
+  {
+   "k": "click",
+   "m": "pizz 시작에서 튐 0.14(몸통 0.004) · 피크 대비"
+  },
+  {
+   "k": "click",
+   "m": "harp 시작에서 튐 0.095(몸통 0.007) · 피크 대비"
+  },
+  {
+   "k": "click",
+   "m": "glock 시작에서 튐 0.041(몸통 0.006) · 피크 대비"
+  },
+  {
+   "k": "timing",
+   "m": "choir 피크 절반에 닿기까지 87.4ms(차오름이 느려 박보다 늦게 들릴 수 있음)"
+  },
+  {
+   "k": "timing",
+   "m": "strings 피크 절반에 닿기까지 221.7ms(차오름이 느려 박보다 늦게 들릴 수 있음)"
+  },
+  {
+   "k": "cell",
+   "m": "so3 recorder 67 예정 0.35초(short) · 실제로 난 길이 0.63초 — 0.6초 문턱 반대쪽"
+  },
+  {
+   "k": "cell",
+   "m": "so5 pitch flute: 크기도 5.1dB(A) 바뀜(답은 pitch)"
+  },
+  {
+   "k": "cell",
+   "m": "so5 pitch flute: 크기도 -4.7dB(A) 바뀜(답은 pitch)"
+  },
+  {
+   "k": "speaker",
+   "m": "hwa1 soft cello G3(55): 250Hz 위 에너지 18% · 위 가락보다 8.6dB(A) 작음"
+  },
+  {
+   "k": "cell",
+   "m": "so6 loud recorder→violin: 크게 쪽이 3.3dB(A)만 큼"
+  },
+  {
+   "k": "cell",
+   "m": "hy1 loud piano→piano: 크게 쪽이 5.7dB(A)만 큼"
+  }
+ ],
+ "pitch": [
+  {
+   "inst": "piano",
+   "p": 48,
+   "name": "C3",
+   "cents": 3.89,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 55,
+   "name": "G3",
+   "cents": 3.77,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 60,
+   "name": "C4",
+   "cents": 3.71,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 64,
+   "name": "E4",
+   "cents": 3.66,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 67,
+   "name": "G4",
+   "cents": 3.57,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 72,
+   "name": "C5",
+   "cents": 3.43,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 74,
+   "name": "D5",
+   "cents": 3.23,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 79,
+   "name": "G5",
+   "cents": 2.9,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 60,
+   "name": "C4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 64,
+   "name": "E4",
+   "cents": 0.01,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 67,
+   "name": "G4",
+   "cents": -0.01,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 72,
+   "name": "C5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 74,
+   "name": "D5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 79,
+   "name": "G5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 84,
+   "name": "C6",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 48,
+   "name": "C3",
+   "cents": -0.01,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 55,
+   "name": "G3",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 60,
+   "name": "C4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 67,
+   "name": "G4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 72,
+   "name": "C5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 79,
+   "name": "G5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 86,
+   "name": "D6",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 60,
+   "name": "C4",
+   "cents": -0.02,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 64,
+   "name": "E4",
+   "cents": -0.01,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 67,
+   "name": "G4",
+   "cents": -0.01,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 72,
+   "name": "C5",
+   "cents": -0.01,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 74,
+   "name": "D5",
+   "cents": -0.01,
+   "used": true
+  },
+  {
+   "inst": "gayageum",
+   "p": 55,
+   "name": "G3",
+   "cents": 0,
+   "used": false
+  },
+  {
+   "inst": "gayageum",
+   "p": 60,
+   "name": "C4",
+   "cents": 0,
+   "used": false
+  },
+  {
+   "inst": "gayageum",
+   "p": 67,
+   "name": "G4",
+   "cents": 0,
+   "used": false
+  },
+  {
+   "inst": "bass",
+   "p": 43,
+   "name": "G2",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "bass",
+   "p": 48,
+   "name": "C3",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "bass",
+   "p": 53,
+   "name": "F3",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "bass",
+   "p": 55,
+   "name": "G3",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "bass",
+   "p": 65,
+   "name": "F4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "pad",
+   "p": 60,
+   "name": "C4",
+   "cents": 3.07,
+   "used": false
+  },
+  {
+   "inst": "pad",
+   "p": 67,
+   "name": "G4",
+   "cents": 2.61,
+   "used": false
+  },
+  {
+   "inst": "violin",
+   "p": 60,
+   "name": "C4",
+   "cents": 0.26,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 64,
+   "name": "E4",
+   "cents": -0.35,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 67,
+   "name": "G4",
+   "cents": -0.36,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 69,
+   "name": "A4",
+   "cents": 0.21,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 72,
+   "name": "C5",
+   "cents": 0.25,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 79,
+   "name": "G5",
+   "cents": 0.27,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 81,
+   "name": "A5",
+   "cents": 0.24,
+   "used": true
+  },
+  {
+   "inst": "strings",
+   "p": 60,
+   "name": "C4",
+   "cents": 0.02,
+   "used": true
+  },
+  {
+   "inst": "strings",
+   "p": 64,
+   "name": "E4",
+   "cents": -0.42,
+   "used": true
+  },
+  {
+   "inst": "strings",
+   "p": 67,
+   "name": "G4",
+   "cents": -0.09,
+   "used": true
+  },
+  {
+   "inst": "cello",
+   "p": 55,
+   "name": "G3",
+   "cents": -0.31,
+   "used": true
+  },
+  {
+   "inst": "cello",
+   "p": 60,
+   "name": "C4",
+   "cents": -0.31,
+   "used": true
+  },
+  {
+   "inst": "cello",
+   "p": 64,
+   "name": "E4",
+   "cents": -0.16,
+   "used": true
+  },
+  {
+   "inst": "contrabass",
+   "p": 36,
+   "name": "C2",
+   "cents": 0.11,
+   "used": false
+  },
+  {
+   "inst": "contrabass",
+   "p": 43,
+   "name": "G2",
+   "cents": -0.14,
+   "used": false
+  },
+  {
+   "inst": "pizz",
+   "p": 55,
+   "name": "G3",
+   "cents": -1.13,
+   "used": true
+  },
+  {
+   "inst": "pizz",
+   "p": 67,
+   "name": "G4",
+   "cents": -0.59,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 60,
+   "name": "C4",
+   "cents": -0.24,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 62,
+   "name": "D4",
+   "cents": -0.18,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 67,
+   "name": "G4",
+   "cents": 0.03,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 72,
+   "name": "C5",
+   "cents": 0.04,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 74,
+   "name": "D5",
+   "cents": 0.29,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 76,
+   "name": "E5",
+   "cents": 0.33,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 79,
+   "name": "G5",
+   "cents": 0.37,
+   "used": true
+  },
+  {
+   "inst": "clarinet",
+   "p": 59,
+   "name": "B3",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "clarinet",
+   "p": 64,
+   "name": "E4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "clarinet",
+   "p": 67,
+   "name": "G4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "clarinet",
+   "p": 72,
+   "name": "C5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "oboe",
+   "p": 67,
+   "name": "G4",
+   "cents": 0.18,
+   "used": false
+  },
+  {
+   "inst": "oboe",
+   "p": 72,
+   "name": "C5",
+   "cents": -0.18,
+   "used": false
+  },
+  {
+   "inst": "trumpet",
+   "p": 60,
+   "name": "C4",
+   "cents": -0.16,
+   "used": true
+  },
+  {
+   "inst": "trumpet",
+   "p": 64,
+   "name": "E4",
+   "cents": 0.15,
+   "used": true
+  },
+  {
+   "inst": "trumpet",
+   "p": 67,
+   "name": "G4",
+   "cents": -0.23,
+   "used": true
+  },
+  {
+   "inst": "trumpet",
+   "p": 71,
+   "name": "B4",
+   "cents": -0.11,
+   "used": true
+  },
+  {
+   "inst": "trumpet",
+   "p": 74,
+   "name": "D5",
+   "cents": 0.11,
+   "used": true
+  },
+  {
+   "inst": "horn",
+   "p": 62,
+   "name": "D4",
+   "cents": 1.07,
+   "used": true
+  },
+  {
+   "inst": "horn",
+   "p": 67,
+   "name": "G4",
+   "cents": 1.16,
+   "used": true
+  },
+  {
+   "inst": "tuba",
+   "p": 41,
+   "name": "F2",
+   "cents": 0,
+   "used": false
+  },
+  {
+   "inst": "tuba",
+   "p": 48,
+   "name": "C3",
+   "cents": 0,
+   "used": false
+  },
+  {
+   "inst": "harp",
+   "p": 55,
+   "name": "G3",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "harp",
+   "p": 60,
+   "name": "C4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "harp",
+   "p": 67,
+   "name": "G4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "harp",
+   "p": 72,
+   "name": "C5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "harp",
+   "p": 79,
+   "name": "G5",
+   "cents": -0.01,
+   "used": true
+  },
+  {
+   "inst": "celesta",
+   "p": 74,
+   "name": "D5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "celesta",
+   "p": 79,
+   "name": "G5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "celesta",
+   "p": 86,
+   "name": "D6",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "glock",
+   "p": 79,
+   "name": "G5",
+   "cents": 0.99,
+   "used": true
+  },
+  {
+   "inst": "glock",
+   "p": 84,
+   "name": "C6",
+   "cents": -0.18,
+   "used": true
+  },
+  {
+   "inst": "glock",
+   "p": 88,
+   "name": "E6",
+   "cents": -0.77,
+   "used": true
+  },
+  {
+   "inst": "glock",
+   "p": 91,
+   "name": "G6",
+   "cents": -0.35,
+   "used": true
+  },
+  {
+   "inst": "choir",
+   "p": 60,
+   "name": "C4",
+   "cents": 3.55,
+   "used": true
+  },
+  {
+   "inst": "choir",
+   "p": 64,
+   "name": "E4",
+   "cents": 3.46,
+   "used": true
+  },
+  {
+   "inst": "choir",
+   "p": 67,
+   "name": "G4",
+   "cents": 3.38,
+   "used": true
+  },
+  {
+   "inst": "timpani",
+   "p": 45,
+   "name": "A2",
+   "cents": 0,
+   "used": false
+  },
+  {
+   "inst": "timpani",
+   "p": 50,
+   "name": "D3",
+   "cents": 0.02,
+   "used": false
+  },
+  {
+   "inst": "timpani",
+   "p": 55,
+   "name": "G3",
+   "cents": 0.01,
+   "used": false
+  },
+  {
+   "inst": "keys",
+   "p": 55,
+   "name": "G3",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "keys",
+   "p": 60,
+   "name": "C4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "keys",
+   "p": 64,
+   "name": "E4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "keys",
+   "p": 67,
+   "name": "G4",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "lead",
+   "p": 72,
+   "name": "C5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "lead",
+   "p": 74,
+   "name": "D5",
+   "cents": 0,
+   "used": true
+  },
+  {
+   "inst": "lead",
+   "p": 76,
+   "name": "E5",
+   "cents": 0,
+   "used": true
+  }
+ ],
+ "level": [
+  {
+   "inst": "piano",
+   "rms": -19.2,
+   "arms": -22.2,
+   "above250": 1,
+   "centroid": 554
+  },
+  {
+   "inst": "xylo",
+   "rms": -22.2,
+   "arms": -26.9,
+   "above250": 1,
+   "centroid": 406
+  },
+  {
+   "inst": "marimba",
+   "rms": -17.9,
+   "arms": -22.8,
+   "above250": 1,
+   "centroid": 397
+  },
+  {
+   "inst": "recorder",
+   "rms": -12.4,
+   "arms": -17.3,
+   "above250": 1,
+   "centroid": 396
+  },
+  {
+   "inst": "gayageum",
+   "rms": -26.1,
+   "arms": -26.6,
+   "above250": 1,
+   "centroid": 1196
+  },
+  {
+   "inst": "bass",
+   "rms": -16.1,
+   "arms": -19.8,
+   "above250": 1,
+   "centroid": 481
+  },
+  {
+   "inst": "pad",
+   "rms": -17.2,
+   "arms": -21.3,
+   "above250": 1,
+   "centroid": 460
+  },
+  {
+   "inst": "violin",
+   "rms": -19.7,
+   "arms": -21.1,
+   "above250": 1,
+   "centroid": 1075
+  },
+  {
+   "inst": "strings",
+   "rms": -24,
+   "arms": -26.1,
+   "above250": 1,
+   "centroid": 727
+  },
+  {
+   "inst": "cello",
+   "rms": -15.5,
+   "arms": -19.8,
+   "above250": 1,
+   "centroid": 457
+  },
+  {
+   "inst": "contrabass",
+   "rms": -19.5,
+   "arms": -21.6,
+   "above250": 1,
+   "centroid": 676
+  },
+  {
+   "inst": "pizz",
+   "rms": -28.6,
+   "arms": -29.2,
+   "above250": 1,
+   "centroid": 1114
+  },
+  {
+   "inst": "flute",
+   "rms": -15.1,
+   "arms": -20,
+   "above250": 1,
+   "centroid": 394
+  },
+  {
+   "inst": "clarinet",
+   "rms": -20.5,
+   "arms": -23.9,
+   "above250": 1,
+   "centroid": 540
+  },
+  {
+   "inst": "oboe",
+   "rms": -22,
+   "arms": -23.1,
+   "above250": 1,
+   "centroid": 921
+  },
+  {
+   "inst": "trumpet",
+   "rms": -22,
+   "arms": -24.4,
+   "above250": 1,
+   "centroid": 674
+  },
+  {
+   "inst": "horn",
+   "rms": -20.6,
+   "arms": -23.7,
+   "above250": 1,
+   "centroid": 537
+  },
+  {
+   "inst": "tuba",
+   "rms": -14.5,
+   "arms": -18.9,
+   "above250": 1,
+   "centroid": 424
+  },
+  {
+   "inst": "harp",
+   "rms": -21.6,
+   "arms": -24.6,
+   "above250": 1,
+   "centroid": 597
+  },
+  {
+   "inst": "celesta",
+   "rms": -19.9,
+   "arms": -24.7,
+   "above250": 1,
+   "centroid": 397
+  },
+  {
+   "inst": "glock",
+   "rms": -22.1,
+   "arms": -26.7,
+   "above250": 1,
+   "centroid": 416
+  },
+  {
+   "inst": "choir",
+   "rms": -20.8,
+   "arms": -22.7,
+   "above250": 1,
+   "centroid": 681
+  },
+  {
+   "inst": "timpani",
+   "rms": -16.6,
+   "arms": -21.3,
+   "above250": 1,
+   "centroid": 405
+  },
+  {
+   "inst": "keys",
+   "rms": -19.4,
+   "arms": -24.3,
+   "above250": 1,
+   "centroid": 394
+  },
+  {
+   "inst": "lead",
+   "rms": -18.4,
+   "arms": -23,
+   "above250": 1,
+   "centroid": 417
+  }
+ ],
+ "vel": {
+  "piano": {
+   "0.16": -33.5,
+   "0.18": -32.5,
+   "0.2": -31.7,
+   "0.26": -29.3,
+   "0.35": -26.8,
+   "0.4": -25.9,
+   "0.42": -25.3,
+   "0.45": -24.7,
+   "0.5": -23.8,
+   "0.52": -23.5,
+   "0.55": -23,
+   "0.6": -22.2,
+   "0.75": -20.5,
+   "0.8": -20,
+   "0.85": -19.4,
+   "0.9": -19.3
+  },
+  "xylo": {
+   "0.16": -38,
+   "0.18": -36.8,
+   "0.2": -35.8,
+   "0.26": -33.8,
+   "0.35": -30.9,
+   "0.4": -30.1,
+   "0.42": -29.5,
+   "0.45": -29.2,
+   "0.5": -28.1,
+   "0.52": -28,
+   "0.55": -27.6,
+   "0.6": -26.9,
+   "0.75": -25.2,
+   "0.8": -24.5,
+   "0.85": -24.1,
+   "0.9": -23.4
+  },
+  "marimba": {
+   "0.16": -34.4,
+   "0.18": -33.3,
+   "0.2": -32.2,
+   "0.26": -30.5,
+   "0.35": -27.4,
+   "0.4": -26.3,
+   "0.42": -25.9,
+   "0.45": -25.1,
+   "0.5": -24.6,
+   "0.52": -24.1,
+   "0.55": -23.6,
+   "0.6": -22.8,
+   "0.75": -21.3,
+   "0.8": -21,
+   "0.85": -20.1,
+   "0.9": -19.7
+  },
+  "recorder": {
+   "0.16": -28.2,
+   "0.18": -27.2,
+   "0.2": -26,
+   "0.26": -24,
+   "0.35": -21.7,
+   "0.4": -20.1,
+   "0.42": -19.9,
+   "0.45": -19.4,
+   "0.5": -18.5,
+   "0.52": -18.3,
+   "0.55": -17.9,
+   "0.6": -17.3,
+   "0.75": -16.1,
+   "0.8": -15.4,
+   "0.85": -14.9,
+   "0.9": -15.1
+  },
+  "gayageum": {
+   "0.16": -36.7,
+   "0.18": -36.8,
+   "0.2": -40.5,
+   "0.26": -35.4,
+   "0.35": -34.3,
+   "0.4": -34.6,
+   "0.42": -29.8,
+   "0.45": -29.4,
+   "0.5": -27.9,
+   "0.52": -29.3,
+   "0.55": -27.5,
+   "0.6": -26.6,
+   "0.75": -24.2,
+   "0.8": -24.7,
+   "0.85": -28.3,
+   "0.9": -25.1
+  },
+  "bass": {
+   "0.16": -30.8,
+   "0.18": -29.7,
+   "0.2": -28.8,
+   "0.26": -26.5,
+   "0.35": -24,
+   "0.4": -23,
+   "0.42": -22.4,
+   "0.45": -22,
+   "0.5": -21,
+   "0.52": -20.7,
+   "0.55": -20.6,
+   "0.6": -19.8,
+   "0.75": -18,
+   "0.8": -17.6,
+   "0.85": -17.2,
+   "0.9": -16.9
+  },
+  "pad": {
+   "0.16": -32.5,
+   "0.18": -31.9,
+   "0.2": -30.8,
+   "0.26": -28.4,
+   "0.35": -25.8,
+   "0.4": -25,
+   "0.42": -24.2,
+   "0.45": -23.8,
+   "0.5": -22.9,
+   "0.52": -22.4,
+   "0.55": -22.2,
+   "0.6": -21.3,
+   "0.75": -19.4,
+   "0.8": -18.9,
+   "0.85": -18.7,
+   "0.9": -18
+  },
+  "violin": {
+   "0.16": -32.5,
+   "0.18": -31.3,
+   "0.2": -30.5,
+   "0.26": -28.2,
+   "0.35": -25.6,
+   "0.4": -24.5,
+   "0.42": -24,
+   "0.45": -23.4,
+   "0.5": -22.6,
+   "0.52": -22.2,
+   "0.55": -21.7,
+   "0.6": -21.1,
+   "0.75": -19.5,
+   "0.8": -19,
+   "0.85": -18.6,
+   "0.9": -18.4
+  },
+  "strings": {
+   "0.16": -37.5,
+   "0.18": -36.5,
+   "0.2": -35.6,
+   "0.26": -33.5,
+   "0.35": -30.8,
+   "0.4": -29.7,
+   "0.42": -29.2,
+   "0.45": -28.6,
+   "0.5": -27.7,
+   "0.52": -27.3,
+   "0.55": -26.8,
+   "0.6": -26.1,
+   "0.75": -24.2,
+   "0.8": -23.6,
+   "0.85": -23.1,
+   "0.9": -22.7
+  },
+  "cello": {
+   "0.16": -31.3,
+   "0.18": -30.4,
+   "0.2": -29.7,
+   "0.26": -27.3,
+   "0.35": -24.9,
+   "0.4": -23.4,
+   "0.42": -23,
+   "0.45": -22.6,
+   "0.5": -21.6,
+   "0.52": -21.2,
+   "0.55": -20.7,
+   "0.6": -19.8,
+   "0.75": -18.2,
+   "0.8": -17.7,
+   "0.85": -17.1,
+   "0.9": -16.7
+  },
+  "contrabass": {
+   "0.16": -33.1,
+   "0.18": -32.1,
+   "0.2": -31.1,
+   "0.26": -28.8,
+   "0.35": -26.1,
+   "0.4": -25.1,
+   "0.42": -24.7,
+   "0.45": -24.2,
+   "0.5": -23,
+   "0.52": -22.7,
+   "0.55": -22.3,
+   "0.6": -21.6,
+   "0.75": -19.6,
+   "0.8": -19.2,
+   "0.85": -18.6,
+   "0.9": -18.3
+  },
+  "pizz": {
+   "0.16": -39,
+   "0.18": -36.8,
+   "0.2": -36.8,
+   "0.26": -36,
+   "0.35": -33.3,
+   "0.4": -31.4,
+   "0.42": -30.8,
+   "0.45": -30.2,
+   "0.5": -31.3,
+   "0.52": -28.6,
+   "0.55": -33,
+   "0.6": -29.2,
+   "0.75": -29.6,
+   "0.8": -26.4,
+   "0.85": -22.3,
+   "0.9": -27.6
+  },
+  "flute": {
+   "0.16": -31.9,
+   "0.18": -30.6,
+   "0.2": -29.5,
+   "0.26": -27.8,
+   "0.35": -24.9,
+   "0.4": -23.7,
+   "0.42": -23.1,
+   "0.45": -22.7,
+   "0.5": -22.2,
+   "0.52": -21.5,
+   "0.55": -21,
+   "0.6": -20,
+   "0.75": -18.7,
+   "0.8": -18.1,
+   "0.85": -17.3,
+   "0.9": -16.9
+  },
+  "clarinet": {
+   "0.16": -35.4,
+   "0.18": -34.4,
+   "0.2": -33.4,
+   "0.26": -31.2,
+   "0.35": -28.4,
+   "0.4": -27.3,
+   "0.42": -27.1,
+   "0.45": -26.6,
+   "0.5": -25.8,
+   "0.52": -25.1,
+   "0.55": -24.8,
+   "0.6": -23.9,
+   "0.75": -22.2,
+   "0.8": -21.4,
+   "0.85": -20.8,
+   "0.9": -20.5
+  },
+  "oboe": {
+   "0.16": -34.8,
+   "0.18": -33.6,
+   "0.2": -32.9,
+   "0.26": -30.3,
+   "0.35": -27.8,
+   "0.4": -26.6,
+   "0.42": -26.3,
+   "0.45": -25.7,
+   "0.5": -24.8,
+   "0.52": -24.5,
+   "0.55": -23.9,
+   "0.6": -23.1,
+   "0.75": -21.4,
+   "0.8": -20.9,
+   "0.85": -20.4,
+   "0.9": -20.1
+  },
+  "trumpet": {
+   "0.16": -35.8,
+   "0.18": -34.7,
+   "0.2": -33.9,
+   "0.26": -31.7,
+   "0.35": -28.9,
+   "0.4": -28.1,
+   "0.42": -27.5,
+   "0.45": -26.8,
+   "0.5": -26,
+   "0.52": -25.6,
+   "0.55": -25,
+   "0.6": -24.4,
+   "0.75": -22.4,
+   "0.8": -21.9,
+   "0.85": -21.5,
+   "0.9": -20.9
+  },
+  "horn": {
+   "0.16": -35.3,
+   "0.18": -34.2,
+   "0.2": -33.3,
+   "0.26": -31,
+   "0.35": -28.5,
+   "0.4": -27.3,
+   "0.42": -26.9,
+   "0.45": -26.2,
+   "0.5": -25.4,
+   "0.52": -25,
+   "0.55": -24.6,
+   "0.6": -23.7,
+   "0.75": -21.7,
+   "0.8": -21.4,
+   "0.85": -20.9,
+   "0.9": -20.5
+  },
+  "tuba": {
+   "0.16": -30.4,
+   "0.18": -29.6,
+   "0.2": -28.8,
+   "0.26": -26.2,
+   "0.35": -23.6,
+   "0.4": -22.7,
+   "0.42": -22.2,
+   "0.45": -21.4,
+   "0.5": -21,
+   "0.52": -20.3,
+   "0.55": -19.9,
+   "0.6": -18.9,
+   "0.75": -17.7,
+   "0.8": -17.3,
+   "0.85": -17,
+   "0.9": -16.6
+  },
+  "harp": {
+   "0.16": -34.7,
+   "0.18": -33.3,
+   "0.2": -30.2,
+   "0.26": -32.2,
+   "0.35": -28.1,
+   "0.4": -28.2,
+   "0.42": -25.5,
+   "0.45": -30.1,
+   "0.5": -25.1,
+   "0.52": -24.2,
+   "0.55": -28,
+   "0.6": -24.6,
+   "0.75": -23.1,
+   "0.8": -23,
+   "0.85": -21.7,
+   "0.9": -21.5
+  },
+  "celesta": {
+   "0.16": -35.8,
+   "0.18": -34.8,
+   "0.2": -33.7,
+   "0.26": -31.6,
+   "0.35": -29.1,
+   "0.4": -27.8,
+   "0.42": -27.6,
+   "0.45": -26.6,
+   "0.5": -26.2,
+   "0.52": -25.9,
+   "0.55": -25.3,
+   "0.6": -24.7,
+   "0.75": -22.3,
+   "0.8": -21.8,
+   "0.85": -21.7,
+   "0.9": -21.2
+  },
+  "glock": {
+   "0.16": -38.5,
+   "0.18": -37.5,
+   "0.2": -36.7,
+   "0.26": -34.5,
+   "0.35": -31.6,
+   "0.4": -30.8,
+   "0.42": -30.1,
+   "0.45": -29.4,
+   "0.5": -28.4,
+   "0.52": -28.2,
+   "0.55": -27.7,
+   "0.6": -26.7,
+   "0.75": -25.2,
+   "0.8": -24.6,
+   "0.85": -23.9,
+   "0.9": -24
+  },
+  "choir": {
+   "0.16": -34.2,
+   "0.18": -33.1,
+   "0.2": -32.4,
+   "0.26": -30,
+   "0.35": -27.4,
+   "0.4": -26.3,
+   "0.42": -25.7,
+   "0.45": -25.2,
+   "0.5": -24.4,
+   "0.52": -24,
+   "0.55": -23.6,
+   "0.6": -22.7,
+   "0.75": -20.9,
+   "0.8": -20.4,
+   "0.85": -19.8,
+   "0.9": -19.4
+  },
+  "timpani": {
+   "0.16": -32.2,
+   "0.18": -31.4,
+   "0.2": -30.8,
+   "0.26": -28.1,
+   "0.35": -25.7,
+   "0.4": -24.8,
+   "0.42": -24.1,
+   "0.45": -23.9,
+   "0.5": -22.6,
+   "0.52": -22.4,
+   "0.55": -21.9,
+   "0.6": -21.3,
+   "0.75": -19.7,
+   "0.8": -19.3,
+   "0.85": -18.6,
+   "0.9": -18.3
+  },
+  "keys": {
+   "0.16": -35.6,
+   "0.18": -34.4,
+   "0.2": -33.5,
+   "0.26": -31.3,
+   "0.35": -28.8,
+   "0.4": -27.5,
+   "0.42": -27.3,
+   "0.45": -26.7,
+   "0.5": -25.7,
+   "0.52": -25.8,
+   "0.55": -24.8,
+   "0.6": -24.3,
+   "0.75": -22.3,
+   "0.8": -21.7,
+   "0.85": -21.3,
+   "0.9": -20.6
+  },
+  "lead": {
+   "0.16": -34.5,
+   "0.18": -33.5,
+   "0.2": -32.9,
+   "0.26": -30.1,
+   "0.35": -27.8,
+   "0.4": -26.2,
+   "0.42": -25.9,
+   "0.45": -25.7,
+   "0.5": -24.5,
+   "0.52": -24.1,
+   "0.55": -23.9,
+   "0.6": -23,
+   "0.75": -21.2,
+   "0.8": -20.6,
+   "0.85": -20.1,
+   "0.9": -19.8
+  }
+ },
+ "velRaw": {
+  "piano": {
+   "0.2": -33.6,
+   "0.9": -20.6
+  },
+  "xylo": {
+   "0.2": -37.5,
+   "0.9": -24.4
+  },
+  "marimba": {
+   "0.2": -34.2,
+   "0.9": -21.2
+  },
+  "recorder": {
+   "0.2": -28.6,
+   "0.9": -15.5
+  },
+  "gayageum": {
+   "0.2": -38.3,
+   "0.9": -24
+  },
+  "bass": {
+   "0.2": -31,
+   "0.9": -18
+  },
+  "pad": {
+   "0.2": -32.9,
+   "0.9": -19.9
+  },
+  "violin": {
+   "0.2": -32.8,
+   "0.9": -19.8
+  },
+  "strings": {
+   "0.2": -38,
+   "0.9": -24.9
+  },
+  "cello": {
+   "0.2": -31.8,
+   "0.9": -18.8
+  },
+  "contrabass": {
+   "0.2": -33.4,
+   "0.9": -20.3
+  },
+  "pizz": {
+   "0.2": -36.4,
+   "0.9": -23.2
+  },
+  "flute": {
+   "0.2": -32,
+   "0.9": -19
+  },
+  "clarinet": {
+   "0.2": -35.7,
+   "0.9": -22.7
+  },
+  "oboe": {
+   "0.2": -35,
+   "0.9": -21.9
+  },
+  "trumpet": {
+   "0.2": -36.2,
+   "0.9": -23.1
+  },
+  "horn": {
+   "0.2": -35.6,
+   "0.9": -22.6
+  },
+  "tuba": {
+   "0.2": -30.9,
+   "0.9": -17.8
+  },
+  "harp": {
+   "0.2": -38.8,
+   "0.9": -25.6
+  },
+  "celesta": {
+   "0.2": -36,
+   "0.9": -23
+  },
+  "glock": {
+   "0.2": -38.5,
+   "0.9": -25.4
+  },
+  "choir": {
+   "0.2": -34.6,
+   "0.9": -21.6
+  },
+  "timpani": {
+   "0.2": -32.5,
+   "0.9": -19.5
+  },
+  "keys": {
+   "0.2": -35.7,
+   "0.9": -22.6
+  },
+  "lead": {
+   "0.2": -34.8,
+   "0.9": -21.8
+  }
+ },
+ "levelSpread": {
+  "loudest": "recorder",
+  "softest": "pizz",
+  "dB": 11.9,
+  "cellsLoudest": "recorder",
+  "cellsSoftest": "pizz",
+  "cellsDB": 11.9,
+  "pairs6": [
+   {
+    "loud": "recorder",
+    "soft": "horn",
+    "dB": 6.4,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "clarinet",
+    "dB": 6.6,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "keys",
+    "dB": 7,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "trumpet",
+    "dB": 7.1,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "harp",
+    "dB": 7.3,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "celesta",
+    "dB": 7.4,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "strings",
+    "dB": 8.8,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "gayageum",
+    "dB": 9.3,
+    "bothInCells": false
+   },
+   {
+    "loud": "recorder",
+    "soft": "glock",
+    "dB": 9.4,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "xylo",
+    "dB": 9.6,
+    "bothInCells": true
+   },
+   {
+    "loud": "recorder",
+    "soft": "pizz",
+    "dB": 11.9,
+    "bothInCells": true
+   },
+   {
+    "loud": "tuba",
+    "soft": "strings",
+    "dB": 7.2,
+    "bothInCells": false
+   },
+   {
+    "loud": "tuba",
+    "soft": "gayageum",
+    "dB": 7.7,
+    "bothInCells": false
+   },
+   {
+    "loud": "tuba",
+    "soft": "glock",
+    "dB": 7.8,
+    "bothInCells": false
+   },
+   {
+    "loud": "tuba",
+    "soft": "xylo",
+    "dB": 8,
+    "bothInCells": false
+   },
+   {
+    "loud": "tuba",
+    "soft": "pizz",
+    "dB": 10.3,
+    "bothInCells": false
+   },
+   {
+    "loud": "bass",
+    "soft": "strings",
+    "dB": 6.3,
+    "bothInCells": true
+   },
+   {
+    "loud": "bass",
+    "soft": "gayageum",
+    "dB": 6.8,
+    "bothInCells": false
+   },
+   {
+    "loud": "bass",
+    "soft": "glock",
+    "dB": 6.9,
+    "bothInCells": true
+   },
+   {
+    "loud": "bass",
+    "soft": "xylo",
+    "dB": 7.1,
+    "bothInCells": true
+   },
+   {
+    "loud": "bass",
+    "soft": "pizz",
+    "dB": 9.4,
+    "bothInCells": true
+   },
+   {
+    "loud": "cello",
+    "soft": "strings",
+    "dB": 6.3,
+    "bothInCells": true
+   },
+   {
+    "loud": "cello",
+    "soft": "gayageum",
+    "dB": 6.8,
+    "bothInCells": false
+   },
+   {
+    "loud": "cello",
+    "soft": "glock",
+    "dB": 6.9,
+    "bothInCells": true
+   },
+   {
+    "loud": "cello",
+    "soft": "xylo",
+    "dB": 7.1,
+    "bothInCells": true
+   },
+   {
+    "loud": "cello",
+    "soft": "pizz",
+    "dB": 9.4,
+    "bothInCells": true
+   },
+   {
+    "loud": "flute",
+    "soft": "strings",
+    "dB": 6.1,
+    "bothInCells": true
+   },
+   {
+    "loud": "flute",
+    "soft": "gayageum",
+    "dB": 6.6,
+    "bothInCells": false
+   },
+   {
+    "loud": "flute",
+    "soft": "glock",
+    "dB": 6.7,
+    "bothInCells": true
+   },
+   {
+    "loud": "flute",
+    "soft": "xylo",
+    "dB": 6.9,
+    "bothInCells": true
+   },
+   {
+    "loud": "flute",
+    "soft": "pizz",
+    "dB": 9.2,
+    "bothInCells": true
+   },
+   {
+    "loud": "violin",
+    "soft": "pizz",
+    "dB": 8.1,
+    "bothInCells": true
+   },
+   {
+    "loud": "pad",
+    "soft": "pizz",
+    "dB": 7.9,
+    "bothInCells": false
+   },
+   {
+    "loud": "timpani",
+    "soft": "pizz",
+    "dB": 7.9,
+    "bothInCells": false
+   },
+   {
+    "loud": "contrabass",
+    "soft": "pizz",
+    "dB": 7.6,
+    "bothInCells": false
+   },
+   {
+    "loud": "piano",
+    "soft": "pizz",
+    "dB": 7,
+    "bothInCells": true
+   },
+   {
+    "loud": "choir",
+    "soft": "pizz",
+    "dB": 6.5,
+    "bothInCells": true
+   },
+   {
+    "loud": "marimba",
+    "soft": "pizz",
+    "dB": 6.4,
+    "bothInCells": true
+   },
+   {
+    "loud": "lead",
+    "soft": "pizz",
+    "dB": 6.2,
+    "bothInCells": true
+   },
+   {
+    "loud": "oboe",
+    "soft": "pizz",
+    "dB": 6.1,
+    "bothInCells": false
+   }
+  ]
+ },
+ "velPairs": [
+  {
+   "cell": "sem1",
+   "inst": "piano",
+   "lo": 0.2,
+   "hi": 0.9,
+   "dB": 12.4,
+   "dBnoComp": 13.1
+  },
+  {
+   "cell": "sem1",
+   "inst": "marimba",
+   "lo": 0.2,
+   "hi": 0.9,
+   "dB": 12.5,
+   "dBnoComp": 13.1
+  },
+  {
+   "cell": "sem1",
+   "inst": "flute",
+   "lo": 0.2,
+   "hi": 0.9,
+   "dB": 12.6,
+   "dBnoComp": 13.1
+  },
+  {
+   "cell": "sem1",
+   "inst": "strings",
+   "lo": 0.2,
+   "hi": 0.9,
+   "dB": 12.9,
+   "dBnoComp": 13.1
+  },
+  {
+   "cell": "so6 loud",
+   "inst": "recorder",
+   "lo": 0.35,
+   "hi": 0.9,
+   "dB": 6.6,
+   "dBnoComp": 8.2
+  },
+  {
+   "cell": "so6 loud",
+   "inst": "violin",
+   "lo": 0.35,
+   "hi": 0.9,
+   "dB": 7.2,
+   "dBnoComp": 8.2
+  },
+  {
+   "cell": "so6 loud",
+   "inst": "trumpet",
+   "lo": 0.35,
+   "hi": 0.9,
+   "dB": 8,
+   "dBnoComp": 8.2
+  },
+  {
+   "cell": "so6 loud",
+   "inst": "piano",
+   "lo": 0.35,
+   "hi": 0.9,
+   "dB": 7.5,
+   "dBnoComp": 8.2
+  },
+  {
+   "cell": "hy1 loud",
+   "inst": "piano",
+   "lo": 0.4,
+   "hi": 0.85,
+   "dB": 6.5,
+   "dBnoComp": 6.5
+  },
+  {
+   "cell": "so5 vol",
+   "inst": "flute",
+   "lo": 0.16,
+   "hi": 0.8,
+   "dB": 13.8,
+   "dBnoComp": 14
+  },
+  {
+   "cell": "so5 vol",
+   "inst": "violin",
+   "lo": 0.16,
+   "hi": 0.8,
+   "dB": 13.5,
+   "dBnoComp": 14
+  },
+  {
+   "cell": "so5 vol",
+   "inst": "recorder",
+   "lo": 0.16,
+   "hi": 0.8,
+   "dB": 12.8,
+   "dBnoComp": 14
+  },
+  {
+   "cell": "ppa1 dyn",
+   "inst": "xylo",
+   "lo": 0.18,
+   "hi": 0.9,
+   "dB": 13.4,
+   "dBnoComp": 14
+  }
+ ],
+ "compSquash": [
+  {
+   "inst": "piano",
+   "raw": 13,
+   "app": 12.4
+  },
+  {
+   "inst": "xylo",
+   "raw": 13.1,
+   "app": 12.4
+  },
+  {
+   "inst": "marimba",
+   "raw": 13,
+   "app": 12.5
+  },
+  {
+   "inst": "recorder",
+   "raw": 13.1,
+   "app": 10.9
+  },
+  {
+   "inst": "gayageum",
+   "raw": 14.3,
+   "app": 15.4
+  },
+  {
+   "inst": "bass",
+   "raw": 13,
+   "app": 11.9
+  },
+  {
+   "inst": "pad",
+   "raw": 13,
+   "app": 12.8
+  },
+  {
+   "inst": "violin",
+   "raw": 13,
+   "app": 12.1
+  },
+  {
+   "inst": "strings",
+   "raw": 13.1,
+   "app": 12.9
+  },
+  {
+   "inst": "cello",
+   "raw": 13,
+   "app": 13
+  },
+  {
+   "inst": "contrabass",
+   "raw": 13.1,
+   "app": 12.8
+  },
+  {
+   "inst": "pizz",
+   "raw": 13.2,
+   "app": 9.2
+  },
+  {
+   "inst": "flute",
+   "raw": 13,
+   "app": 12.6
+  },
+  {
+   "inst": "clarinet",
+   "raw": 13,
+   "app": 12.9
+  },
+  {
+   "inst": "oboe",
+   "raw": 13.1,
+   "app": 12.8
+  },
+  {
+   "inst": "trumpet",
+   "raw": 13.1,
+   "app": 13
+  },
+  {
+   "inst": "horn",
+   "raw": 13,
+   "app": 12.8
+  },
+  {
+   "inst": "tuba",
+   "raw": 13.1,
+   "app": 12.2
+  },
+  {
+   "inst": "harp",
+   "raw": 13.2,
+   "app": 8.7
+  },
+  {
+   "inst": "celesta",
+   "raw": 13,
+   "app": 12.5
+  },
+  {
+   "inst": "glock",
+   "raw": 13.1,
+   "app": 12.7
+  },
+  {
+   "inst": "choir",
+   "raw": 13,
+   "app": 13
+  },
+  {
+   "inst": "timpani",
+   "raw": 13,
+   "app": 12.5
+  },
+  {
+   "inst": "keys",
+   "raw": 13.1,
+   "app": 12.9
+  },
+  {
+   "inst": "lead",
+   "raw": 13,
+   "app": 13.1
+  }
+ ],
+ "speaker": [
+  {
+   "inst": "piano",
+   "p": 48,
+   "name": "C3",
+   "above250": 0.281,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.29,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.966,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 74,
+   "name": "D5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "piano",
+   "p": 79,
+   "name": "G5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.951,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 74,
+   "name": "D5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 79,
+   "name": "G5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "xylo",
+   "p": 84,
+   "name": "C6",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 48,
+   "name": "C3",
+   "above250": 0.004,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.004,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.951,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 79,
+   "name": "G5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "marimba",
+   "p": 86,
+   "name": "D6",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.948,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "recorder",
+   "p": 74,
+   "name": "D5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "gayageum",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.735,
+   "used": false
+  },
+  {
+   "inst": "gayageum",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.988,
+   "used": false
+  },
+  {
+   "inst": "gayageum",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": false
+  },
+  {
+   "inst": "bass",
+   "p": 43,
+   "name": "G2",
+   "above250": 0.013,
+   "used": true
+  },
+  {
+   "inst": "bass",
+   "p": 48,
+   "name": "C3",
+   "above250": 0.168,
+   "used": true
+  },
+  {
+   "inst": "bass",
+   "p": 53,
+   "name": "F3",
+   "above250": 0.181,
+   "used": true
+  },
+  {
+   "inst": "bass",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.185,
+   "used": true
+  },
+  {
+   "inst": "bass",
+   "p": 65,
+   "name": "F4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "pad",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.957,
+   "used": false
+  },
+  {
+   "inst": "pad",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": false
+  },
+  {
+   "inst": "violin",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.97,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 69,
+   "name": "A4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 79,
+   "name": "G5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "violin",
+   "p": 81,
+   "name": "A5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "strings",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.966,
+   "used": true
+  },
+  {
+   "inst": "strings",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "strings",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "cello",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.186,
+   "used": true
+  },
+  {
+   "inst": "cello",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.955,
+   "used": true
+  },
+  {
+   "inst": "cello",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "contrabass",
+   "p": 36,
+   "name": "C2",
+   "above250": 0.105,
+   "used": false
+  },
+  {
+   "inst": "contrabass",
+   "p": 43,
+   "name": "G2",
+   "above250": 0.173,
+   "used": false
+  },
+  {
+   "inst": "pizz",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.821,
+   "used": true
+  },
+  {
+   "inst": "pizz",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.947,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 62,
+   "name": "D4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 74,
+   "name": "D5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 76,
+   "name": "E5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "flute",
+   "p": 79,
+   "name": "G5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "clarinet",
+   "p": 59,
+   "name": "B3",
+   "above250": 0.33,
+   "used": true
+  },
+  {
+   "inst": "clarinet",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "clarinet",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "clarinet",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "oboe",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": false
+  },
+  {
+   "inst": "oboe",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": false
+  },
+  {
+   "inst": "trumpet",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.966,
+   "used": true
+  },
+  {
+   "inst": "trumpet",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "trumpet",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "trumpet",
+   "p": 71,
+   "name": "B4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "trumpet",
+   "p": 74,
+   "name": "D5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "horn",
+   "p": 62,
+   "name": "D4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "horn",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "tuba",
+   "p": 41,
+   "name": "F2",
+   "above250": 0.042,
+   "used": false
+  },
+  {
+   "inst": "tuba",
+   "p": 48,
+   "name": "C3",
+   "above250": 0.084,
+   "used": false
+  },
+  {
+   "inst": "harp",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.871,
+   "used": true
+  },
+  {
+   "inst": "harp",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.99,
+   "used": true
+  },
+  {
+   "inst": "harp",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "harp",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "harp",
+   "p": 79,
+   "name": "G5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "celesta",
+   "p": 74,
+   "name": "D5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "celesta",
+   "p": 79,
+   "name": "G5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "celesta",
+   "p": 86,
+   "name": "D6",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "glock",
+   "p": 79,
+   "name": "G5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "glock",
+   "p": 84,
+   "name": "C6",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "glock",
+   "p": 88,
+   "name": "E6",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "glock",
+   "p": 91,
+   "name": "G6",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "choir",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.974,
+   "used": true
+  },
+  {
+   "inst": "choir",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "choir",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "timpani",
+   "p": 45,
+   "name": "A2",
+   "above250": 0,
+   "used": false
+  },
+  {
+   "inst": "timpani",
+   "p": 50,
+   "name": "D3",
+   "above250": 0.012,
+   "used": false
+  },
+  {
+   "inst": "timpani",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.066,
+   "used": false
+  },
+  {
+   "inst": "keys",
+   "p": 55,
+   "name": "G3",
+   "above250": 0.004,
+   "used": true
+  },
+  {
+   "inst": "keys",
+   "p": 60,
+   "name": "C4",
+   "above250": 0.951,
+   "used": true
+  },
+  {
+   "inst": "keys",
+   "p": 64,
+   "name": "E4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "keys",
+   "p": 67,
+   "name": "G4",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "lead",
+   "p": 72,
+   "name": "C5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "lead",
+   "p": 74,
+   "name": "D5",
+   "above250": 1,
+   "used": true
+  },
+  {
+   "inst": "lead",
+   "p": 76,
+   "name": "E5",
+   "above250": 1,
+   "used": true
+  }
+ ],
+ "timbre": [
+  {
+   "inst": "piano",
+   "centroid": 546,
+   "attackMs": 6.5,
+   "decay05": -6.9,
+   "oddEven": -5.3
+  },
+  {
+   "inst": "xylo",
+   "centroid": 401,
+   "attackMs": 3.5,
+   "decay05": -21.8,
+   "oddEven": 75.2
+  },
+  {
+   "inst": "marimba",
+   "centroid": 396,
+   "attackMs": 4.5,
+   "decay05": -11.4,
+   "oddEven": -85.6
+  },
+  {
+   "inst": "recorder",
+   "centroid": 396,
+   "attackMs": 22.5,
+   "decay05": -1.9,
+   "oddEven": 3.2
+  },
+  {
+   "inst": "gayageum",
+   "centroid": 1019,
+   "attackMs": 2.5,
+   "decay05": -12.4,
+   "oddEven": 0.4
+  },
+  {
+   "inst": "bass",
+   "centroid": 477,
+   "attackMs": 6.5,
+   "decay05": -4.2,
+   "oddEven": -13.3
+  },
+  {
+   "inst": "pad",
+   "centroid": 456,
+   "attackMs": 27.5,
+   "decay05": -2.3,
+   "oddEven": -5.6
+  },
+  {
+   "inst": "violin",
+   "centroid": 1073,
+   "attackMs": 55.5,
+   "decay05": -1.4,
+   "oddEven": -1.8
+  },
+  {
+   "inst": "strings",
+   "centroid": 703,
+   "attackMs": 484.5,
+   "decay05": -0.3,
+   "oddEven": -3
+  },
+  {
+   "inst": "cello",
+   "centroid": 459,
+   "attackMs": 63.5,
+   "decay05": -1.4,
+   "oddEven": -4.6
+  },
+  {
+   "inst": "contrabass",
+   "centroid": 679,
+   "attackMs": 55.5,
+   "decay05": -1.4,
+   "oddEven": -6.9
+  },
+  {
+   "inst": "pizz",
+   "centroid": 853,
+   "attackMs": 2.5,
+   "decay05": -38.3,
+   "oddEven": -11.5
+  },
+  {
+   "inst": "flute",
+   "centroid": 394,
+   "attackMs": 44.5,
+   "decay05": -1.5,
+   "oddEven": -9.9
+  },
+  {
+   "inst": "clarinet",
+   "centroid": 534,
+   "attackMs": 31.5,
+   "decay05": -1.5,
+   "oddEven": 84.5
+  },
+  {
+   "inst": "oboe",
+   "centroid": 926,
+   "attackMs": 27.5,
+   "decay05": -1.5,
+   "oddEven": 0
+  },
+  {
+   "inst": "trumpet",
+   "centroid": 688,
+   "attackMs": 18.5,
+   "decay05": -1.6,
+   "oddEven": -2.9
+  },
+  {
+   "inst": "horn",
+   "centroid": 528,
+   "attackMs": 53.5,
+   "decay05": -7.3,
+   "oddEven": -6.7
+  },
+  {
+   "inst": "tuba",
+   "centroid": 426,
+   "attackMs": 41.5,
+   "decay05": -1.5,
+   "oddEven": -6.5
+  },
+  {
+   "inst": "harp",
+   "centroid": 606,
+   "attackMs": 2.5,
+   "decay05": -16.1,
+   "oddEven": -8.9
+  },
+  {
+   "inst": "celesta",
+   "centroid": 397,
+   "attackMs": 3.5,
+   "decay05": -5.9,
+   "oddEven": -92.8
+  },
+  {
+   "inst": "glock",
+   "centroid": 415,
+   "attackMs": 4.5,
+   "decay05": -8.3,
+   "oddEven": 28.3
+  },
+  {
+   "inst": "choir",
+   "centroid": 708,
+   "attackMs": 571.5,
+   "decay05": -4.3,
+   "oddEven": -10.4
+  },
+  {
+   "inst": "timpani",
+   "centroid": 406,
+   "attackMs": 4.5,
+   "decay05": -9.4,
+   "oddEven": -80.1
+  },
+  {
+   "inst": "keys",
+   "centroid": 393,
+   "attackMs": 6.5,
+   "decay05": -7.6,
+   "oddEven": -86.8
+  },
+  {
+   "inst": "lead",
+   "centroid": 417,
+   "attackMs": 27.5,
+   "decay05": -2,
+   "oddEven": -1.5
+  }
+ ],
+ "click": [
+  {
+   "inst": "piano",
+   "onset": 0.02,
+   "body": 0.011,
+   "end": 0.004,
+   "endAtMs": 5
+  },
+  {
+   "inst": "xylo",
+   "onset": 0.088,
+   "body": 0.003,
+   "end": 0.001,
+   "endAtMs": 600
+  },
+  {
+   "inst": "marimba",
+   "onset": 0.036,
+   "body": 0.005,
+   "end": 0,
+   "endAtMs": 2
+  },
+  {
+   "inst": "recorder",
+   "onset": 0.003,
+   "body": 0.004,
+   "end": 0.004,
+   "endAtMs": 2
+  },
+  {
+   "inst": "gayageum",
+   "onset": 0.129,
+   "body": 0.032,
+   "end": 0.001,
+   "endAtMs": 1
+  },
+  {
+   "inst": "bass",
+   "onset": 0.008,
+   "body": 0.006,
+   "end": 0.004,
+   "endAtMs": 2
+  },
+  {
+   "inst": "pad",
+   "onset": 0.01,
+   "body": 0.025,
+   "end": 0.012,
+   "endAtMs": 2
+  },
+  {
+   "inst": "violin",
+   "onset": 0.021,
+   "body": 0.125,
+   "end": 0.101,
+   "endAtMs": 5
+  },
+  {
+   "inst": "strings",
+   "onset": 0.003,
+   "body": 0.058,
+   "end": 0.03,
+   "endAtMs": 155
+  },
+  {
+   "inst": "cello",
+   "onset": 0.018,
+   "body": 0.075,
+   "end": 0.061,
+   "endAtMs": 2
+  },
+  {
+   "inst": "contrabass",
+   "onset": 0.008,
+   "body": 0.042,
+   "end": 0.033,
+   "endAtMs": 2
+  },
+  {
+   "inst": "pizz",
+   "onset": 0.14,
+   "body": 0.004,
+   "end": 0,
+   "endAtMs": 0
+  },
+  {
+   "inst": "flute",
+   "onset": 0.017,
+   "body": 0.009,
+   "end": 0.005,
+   "endAtMs": 4
+  },
+  {
+   "inst": "clarinet",
+   "onset": 0.017,
+   "body": 0.042,
+   "end": 0.034,
+   "endAtMs": 1
+  },
+  {
+   "inst": "oboe",
+   "onset": 0.021,
+   "body": 0.054,
+   "end": 0.043,
+   "endAtMs": 2
+  },
+  {
+   "inst": "trumpet",
+   "onset": 0.019,
+   "body": 0.086,
+   "end": 0.033,
+   "endAtMs": 0
+  },
+  {
+   "inst": "horn",
+   "onset": 0.007,
+   "body": 0.015,
+   "end": 0.009,
+   "endAtMs": 2
+  },
+  {
+   "inst": "tuba",
+   "onset": 0.003,
+   "body": 0.012,
+   "end": 0.01,
+   "endAtMs": 0
+  },
+  {
+   "inst": "harp",
+   "onset": 0.095,
+   "body": 0.007,
+   "end": 0,
+   "endAtMs": 1
+  },
+  {
+   "inst": "celesta",
+   "onset": 0.008,
+   "body": 0.004,
+   "end": 0.001,
+   "endAtMs": 2
+  },
+  {
+   "inst": "glock",
+   "onset": 0.041,
+   "body": 0.006,
+   "end": 0.001,
+   "endAtMs": 8
+  },
+  {
+   "inst": "choir",
+   "onset": 0.004,
+   "body": 0.092,
+   "end": 0.049,
+   "endAtMs": 2
+  },
+  {
+   "inst": "timpani",
+   "onset": 0.006,
+   "body": 0.003,
+   "end": 0,
+   "endAtMs": 5
+  },
+  {
+   "inst": "keys",
+   "onset": 0.017,
+   "body": 0.007,
+   "end": 0.006,
+   "endAtMs": 250
+  },
+  {
+   "inst": "lead",
+   "onset": 0.003,
+   "body": 0.007,
+   "end": 0.006,
+   "endAtMs": 2
+  }
+ ],
+ "drums": [
+  {
+   "drum": "kick",
+   "rms": -20.2,
+   "arms": -39.1,
+   "peak": 0.683
+  },
+  {
+   "drum": "snare",
+   "rms": -35.1,
+   "arms": -36,
+   "peak": 0.411
+  },
+  {
+   "drum": "hat",
+   "rms": -40.5,
+   "arms": -44.9,
+   "peak": 0.232
+  },
+  {
+   "drum": "kung",
+   "rms": -17.8,
+   "arms": -37.6,
+   "peak": 0.686
+  },
+  {
+   "drum": "deok",
+   "rms": -38.7,
+   "arms": -39.5,
+   "peak": 0.307
+  },
+  {
+   "drum": "gi",
+   "rms": -43.5,
+   "arms": -44,
+   "peak": 0.165
+  },
+  {
+   "drum": "deong",
+   "rms": -18.1,
+   "arms": -37.5,
+   "peak": 0.795
+  },
+  {
+   "drum": "roll",
+   "rms": -39.6,
+   "arms": -40.5,
+   "peak": 0.262
+  },
+  {
+   "drum": "cymbal",
+   "rms": -20.2,
+   "arms": -23.3,
+   "peak": 0.468
+  },
+  {
+   "drum": "bassdrum",
+   "rms": -14.7,
+   "arms": -39.1,
+   "peak": 0.725
+  },
+  {
+   "drum": "triangle",
+   "rms": -28.2,
+   "arms": -27.3,
+   "peak": 0.173
+  },
+  {
+   "drum": "swell",
+   "rms": -58.8,
+   "arms": -61.7,
+   "peak": 0.385
+  }
+ ],
+ "dist": {
+  "of": 300,
+  "closest": [
+   {
+    "a": "recorder",
+    "b": "lead",
+    "d": 0.24
+   },
+   {
+    "a": "flute",
+    "b": "tuba",
+    "d": 0.26
+   },
+   {
+    "a": "marimba",
+    "b": "timpani",
+    "d": 0.29
+   },
+   {
+    "a": "pad",
+    "b": "lead",
+    "d": 0.3
+   },
+   {
+    "a": "tuba",
+    "b": "lead",
+    "d": 0.32
+   },
+   {
+    "a": "timpani",
+    "b": "keys",
+    "d": 0.36
+   },
+   {
+    "a": "pad",
+    "b": "tuba",
+    "d": 0.37
+   },
+   {
+    "a": "cello",
+    "b": "tuba",
+    "d": 0.38
+   }
+  ],
+  "farthest": [
+   {
+    "a": "strings",
+    "b": "pizz",
+    "d": 5.81
+   },
+   {
+    "a": "pizz",
+    "b": "choir",
+    "d": 5.51
+   },
+   {
+    "a": "pizz",
+    "b": "clarinet",
+    "d": 5.47
+   },
+   {
+    "a": "pizz",
+    "b": "flute",
+    "d": 5.37
+   },
+   {
+    "a": "cello",
+    "b": "pizz",
+    "d": 5.28
+   }
+  ],
+  "so6": [
+   {
+    "a": "piano",
+    "b": "recorder",
+    "close": false,
+    "d": 1.44,
+    "rank": 52
+   },
+   {
+    "a": "xylo",
+    "b": "violin",
+    "close": false,
+    "d": 4.72,
+    "rank": 285
+   },
+   {
+    "a": "trumpet",
+    "b": "harp",
+    "close": false,
+    "d": 2.18,
+    "rank": 101
+   },
+   {
+    "a": "flute",
+    "b": "trumpet",
+    "close": true,
+    "d": 1.85,
+    "rank": 79
+   },
+   {
+    "a": "xylo",
+    "b": "harp",
+    "close": true,
+    "d": 2.53,
+    "rank": 145
+   },
+   {
+    "a": "violin",
+    "b": "flute",
+    "close": true,
+    "d": 3.14,
+    "rank": 211
+   },
+   {
+    "a": "piano",
+    "b": "xylo",
+    "close": false,
+    "d": 2.86,
+    "rank": 187
+   },
+   {
+    "a": "recorder",
+    "b": "violin",
+    "close": false,
+    "d": 3.18,
+    "rank": 214
+   },
+   {
+    "a": "trumpet",
+    "b": "piano",
+    "close": false,
+    "d": 1.18,
+    "rank": 37
+   },
+   {
+    "a": "clarinet",
+    "b": "trumpet",
+    "close": true,
+    "d": 2.31,
+    "rank": 114
+   },
+   {
+    "a": "harp",
+    "b": "piano",
+    "close": true,
+    "d": 1.28,
+    "rank": 42
+   }
+  ],
+  "so6CloseAvg": 2.22,
+  "so6ClearAvg": 2.59
+ },
+ "clip": [
+  {
+   "name": "hwa1 plain0 하나씩",
+   "peak": 0.523,
+   "peakDb": -5.6
+  },
+  {
+   "name": "hwa1 plain0 함께",
+   "peak": 0.701,
+   "peakDb": -3.1
+  },
+  {
+   "name": "hwa1 plain1 하나씩",
+   "peak": 0.525,
+   "peakDb": -5.6
+  },
+  {
+   "name": "hwa1 plain1 함께",
+   "peak": 0.696,
+   "peakDb": -3.1
+  },
+  {
+   "name": "hwa1 chord0 하나씩",
+   "peak": 0.574,
+   "peakDb": -4.8
+  },
+  {
+   "name": "hwa1 chord0 함께",
+   "peak": 0.862,
+   "peakDb": -1.3
+  },
+  {
+   "name": "hwa1 chord1 하나씩",
+   "peak": 0.589,
+   "peakDb": -4.6
+  },
+  {
+   "name": "hwa1 chord1 함께",
+   "peak": 0.852,
+   "peakDb": -1.4
+  },
+  {
+   "name": "hwa1 self0 하나씩",
+   "peak": 0.6,
+   "peakDb": -4.4
+  },
+  {
+   "name": "hwa1 self0 함께",
+   "peak": 0.736,
+   "peakDb": -2.7
+  },
+  {
+   "name": "hwa1 self1 하나씩",
+   "peak": 0.487,
+   "peakDb": -6.2
+  },
+  {
+   "name": "hwa1 self1 함께",
+   "peak": 0.687,
+   "peakDb": -3.3
+  },
+  {
+   "name": "hwa1 turn0 하나씩",
+   "peak": 0.576,
+   "peakDb": -4.8
+  },
+  {
+   "name": "hwa1 turn0 함께",
+   "peak": 0.669,
+   "peakDb": -3.5
+  },
+  {
+   "name": "hwa1 soft0 하나씩",
+   "peak": 0.414,
+   "peakDb": -7.7
+  },
+  {
+   "name": "hwa1 soft0 함께",
+   "peak": 0.553,
+   "peakDb": -5.1
+  },
+  {
+   "name": "hwa1 turn1 하나씩",
+   "peak": 0.53,
+   "peakDb": -5.5
+  },
+  {
+   "name": "hwa1 turn1 함께",
+   "peak": 0.601,
+   "peakDb": -4.4
+  },
+  {
+   "name": "hwa1 soft1 하나씩",
+   "peak": 0.617,
+   "peakDb": -4.2
+  },
+  {
+   "name": "hwa1 soft1 함께",
+   "peak": 0.647,
+   "peakDb": -3.8
+  },
+  {
+   "name": "hwa1 round0 하나씩",
+   "peak": 0.52,
+   "peakDb": -5.7
+  },
+  {
+   "name": "hwa1 round0 함께",
+   "peak": 0.788,
+   "peakDb": -2.1
+  },
+  {
+   "name": "hwa1 plain2 하나씩",
+   "peak": 0.523,
+   "peakDb": -5.6
+  },
+  {
+   "name": "hwa1 plain2 함께",
+   "peak": 0.686,
+   "peakDb": -3.3
+  },
+  {
+   "name": "주제곡 다섯 줄 다 열림(16마디 + 마침 · 배경 음악 크기 0.38)",
+   "peak": 0.654,
+   "peakDb": -3.7
+  },
+  {
+   "name": "주제곡 다섯 줄 다 열림(소리 길 크기 1 — 배경 음악 크기를 빼면)",
+   "peak": 0.931,
+   "peakDb": -0.6
+  },
+  {
+   "name": "따라 치기 반주 + 고슴도치 북(덩 0.85)",
+   "peak": 0.855,
+   "peakDb": -1.4
+  },
+  {
+   "name": "별 셋 + 팡파르(크기 0.9)",
+   "peak": 0.845,
+   "peakDb": -1.5
+  },
+  {
+   "name": "악기 하나 가장 큰 피크(harp vel 0.85 솔4)",
+   "peak": 0.744,
+   "peakDb": -2.6
+  },
+  {
+   "name": "북 하나 가장 큰 피크(deong vel 0.9)",
+   "peak": 0.795,
+   "peakDb": -2
+  }
+ ],
+ "themeRms": -19.4,
+ "timing": [
+  {
+   "inst": "piano",
+   "firstMs": 0.08,
+   "reachMs": 3.5,
+   "reachMinMs": 3.1
+  },
+  {
+   "inst": "xylo",
+   "firstMs": 0.04,
+   "reachMs": 1.8,
+   "reachMinMs": 0
+  },
+  {
+   "inst": "marimba",
+   "firstMs": 0.04,
+   "reachMs": 3.3,
+   "reachMinMs": 0
+  },
+  {
+   "inst": "recorder",
+   "firstMs": 0.17,
+   "reachMs": 13.4,
+   "reachMinMs": 12.8
+  },
+  {
+   "inst": "flute",
+   "firstMs": 0,
+   "reachMs": 28.6,
+   "reachMinMs": 26.1
+  },
+  {
+   "inst": "violin",
+   "firstMs": 0,
+   "reachMs": 32,
+   "reachMinMs": 31.8
+  },
+  {
+   "inst": "trumpet",
+   "firstMs": 0.35,
+   "reachMs": 12,
+   "reachMinMs": 11.1
+  },
+  {
+   "inst": "clarinet",
+   "firstMs": 0,
+   "reachMs": 18.4,
+   "reachMinMs": 18.1
+  },
+  {
+   "inst": "harp",
+   "firstMs": 0,
+   "reachMs": 0.2,
+   "reachMinMs": 0.1
+  },
+  {
+   "inst": "cello",
+   "firstMs": 0,
+   "reachMs": 37.9,
+   "reachMinMs": 35
+  },
+  {
+   "inst": "choir",
+   "firstMs": 0.35,
+   "reachMs": 87.4,
+   "reachMinMs": 47.3
+  },
+  {
+   "inst": "strings",
+   "firstMs": 0.37,
+   "reachMs": 221.7,
+   "reachMinMs": 77.8
+  },
+  {
+   "inst": "keys",
+   "firstMs": 0.04,
+   "reachMs": 3.4,
+   "reachMinMs": 3.1
+  },
+  {
+   "inst": "lead",
+   "firstMs": 0.19,
+   "reachMs": 15.9,
+   "reachMinMs": 15.8
+  },
+  {
+   "inst": "glock",
+   "firstMs": 0.04,
+   "reachMs": 2,
+   "reachMinMs": 0
+  },
+  {
+   "inst": "celesta",
+   "firstMs": 0.04,
+   "reachMs": 3.2,
+   "reachMinMs": 2.8
+  }
+ ],
+ "cells": {
+  "sem1": [
+   {
+    "kind": "pair",
+    "inst": "piano",
+    "dB": 12
+   },
+   {
+    "kind": "pair",
+    "inst": "marimba",
+    "dB": 12.1
+   },
+   {
+    "kind": "pair",
+    "inst": "flute",
+    "dB": 12.3
+   },
+   {
+    "kind": "pair",
+    "inst": "strings",
+    "dB": 13
+   },
+   {
+    "kind": "pitch(낮고 센 − 높고 여린)",
+    "inst": "piano",
+    "dB": 8.8,
+    "dBrms": 11.9
+   },
+   {
+    "kind": "pitch(낮고 센 − 높고 여린)",
+    "inst": "flute",
+    "dB": 8.2,
+    "dBrms": 12.4
+   }
+  ],
+  "so3": [
+   {
+    "inst": "flute",
+    "p": 67,
+    "d": 1.2,
+    "right": "long",
+    "heard": 1.49,
+    "peak": -19.3
+   },
+   {
+    "inst": "flute",
+    "p": 67,
+    "d": 0.25,
+    "right": "short",
+    "heard": 0.51,
+    "peak": -19.4
+   },
+   {
+    "inst": "flute",
+    "p": 67,
+    "d": 0.25,
+    "right": "short",
+    "heard": 0.48,
+    "peak": -19.4
+   },
+   {
+    "inst": "flute",
+    "p": 67,
+    "d": 1.2,
+    "right": "long",
+    "heard": 1.48,
+    "peak": -19.4
+   },
+   {
+    "inst": "flute",
+    "p": 67,
+    "d": 0.35,
+    "right": "short",
+    "heard": 0.57,
+    "peak": -19.4
+   },
+   {
+    "inst": "flute",
+    "p": 67,
+    "d": 0.8,
+    "right": "long",
+    "heard": 1.01,
+    "peak": -19.4
+   },
+   {
+    "inst": "recorder",
+    "p": 67,
+    "d": 0.8,
+    "right": "long",
+    "heard": 1.05,
+    "peak": -19.4
+   },
+   {
+    "inst": "recorder",
+    "p": 67,
+    "d": 0.35,
+    "right": "short",
+    "heard": 0.63,
+    "peak": -19.3
+   },
+   {
+    "inst": "violin",
+    "p": 79,
+    "d": 0.9,
+    "right": "long",
+    "heard": 1.15,
+    "peak": -15.4
+   },
+   {
+    "inst": "choir",
+    "p": 60,
+    "d": 0.3,
+    "right": "short",
+    "heard": 0.52,
+    "peak": -22.6
+   },
+   {
+    "inst": "violin",
+    "p": 81,
+    "d": 0.3,
+    "right": "short",
+    "heard": 0.53,
+    "peak": -15
+   },
+   {
+    "inst": "recorder",
+    "p": 60,
+    "d": 1,
+    "right": "long",
+    "heard": 1.29,
+    "peak": -22.7
+   }
+  ],
+  "so3Peak": [
+   {
+    "inst": "flute",
+    "p": 67,
+    "peakSpread": 0.1
+   },
+   {
+    "inst": "recorder",
+    "p": 67,
+    "peakSpread": 0.1
+   }
+  ],
+  "so5": [
+   {
+    "k": "pitch",
+    "inst": "flute",
+    "a": {
+     "p": 60,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "b": {
+     "p": 72,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "dPitchCents": 1200.2,
+    "dLenSec": 0.04,
+    "dLoudDb": 5.1
+   },
+   {
+    "k": "len",
+    "inst": "flute",
+    "a": {
+     "p": 67,
+     "d": 0.3,
+     "v": 0.55
+    },
+    "b": {
+     "p": 67,
+     "d": 1.1,
+     "v": 0.55
+    },
+    "dPitchCents": 0.3,
+    "dLenSec": 0.77,
+    "dLoudDb": 0.1
+   },
+   {
+    "k": "pitch",
+    "inst": "flute",
+    "a": {
+     "p": 76,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "b": {
+     "p": 64,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "dPitchCents": -1199.8,
+    "dLenSec": 0,
+    "dLoudDb": -4.7
+   },
+   {
+    "k": "len",
+    "inst": "flute",
+    "a": {
+     "p": 67,
+     "d": 1.1,
+     "v": 0.55
+    },
+    "b": {
+     "p": 67,
+     "d": 0.3,
+     "v": 0.55
+    },
+    "dPitchCents": -0.3,
+    "dLenSec": -0.84,
+    "dLoudDb": -0.1
+   },
+   {
+    "k": "pitch",
+    "inst": "recorder",
+    "a": {
+     "p": 67,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "b": {
+     "p": 72,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "dPitchCents": 500.2,
+    "dLenSec": 0.06,
+    "dLoudDb": 2
+   },
+   {
+    "k": "len",
+    "inst": "recorder",
+    "a": {
+     "p": 67,
+     "d": 0.4,
+     "v": 0.55
+    },
+    "b": {
+     "p": 67,
+     "d": 0.9,
+     "v": 0.55
+    },
+    "dPitchCents": 0.2,
+    "dLenSec": 0.46,
+    "dLoudDb": 0.1
+   },
+   {
+    "k": "vol",
+    "inst": "flute",
+    "a": {
+     "p": 67,
+     "d": 0.6,
+     "v": 0.16
+    },
+    "b": {
+     "p": 67,
+     "d": 0.6,
+     "v": 0.8
+    },
+    "dPitchCents": 0.2,
+    "dLenSec": 0.01,
+    "dLoudDb": 13.7
+   },
+   {
+    "k": "pitch",
+    "inst": "violin",
+    "a": {
+     "p": 74,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "b": {
+     "p": 67,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "dPitchCents": -699.8,
+    "dLenSec": 0.02,
+    "dLoudDb": -2.4
+   },
+   {
+    "k": "vol",
+    "inst": "violin",
+    "a": {
+     "p": 72,
+     "d": 0.6,
+     "v": 0.8
+    },
+    "b": {
+     "p": 72,
+     "d": 0.6,
+     "v": 0.16
+    },
+    "dPitchCents": 0,
+    "dLenSec": -0.02,
+    "dLoudDb": -13.5
+   },
+   {
+    "k": "len",
+    "inst": "violin",
+    "a": {
+     "p": 67,
+     "d": 1,
+     "v": 0.55
+    },
+    "b": {
+     "p": 67,
+     "d": 0.35,
+     "v": 0.55
+    },
+    "dPitchCents": 0.4,
+    "dLenSec": -0.65,
+    "dLoudDb": 0
+   },
+   {
+    "k": "pitch",
+    "inst": "flute",
+    "a": {
+     "p": 62,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "b": {
+     "p": 69,
+     "d": 0.6,
+     "v": 0.55
+    },
+    "dPitchCents": 699.6,
+    "dLenSec": -0.02,
+    "dLoudDb": 2.9
+   },
+   {
+    "k": "vol",
+    "inst": "recorder",
+    "a": {
+     "p": 64,
+     "d": 0.6,
+     "v": 0.16
+    },
+    "b": {
+     "p": 64,
+     "d": 0.6,
+     "v": 0.8
+    },
+    "dPitchCents": 0.1,
+    "dLenSec": 0.05,
+    "dLoudDb": 13.7
+   }
+  ],
+  "ppa1": {
+   "slow": {
+    "planned": 0.9,
+    "heard": 0.9,
+    "found": 4,
+    "notes": 4
+   },
+   "mid": {
+    "planned": 0.6,
+    "heard": 0.6,
+    "found": 6,
+    "notes": 6
+   },
+   "fast": {
+    "planned": 0.4,
+    "heard": 0.402,
+    "found": 9,
+    "notes": 9
+   },
+   "slowOverMid": 1.5,
+   "midOverFast": 1.49,
+   "dynXyloDb": 13.4
+  },
+  "hwa1soft": [
+   {
+    "m": 0,
+    "top": "trumpet",
+    "low": "cello",
+    "lowP": 55,
+    "belowDbA": 8.6,
+    "belowDb": 2.3,
+    "lowAbove250": 0.183
+   },
+   {
+    "m": 1,
+    "top": "violin",
+    "low": "cello",
+    "lowP": 60,
+    "belowDbA": 8.3,
+    "belowDb": 3,
+    "lowAbove250": 0.954
+   }
+  ],
+  "so6hy1": [
+   {
+    "cell": "so6",
+    "kind": "pitch",
+    "a": "piano",
+    "second": "piano",
+    "dDbA": 2.2,
+    "dCentroid": 270
+   },
+   {
+    "cell": "so6",
+    "kind": "pitch",
+    "a": "piano",
+    "second": "xylo",
+    "dDbA": -0.3,
+    "dCentroid": 60
+   },
+   {
+    "cell": "so6",
+    "kind": "loud",
+    "a": "recorder",
+    "second": "recorder",
+    "dDbA": 6.5,
+    "dCentroid": 0
+   },
+   {
+    "cell": "so6",
+    "kind": "loud",
+    "a": "recorder",
+    "second": "violin",
+    "dDbA": 3.3,
+    "dCentroid": 650
+   },
+   {
+    "cell": "so6",
+    "kind": "pitch",
+    "a": "violin",
+    "second": "violin",
+    "dDbA": 1.4,
+    "dCentroid": 413
+   },
+   {
+    "cell": "so6",
+    "kind": "pitch",
+    "a": "violin",
+    "second": "recorder",
+    "dDbA": 6.3,
+    "dCentroid": -452
+   },
+   {
+    "cell": "so6",
+    "kind": "loud",
+    "a": "trumpet",
+    "second": "trumpet",
+    "dDbA": 8.3,
+    "dCentroid": 28
+   },
+   {
+    "cell": "so6",
+    "kind": "loud",
+    "a": "trumpet",
+    "second": "piano",
+    "dDbA": 10.4,
+    "dCentroid": -126
+   },
+   {
+    "cell": "so6",
+    "kind": "pitch",
+    "a": "clarinet",
+    "second": "clarinet",
+    "dDbA": 2,
+    "dCentroid": 254
+   },
+   {
+    "cell": "so6",
+    "kind": "pitch",
+    "a": "clarinet",
+    "second": "trumpet",
+    "dDbA": 1.2,
+    "dCentroid": 492
+   },
+   {
+    "cell": "hy1",
+    "kind": "loud",
+    "a": "piano",
+    "second": "piano",
+    "dDbA": 5.7,
+    "dCentroid": -4
+   }
+  ]
+ }
+}
