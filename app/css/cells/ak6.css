@@ -1,0 +1,4 @@
+/* 악6 기호가 붙은 악보 — 공용 틀(_pick.css) + 단추 넷에 오선 카드(renderScore)가 들어가게 — _pick.css가 이 파일보다 늦게 붙을 수 있어 앞에 .pk .answers를 붙여 이기게 */
+.pk .answers.pk-cards .ans{min-height:80px;padding:4px 14px}
+.pk .answers.pk-cards .ans .chip{max-width:200px;height:72px}
+.pk .answers.pk-cards .ans .chip svg.ak6-staff{height:72px;width:auto;max-width:200px}
