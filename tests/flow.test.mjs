@@ -22,6 +22,7 @@ ok('요소 열 가지 · id와 단계 id가 겹치지 않는다', () => {
   }
   assert.equal(elementById('nope'), null);
   assert.equal(stepById('d4').el.id, 'dyn');
+  assert.ok(stepById('d4').step.acts.includes('cell:sem2') && !stepById('d3').step.acts.includes('cell:sem2'), '셈2(점점 세게·점점 여리게)는 d4에만 — mp · mf(d3)는 악보 판만');
   assert.equal(stepById('nope'), null);
 });
 

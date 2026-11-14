@@ -69,6 +69,8 @@ assert.ok(lad.every(r => r.els.length), '빈 층');
 const lvs = ORDER.map(cellLevel);
 FIRST.forEach(id => assert.ok(cellLevel(id) != null, `${id}가 어느 흐름에도 없음`));
 for (let i = 1; i < lvs.length; i++) assert.ok(lvs[i] >= lvs[i - 1], `칸 차례 ${ORDER[i - 1]}(${lvs[i - 1]}) → ${ORDER[i]}(${lvs[i]})`);
+assert.equal(cellLevel('sem2'), 2, '셈2 = 흐름 d4(점점 세게 · 점점 여리게) 난이도 2');
+assert.ok(ORDER.indexOf('sem1') < ORDER.indexOf('sem2'), '추천 차례 셈1 → 셈2');
 
 const dist = [1, 2, 3, 4, 5].map(lv => ids.filter(i => loadOf(i).lv === lv).length);
 console.log(`✓ 계열 · 난이도 — 단계 ${ids.length} · 난이도 분포 ${dist.join('/')} · 덩어리 평균 ${means.map(m => m.toFixed(2)).join(' → ')} · 칸 ${ORDER.length} 차례 ${lvs.join('')}`);

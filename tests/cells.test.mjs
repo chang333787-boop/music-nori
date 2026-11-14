@@ -588,6 +588,9 @@ for (const c of CELLS.filter(x => x.frame === 'pick')) {
   for (const id of ['ga1', 'ga2', 'ga3', 'ga4']) { const [a, b] = R[id].map(notes); assert.ok(a.length === b.length && a.every((n, j) => n.d === b[j].d && n.inst === b[j].inst) && a.some((n, j) => n.p !== b[j].p), id + ' — 음 높이만 다름'); }
   { const [a, b] = R.ppa1, kicks = x => x.c.filter(c => c.kind === 'kick').length;
     assert.equal(a.sec, b.sec, '빠1 — 두 소리 길이가 같음(길이로 못 고르게)'); assert.ok(kicks(a) < kicks(b), '빠1 — 박 수만 다름(보통 < 빠르게)'); }
+  { const [a, b] = R.sem2.map(notes);
+    assert.ok(a.length === b.length && a.every((n, j) => n.p === b[j].p && n.d === b[j].d && n.inst === b[j].inst && (!j || n.p > a[j - 1].p)), '셈2 — 둘 다 같은 올라가는 가락');
+    assert.ok(a.every(n => n.vel === a[0].vel) && b.every((n, j) => !j || n.vel > b[j - 1].vel), '셈2 — 세기만 다름(그대로 ↔ 점점 세게)'); }
   assert.deepEqual(R.jd1.map(x => [...new Set(x.c.map(c => c.kind))].join()), ['deong', 'kung'], '장1 — 덩 · 쿵');
   assert.equal(typeof K.nearSeq([{ p: 60, d: 0.3 }]), 'function');
   delete globalThis.localStorage;

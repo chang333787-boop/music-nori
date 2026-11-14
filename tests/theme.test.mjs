@@ -39,7 +39,7 @@ assert.equal(stepsOf(ALL), STAIRS);
 assert.deepEqual(levelsOf({ so3: { stars: 2 }, ri1: { stars: 0 }, ri2: { stars: 3 } }), { bear: 1, bunny: 1, bird: 0, hog: 1, turtle: 0 });
 assert.deepEqual(newParts({ bunny: 1 }, { bear: 1, bunny: 2, bird: 1, hog: 0, turtle: 0 }), [{ key: 'bunny', from: 1, to: 2 }, { key: 'bird', from: 0, to: 1 }]);
 assert.equal(partOfCell('ri4').key, 'hog'); assert.equal(partOfCell('ak2').key, 'turtle'); assert.equal(partOfCell('so5').key, 'bunny');
-assert.equal(partOfCell('so6').key, 'bunny'); assert.equal(partOfCell('hy1').key, 'turtle'); assert.equal(partOfCell('hwa1').key, 'turtle');
+assert.equal(partOfCell('so6').key, 'bunny'); assert.equal(partOfCell('hy1').key, 'turtle'); assert.equal(partOfCell('hwa1').key, 'turtle'); assert.equal(partOfCell('sem2').key, 'bear');
 assert.deepEqual(levelsOf({ ak1: { stars: 1 }, hy1: { stars: 1 }, hwa1: { stars: 2 } }), { bear: 1, bunny: 0, bird: 0, hog: 0, turtle: 3 }, '거북 계단 = 악보 칸 + 형식·화음 칸');
 // 계단이 오를수록 사건이 늘기만(줄어드는 계단 없음) · 곰은 처음부터
 const count = lv => { let n = 0; for (let i = 0; i < BARS; i++) n += themeBar(i, lv).length; return n; };
