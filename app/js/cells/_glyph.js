@@ -7,6 +7,7 @@
 //     쓸 수 있는 길이: 4 온 · 3 점2분 · 2 2분 · 1.5 점4분 · 1 4분 · 0.75 점8분 · 0.5 8분 · 0.25 16분 · 1/3 셋잇단 8분(셋이 한 박 · 위에 3)(그 밖은 오류)
 //     예) [1, 0.5, 0.5, 2] = 4분 · 8분 둘(묶음) · 2분 / [1.5, 0.5, -1, 1] = 점4분 · 8분 · 4분쉼표 · 4분 / [{ d: 1, tie: true }, 1]
 //   8분 · 16분은 한 박(4분음표 하나) 안에서 꼬리를 묶는다 — 혼자 남으면 깃발. 16분은 두 줄 묶음(점8분 + 16분은 짧은 둘째 줄)
+//   unit = 꼬리를 묶는 박 길이(기본 1 = 4분음표 · 6/8은 1.5 = 점4분음표 한 박에 8분 셋을 한 묶음 — 11-14 묶음 C 리13이 더함)
 //   hi = 강조할 음 차례(쉼표를 뺀 음표 차례 · 0부터) → 초록 · size = 높이 px(단추 카드 64px에서도 읽히게 굵게)
 //   뿌리 svg에 data-beats · data-notes · data-rests · data-beams(묶음 수) · data-ties를 적어 둔다(시험이 읽음)
 
@@ -40,7 +41,7 @@ export function parseBeats(beats) {
   });
 }
 
-export function glyph(beats, { size = 64, hi = [], color = INK, label = '' } = {}) {
+export function glyph(beats, { size = 64, hi = [], color = INK, label = '', unit = 1 } = {}) {
   const items = parseBeats(beats), hiSet = new Set(hi);
   let x = 10, ni = 0;
   for (const it of items) {                       // 자리 — 머리 cx · 기둥 x
@@ -54,8 +55,8 @@ export function glyph(beats, { size = 64, hi = [], color = INK, label = '' } = {
   const groups = [];
   let g = null;
   for (const it of items) {
-    const short = !it.rest && (it.shape === 'e' || it.shape === 's'), beat = Math.floor(it.t + EPS);
-    const fits = short && Math.floor(it.t + it.d - EPS) === beat;   // 박을 넘는 8분(엇박에서 시작한 점8분 등)은 묶지 않음
+    const short = !it.rest && (it.shape === 'e' || it.shape === 's'), beat = Math.floor(it.t / unit + EPS);
+    const fits = short && Math.floor((it.t + it.d) / unit - EPS) === beat;   // 박을 넘는 8분(엇박에서 시작한 점8분 등)은 묶지 않음
     if (fits && g && g.beat === beat && g.last === it.t) { g.items.push(it); g.last = it.t + it.d; }
     else if (fits) { g = { beat, items: [it], last: it.t + it.d }; groups.push(g); }
     else g = null;
