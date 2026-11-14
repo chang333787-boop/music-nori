@@ -4,12 +4,13 @@
 //  기호는 '넣은 것 목록(marks)' 하나에 모인다 — 화면은 scoreOf로 그리고, 소리는 perform으로 만든다.
 //   · 음에 넣는 기호는 '몇째 음(k)'에, 마디에 넣는 기호는 '몇째 마디(b)'에, 곡 처음에 넣는 것은 값 하나로 적는다.
 //   · marks는 고치지 않는다 — toggle이 새 marks를 돌려준다.
-//  차례(쉬운 것 먼저)는 docs/flow.md의 묶음 순서: 셈여림 · 빠르기 · 음색 → 음의 길이 · 되풀이 → 박자.
+//  차례(쉬운 것 먼저)는 docs/flow.md의 묶음 순서: 셈여림 · 빠르기 · 음색 → 음의 길이 · 되풀이 → 박자 → 조 · 화음(묶음 D2 · 5~6학년 쪽).
 //  [D1 · 11-14] 음 길이를 바꾸는 기호(점음표 · 당김음 · 16분음표 · 셋잇단)는 본래 음(k)을 조각(parts)으로 나눠 소리와 악보를 만든다 —
 //   다른 기호는 여전히 본래 음 번호에 붙는다(셈여림 · 악센트 = 첫 조각, 늘임표 = 끝 조각, 스타카토 = 모든 조각).
 //   마디를 다시 나누는 기호(8분의 6박자 · 못갖춘마디 · 바뀌는 박자)는 마디 목록(barsOf)을 바꾼다 — 마디에 넣은 기호는 빠진다.
+//  [D2 · 11-14] 조 · 임시표는 음 높이(p)와 음이름 자리(step)를 바꾸고 조각에도 그대로 입힌다 · 1 · 2번 괄호 · D.C. · Fine · 화음 · 북 반주는 마디 목록(B)을 따른다.
 import { makeSong, sounding } from './song.js';
-import { barTicks, beatTicks, compound, DUR_NAME, TPQ } from './theory.js';
+import { barTicks, beatTicks, compound, DUR_NAME, TPQ, pc, accents, colorOf } from './theory.js';
 import { songById } from './songs/index.js';
 
 export const GROUPS = [
@@ -19,6 +20,8 @@ export const GROUPS = [
   { id: 'len', name: '음의 길이', friend: 'hog', phrase: 'auclair' },
   { id: 'repeat', name: '되풀이', friend: 'turtle', phrase: 'haenschen' },
   { id: 'meter', name: '박자', friend: 'hog', phrase: 'frere' },
+  { id: 'key', name: '조', friend: 'bird', phrase: 'ode' },
+  { id: 'chord', name: '화음', friend: 'turtle', phrase: 'ahvous8' },
 ];
 export const groupById = id => GROUPS.find(g => g.id === id) || null;
 
@@ -30,6 +33,10 @@ const ACCENT = 1.6, DOWN = 1.3, WEAK = 0.85;       // 악센트 · 센박 · 여
 const MID = 1.1, SYNC = 1.3;                       // [D1] 8분의 6박자 넷째 8분(그다음 센 박) · 당김음 가운데 음(센 느낌이 여린 자리로)
 const RIT = 0.5, ACCEL = 1.7;                      // 끝에서의 빠르기 비율
 const STACC = 0.4, GAP = 0.92;
+const SECOND = 0.75, CHORD_V = 0.42;               // 둘째 줄 · 화음 한 음의 크기(가락에 견줘) — 가락이 앞에 들리게
+export const CHORD = { I: [60, 64, 67], IV: [65, 69, 72], V: [67, 71, 74] };   // 다장조 도미솔 · 파라도 · 솔시레(화2 칸과 같은 자리)
+export const CHORD_G = { I: [67, 71, 74], IV: [60, 64, 67], V: [62, 66, 69] };  // 사장조 — 음이름 사나라 · 다마사 · 라올림바가(화3 칸과 같은 자리)
+export const chordsIn = key => (key === 7 ? CHORD_G : CHORD);
 
 const L = (id, name) => ({ id, group: 'dyn', name, sym: id, where: 'note', kind: 'letter' });
 const T = (id, name, bpm) => ({ id, group: 'tempo', name, sym: name, where: 'start', kind: 'tempo', ...(bpm ? { bpm } : { base: true }) });
@@ -48,6 +55,7 @@ export const SIGNS = [
   { id: 'accel', group: 'tempo', name: '점점 빠르게', sym: 'accel.', where: 'bar', kind: 'tchange' },
 
   I('piano', '피아노'), I('recorder', '리코더'), I('xylo', '실로폰'), I('violin', '바이올린'), I('trumpet', '트럼펫'),
+  { id: 'drum', group: 'inst', name: '북 반주', sym: '북 반주', where: 'start', kind: 'drum' },
 
   { id: 'rest', group: 'len', name: '쉼표', sym: '쉼표', where: 'note', kind: 'rest' },
   { id: 'tie', group: 'len', name: '붙임줄', sym: '⌣', where: 'tie', kind: 'tie' },
@@ -59,11 +67,23 @@ export const SIGNS = [
   { id: 'trip', group: 'len', name: '셋잇단음표', sym: '3', where: 'note', kind: 'trip', tip: '셋잇단음표로 나눌 4분음표를 눌러요' },
 
   { id: 'repeat', group: 'repeat', name: '도돌이표', sym: ':|', where: 'bar', kind: 'repeat' },
+  { id: 'volta', group: 'repeat', name: '1 · 2번 괄호', sym: '1. 2.', where: 'bar', kind: 'volta', phrase: 'odev' },
+  { id: 'dc', group: 'repeat', name: 'D.C.', ko: '다 카포', sym: 'D.C.', where: 'bar', kind: 'dc', phrase: 'ahvousdc' },
+  { id: 'fine', group: 'repeat', name: 'Fine', ko: '피네', sym: 'Fine', where: 'bar', kind: 'fine', phrase: 'ahvousdc' },
 
   M('m24', '4분의 2박자', [2, 4]), M('m34', '4분의 3박자', [3, 4]), M('m44', '4분의 4박자', [4, 4]),
   { ...M('m68', '8분의 6박자', [6, 8]), phrase: 'rowrow' },          // phrase = 주소로 이 기호를 가리키면 먼저 여는 가락(이 기호가 맞는 가락)
   { id: 'pickup', group: 'meter', name: '못갖춘마디', sym: '못갖춘마디', where: 'start', kind: 'pickup', phrase: 'haenschen' },
   { id: 'mixed', group: 'meter', name: '바뀌는 박자', sym: '바뀌는 박자', where: 'bar', kind: 'mixed', phrase: 'frere', tip: '박자가 바뀔 마디를 눌러요' },
+
+  { id: 'up', group: 'key', name: '조 옮기기', sym: '♯', where: 'start', kind: 'keyup', also: ['chord'] },   // 화음 묶음 단추 줄에도(사장조 화음을 듣게)
+  { id: 'sharp', group: 'key', name: '올림표', sym: '♯', where: 'note', kind: 'acc' },
+  { id: 'flat', group: 'key', name: '내림표', sym: '♭', where: 'note', kind: 'acc' },
+
+  { id: 'second', group: 'chord', name: '둘째 줄', sym: '3도', where: 'start', kind: 'second' },
+  { id: 'I', group: 'chord', name: '으뜸화음', ko: '도미솔', sym: 'Ⅰ', where: 'bar', kind: 'chord' },
+  { id: 'IV', group: 'chord', name: '버금딸림화음', ko: '파라도', sym: 'Ⅳ', where: 'bar', kind: 'chord' },
+  { id: 'V', group: 'chord', name: '딸림화음', ko: '솔시레', sym: 'Ⅴ', where: 'bar', kind: 'chord' },
 ];
 export const signById = id => SIGNS.find(s => s.id === id) || null;
 export const signsOf = group => SIGNS.filter(s => s.group === group);
@@ -75,11 +95,17 @@ const CUTS = [
   ['haenschen', 'haenschen', 0, 4, '첫 도막'],
   ['frere', 'frere', 0, 6, '첫 여섯 마디'],
   ['rowrow', 'rowrow', 4, 8, '뒤 도막'],                     // D1 8분의 6박자 — 8분음표 여섯이 셋씩 묶인 마디가 둘(4분의 3박자로 바꾸면 둘씩 셋)
+  // 묶음 D2 — 1 · 2번 괄호 · D.C. · Fine · 화음에 쓰는 도막(새 곡 X · 마디째 자름)
+  //  odev = 환희의 송가 주제 여덟 마디를 1 · 2번 괄호로 줄여 적은 꼴(1~4마디 + 8마디 · 넷째 마디와 여덟째 마디만 다르다)
+  //  ahvousdc = 작은 별 가락 a(8마디) + b의 앞 4마디 — D.C. · Fine을 넣으면 a b a(곡의 짜임 그대로)
+  ['odev', 'ode', [0, 1, 2, 3, 7], null, '여덟 마디를 줄여 적은 꼴'],
+  ['ahvousdc', 'ahvous', 0, 12, '앞 열두 마디'],
+  ['ahvous8', 'ahvous', 0, 8, '첫 여덟 마디'],
 ];
 function cut([id, src, from, to, part]) {
   const s = songById(src);
   if (!s) throw new Error('곡 대장에 없는 곡: ' + src);
-  const mel = s.mel.split('|').map(x => x.trim()).slice(from, to).join(' | ');
+  const all = s.mel.split('|').map(x => x.trim()), mel = (Array.isArray(from) ? from.map(i => all[i]) : all.slice(from, to)).join(' | ');
   const song = makeSong({ mel, meter: s.meter, tempo: s.tempo });
   const N = sounding(song).map((n, k) => ({ k, t: n.t, d: n.d, p: n.p }));
   return { id, src, title: s.title, part, meter: s.meter, tempo: s.tempo, mel, song, N, total: song.total };
@@ -87,12 +113,14 @@ function cut([id, src, from, to, part]) {
 export const PHRASES = CUTS.map(cut);
 export const phraseById = id => PHRASES.find(p => p.id === id) || null;
 
-export const emptyMarks = () => ({ dyn: {}, hair: {}, accent: {}, stacc: {}, tie: {}, rest: {}, fermata: {}, repeat: null, tempo: null, tchange: null, meter: null, inst: null });
+export const emptyMarks = () => ({ dyn: {}, hair: {}, accent: {}, stacc: {}, tie: {}, rest: {}, fermata: {}, repeat: null, tempo: null, tchange: null, meter: null, inst: null,
+  acc: {}, chord: {}, keyup: false, second: false, volta: null, dc: null, fine: null, drum: false });
 export function countMarks(m) {
   const n = o => Object.keys(o).length;
   return n(m.dyn) + n(m.hair) + n(m.accent) + n(m.stacc) + n(m.tie) + n(m.rest) + n(m.fermata)
     + countD1(m)
-    + (m.repeat ? 1 : 0) + (m.tempo ? 1 : 0) + (m.tchange ? 1 : 0) + (m.meter ? 1 : 0) + (m.inst ? 1 : 0);
+    + (m.repeat ? 1 : 0) + (m.tempo ? 1 : 0) + (m.tchange ? 1 : 0) + (m.meter ? 1 : 0) + (m.inst ? 1 : 0)
+    + n(m.acc || {}) + n(m.chord || {}) + (m.keyup ? 1 : 0) + (m.second ? 1 : 0) + (m.volta ? 1 : 0) + (m.dc != null ? 1 : 0) + (m.fine != null ? 1 : 0) + (m.drum ? 1 : 0);
 }
 
 // [D1] 음 길이 기호(본래 음 번호 → true)와 못갖춘마디 · 바뀌는 박자 — 빈 목록(emptyMarks)에 없던 칸은 비어 있는 것으로 읽는다
@@ -158,6 +186,80 @@ function rhythmOf(ph, marks) {
   });
 }
 
+// ── 조 · 임시표(묶음 D2) ─────────────────────────────────────────────────
+//  음 하나 = 음이름 자리(step · 7칸이 한 옥타브 · 가온 도 = 35) + 올림 · 내림(alt). 도막은 모두 다장조 음만 쓴다.
+//  · 조 옮기기 = 다장조 → 사장조. 모든 음이 같은 만큼(완전5도 위 = 음이름 4칸 위, 또는 완전4도 아래 = 3칸 아래) 옮겨져 가락 모양이 그대로다.
+//    사장조의 조표 = 파(F)에 올림표 하나 — 조표가 붙은 자리의 음은 어느 마디에서나 반음 올려 소리 낸다.
+//  · 올림표 · 내림표(임시표) = 그 음과, 같은 마디 안에서 뒤에 오는 같은 자리(같은 옥타브)의 음을 반음 올리고 내린다.
+//    다음 마디에서는 제자리(조표대로)로 돌아온다. 다른 오선(둘째 줄 · 화음)에는 걸리지 않는다.
+//    올림표는 검은 건반이 되는 자리(미 · 시 X)에만, 내림표도 검은 건반이 되는 자리(도 · 파 X)에만 — 미♯ · 시♯ · 도♭ · 파♭ 같은 글자는 쓰지 않는다.
+//    조표로 이미 올린 자리(사장조의 파)에는 넣지 않는다(겹올림 · 제자리표가 필요해짐). 그런 자리의 기호는 조를 옮기는 동안 쉰다(조 옮기기를 빼면 돌아온다).
+const LET = [0, 2, 4, 5, 7, 9, 11];                                   // 음이름(C D E F G A B)의 반음 수
+const NAT = { 0: 0, 2: 1, 4: 2, 5: 3, 7: 4, 9: 5, 11: 6 };            // 반음 → 음이름(다장조 음만)
+const KALT = { 0: [0, 0, 0, 0, 0, 0, 0], 7: [0, 0, 0, 1, 0, 0, 0] };  // 조표 — 다장조 없음 · 사장조 파(F) ♯
+const SYL = ['도', '레', '미', '파', '솔', '라', '시'];
+const stepOf = p => (NAT[pc(p)] == null ? null : Math.floor(p / 12) * 7 + NAT[pc(p)]);
+const natOf = st => Math.floor(st / 7) * 12 + LET[((st % 7) + 7) % 7];
+const letterOf = st => ((st % 7) + 7) % 7;
+// 조 옮기기 방향 — 덧줄이 덜 생기는 쪽(높은음자리표 덧줄 없는 넓이 = 레4 ~ 솔5), 같으면 위로
+export function keyShift(ph) {
+  const cost = sh => ph.N.reduce((c, n) => c + Math.max(0, 62 - (n.p + sh)) + Math.max(0, n.p + sh - 79), 0);
+  return cost(-5) < cost(7) ? -5 : 7;
+}
+// 그 조의 음계 음 → 음이름 자리(사장조의 파# = 파 자리 · 조표가 맡으니 따로 기호를 붙이지 않음)
+const stepIn = (p, key) => { const L = LET.findIndex((v, i) => (v + KALT[key][i]) % 12 === pc(p)); return Math.floor((p - KALT[key][L]) / 12) * 7 + L; };
+const accOk = (a, L, kalt) => kalt[L] === 0 && (a === 'sharp' ? L !== 2 && L !== 6 : L !== 0 && L !== 3);
+// notes(새로 만든 것)에 조 · 임시표를 입힌다 — 소리 높이(p) · 음이름 자리(step) · 붙은 기호(mark) · 둘째 줄 높이(p2)
+function spell(marks, notes, shift) {
+  const key = shift ? 7 : 0, ds = shift > 0 ? 4 : shift < 0 ? -3 : 0, kalt = KALT[key], acc = marks.acc || {};
+  let bar = -1, state = null, any = false;
+  for (const n of notes) {
+    if (n.bar !== bar) { bar = n.bar; state = new Map(); }
+    const st0 = stepOf(n.p);
+    if (st0 == null) { n.step = null; continue; }                     // 다장조 밖 음(지금 도막에는 없음)은 그대로 둔다
+    const step = st0 + ds, L = letterOf(step);
+    let alt = state.has(step) ? state.get(step) : kalt[L], mark = null;
+    const a = acc[n.k];
+    if (a && !n.rest && accOk(a, L, kalt)) { alt = a === 'sharp' ? 1 : -1; state.set(step, alt); mark = a; any = true; }
+    const L2 = letterOf(step - 2);
+    Object.assign(n, { p0: n.p, step, alt, mark, p: natOf(step) + alt, p2: natOf(step - 2) + kalt[L2] });
+    if (n.parts) for (const q of n.parts) Object.assign(q, { p: n.p, step, mark: q.j ? null : mark });      // 음 길이 기호로 나눈 조각도 같은 높이(임시표는 첫 조각에만 적음)
+  }
+  return { key, any };
+}
+// 연주 차례 — [{ a, b, pass }] (틱 구간 · 몇째 번 지나가나)
+//  도돌이표: 그 마디까지 → 처음부터 끝까지 · 1 · 2번 괄호: 1번 마디까지 → 처음부터 1번 앞까지 → 2번 마디부터 끝까지
+//  D.C.: 끝까지 간 뒤 처음으로 → Fine이 있으면 Fine 마디 끝에서, 없으면 끝에서 마침. D.C.로 돌아온 뒤에는 도돌이표를 다시 지키지 않고 1번 괄호는 건너뛴다(관례)
+function segsOf(m, total) {
+  const B = b => (b >= m.bars ? total : m.B[b].t0), r = m.repeat ? m.repeat.to : null, out = [];      // B(b) = b번째 마디가 시작하는 틱(마디 목록 · 못갖춘마디 · 바뀌는 박자)
+  let pass = 0;
+  const go = (a, b) => { if (b > a) out.push({ a, b, pass }); };
+  if (r == null) go(0, total);
+  else if (m.volta) { go(0, B(r + 1)); pass++; go(0, B(r)); go(B(r + 1), total); }
+  else { go(0, B(r + 1)); pass++; go(0, total); }
+  if (m.dc) {
+    pass++;
+    const end = m.fine != null ? B(m.fine + 1) : total;
+    if (m.volta) { go(0, Math.min(B(r), end)); if (end > B(r + 1)) go(B(r + 1), end); } else go(0, end);
+  }
+  return out;
+}
+// 북 반주의 박 — 마디마다 그 박자의 박(8분의 6박자 = 점4분 둘). 못갖춘마디의 첫 마디는 마디의 뒤쪽 박(여린박)
+function drumBeats(B) {
+  const out = [];
+  for (const bar of B) {
+    const bt = beatTicks(bar.meter), w = accents(bar.meter), off = bar.pick ? barTicks(bar.meter) - bar.len : 0;
+    for (let x = 0; x < bar.len; x += bt) { const wt = w[Math.floor((off + x) / bt)] || 0; out.push({ t: bar.t0 + x, d: Math.min(bt, bar.len - x), w: wt, big: wt >= 0.5 }); }
+  }
+  return out;
+}
+// 마디 번호로 본 연주 차례(시험 · 화면 설명용)
+export function orderOf(ph, marks) {
+  const m = build(ph, marks), out = [];
+  for (const g of segsOf(m, ph.total)) m.B.forEach((bar, b) => { if (bar.t0 >= g.a && bar.t0 < g.b) out.push(b); });
+  return out;
+}
+
 // ── 넣은 것 목록에서 뽑은 모양(화면과 소리가 같이 씀) ───────────────────
 export function build(ph, marks) {
   const meter = meterNow(ph, marks), cap = barTicks(meter);
@@ -168,6 +270,7 @@ export function build(ph, marks) {
     const rest = !!marks.rest[n.k];
     return { ...n, bar: barOf(n.t), rest, parts: n.parts.map(q => ({ ...q, bar: barOf(q.t), rest })) };
   });
+  const shift = marks.keyup ? keyShift(ph) : 0, sp = spell(marks, notes, shift);      // [D2] 조 · 임시표(조각에도)
   const parts = notes.flatMap(n => n.parts);
   const tieOk = k => { const a = notes[k], b = notes[k + 1]; return !!(a && b && a.p === b.p && a.t + a.d === b.t && !a.rest && !b.rest && !busy(marks, k) && !busy(marks, k + 1)); };
   const ties = notes.filter(n => marks.tie[n.k] && tieOk(n.k)).map(n => n.k);
@@ -177,7 +280,13 @@ export function build(ph, marks) {
   const repeat = marks.repeat && marks.repeat.to < bars ? marks.repeat : null;
   const hair = {};
   for (const [b, kind] of Object.entries(marks.hair)) if (+b < bars && notes.some(n => n.bar === +b && !n.rest)) hair[b] = kind;
-  return { meter, cap, bars, B, barOf, notes, parts, tieOk, ties, tieSet: new Set(ties), bpm, tempoWord: (tw || signById('mid')).name, inst: marks.inst || 'piano', tchange, repeat, hair };
+  const r = repeat ? repeat.to : -1, volta = !!marks.volta && r >= 1 && r <= bars - 2;
+  const chord = {};
+  for (const [b, id] of Object.entries(marks.chord || {})) if (+b < bars) chord[b] = id;      // 조를 옮기면 화음도 그 조의 Ⅰ · Ⅳ · Ⅴ로 따라간다
+  const dc = marks.dc != null && marks.dc === bars - 1;
+  const fine = marks.fine != null && marks.fine < bars - 1 && !(volta && marks.fine === r) ? marks.fine : null;
+  return { meter, cap, bars, B, barOf, notes, parts, tieOk, ties, tieSet: new Set(ties), bpm, tempoWord: (tw || signById('mid')).name, inst: marks.inst || 'piano', tchange, repeat, hair,
+    shift, key: sp.key, spelled: !!shift || sp.any, second: !!marks.second, chord, volta, dc, fine, drum: !!marks.drum };
 }
 
 // [D1] 음 길이 기호를 이 음(k)에 새로 넣을 수 있나 — 걸린 음은 쉬지 않고 · 다른 길이 기호 · 붙임줄에 묶이지 않아야 한다
@@ -220,11 +329,27 @@ export function places(ph, marks, signId) {
   if (s.kind === 'rest') return m.notes.filter(n => n.rest || act.length > 1).map(n => n.k);
   if (s.kind === 'tie') return m.notes.filter(n => m.tieOk(n.k)).map(n => n.k);
   if (LEN_KINDS.includes(s.kind)) return m.notes.filter(n => lk(marks, s.kind)[n.k] || lenOk(m, marks, s.kind, n.k)).map(n => n.k);
+  if (s.kind === 'acc') return accPlaces(m, marks, s.id);
   if (s.where === 'note') return act.map(n => n.k);
   const all = Array.from({ length: m.bars }, (_, b) => b);
   if (s.kind === 'mixed') return all.filter(b => (marks.mixed && marks.mixed.bar === b) || mixedMeter(ph, marks, b));
   if (s.kind === 'hair') return all.filter(b => act.some(n => n.bar === b));
+  if (s.kind === 'chord') return all;
+  if (s.kind === 'volta') return marks.repeat ? (m.repeat && m.repeat.to >= 1 && m.repeat.to <= m.bars - 2 ? [m.repeat.to] : []) : all.filter(b => b >= 1 && b <= m.bars - 2);
+  if (s.kind === 'dc') return [m.bars - 1];
+  if (s.kind === 'fine') return all.filter(b => b < m.bars - 1 && !(m.volta && b === m.repeat.to));
   return all;
+}
+
+// 올림표 · 내림표를 넣을 수 있는 음 — 검은 건반이 되는 자리 · 조표가 없는 자리 · 같은 마디 앞의 임시표로 이미 그렇게 바뀐 음은 빼고(넣어도 소리가 같음)
+function accPlaces(m, marks, id) {
+  const kalt = KALT[m.key], want = id === 'sharp' ? 1 : -1, acc = marks.acc || {};
+  return m.notes.filter(n => {
+    if (n.rest || n.step == null || !accOk(id, letterOf(n.step), kalt)) return false;
+    if (acc[n.k] === id) return true;
+    const before = m.notes.filter(q => q.bar === n.bar && q.k < n.k && q.step === n.step && q.mark);
+    return !(before.length && before[before.length - 1].mark === id && n.alt === want);
+  }).map(n => n.k);
 }
 
 export function has(marks, signId, at = null) {
@@ -241,6 +366,11 @@ export function has(marks, signId, at = null) {
     case 'dot': case 'sync': case 'six': case 'trip': return !!lk(marks, s.kind)[at];
     case 'pickup': return !!marks.pickup;
     case 'mixed': return !!marks.mixed && (at == null || marks.mixed.bar === at);
+    case 'keyup': case 'second': case 'drum': return !!marks[s.kind];
+    case 'acc': return (marks.acc || {})[at] === s.id;
+    case 'chord': return (marks.chord || {})[at] === s.id;
+    case 'volta': return !!marks.volta && !!marks.repeat && (at == null || marks.repeat.to === at);
+    case 'dc': case 'fine': return marks[s.kind] != null && (at == null || marks[s.kind] === at);
     default: return false;
   }
 }
@@ -259,8 +389,9 @@ const BAR_NOTE = {
 };
 function settle(ph, before, m2, barNote, sideMixed) {
   const notes = [];
-  const had = Object.keys(before.hair).length || before.tchange || before.repeat || (sideMixed && before.mixed);
-  let out = { ...m2, hair: {}, tchange: null, repeat: null, ...(sideMixed ? { mixed: null } : {}) };
+  const had = Object.keys(before.hair).length || before.tchange || before.repeat || (sideMixed && before.mixed)
+    || Object.keys(before.chord || {}).length || before.dc != null || before.fine != null;      // [D2] 화음 · 괄호 · D.C. · Fine도 마디에 넣은 기호
+  let out = { ...m2, hair: {}, tchange: null, repeat: null, ...(sideMixed ? { mixed: null } : {}), chord: {}, volta: null, dc: null, fine: null };
   if (had) notes.push(barNote);
   let dropped = false;
   for (const kind of LEN_KINDS) for (const k of Object.keys(lk(out, kind)).map(Number)) {
@@ -308,6 +439,14 @@ export function toggle(ph, marks, signId, at = null) {
     const v = s.base || marks.inst === s.id ? null : s.id;
     return { marks: { ...marks, inst: v }, on: v != null || !!s.base };
   }
+  if (s.kind === 'keyup' || s.kind === 'second' || s.kind === 'drum') {     // 곡 전체에 켜고 끄는 것(묶음 D2)
+    const v = !marks[s.kind], m2 = { ...marks, [s.kind]: v };
+    if (s.kind !== 'keyup' || !v) return { marks: m2, on: v };
+    const rest = [];
+    const b = build(ph, m2);
+    if (Object.keys(marks.acc || {}).some(k => b.notes[k] && !b.notes[k].mark && !b.notes[k].rest)) rest.push('사장조에서 쓰지 않는 자리의 임시표');
+    return { marks: m2, on: v, ...(rest.length ? { note: `조를 옮기는 동안 ${josa(rest.join(' · '), '은/는')} 쉬어요. 조 옮기기를 빼면 돌아와요.` } : {}) };
+  }
   const on = has(marks, signId, at);
   if (!on && !places(ph, marks, signId).includes(at)) return { marks, on: false, blocked: true };
   switch (s.kind) {
@@ -315,7 +454,13 @@ export function toggle(ph, marks, signId, at = null) {
     case 'hair': return { marks: { ...marks, hair: on ? without(marks.hair, at) : { ...marks.hair, [at]: s.id } }, on: !on };
     case 'accent': case 'stacc': case 'tie': case 'rest': case 'fermata': return { marks: { ...marks, [s.kind]: flip(marks[s.kind], at) }, on: !on };
     case 'tchange': return { marks: { ...marks, tchange: on ? null : { bar: at, kind: s.id } }, on: !on };
-    case 'repeat': return { marks: { ...marks, repeat: on ? null : { to: at } }, on: !on };
+    case 'repeat': return { marks: { ...marks, repeat: on ? null : { to: at }, volta: !on && marks.volta && at >= 1 && at <= build(ph, marks).bars - 2 ? { own: false } : null }, on: !on };
+    case 'acc': return { marks: { ...marks, acc: on ? without(marks.acc, at) : { ...marks.acc, [at]: s.id } }, on: !on };
+    case 'chord': return { marks: { ...marks, chord: on ? without(marks.chord, at) : { ...marks.chord, [at]: s.id } }, on: !on };
+    case 'volta':                                                // 도돌이표가 없으면 그 마디 끝에 도돌이표도 함께 — 뺄 때 함께 빠진다
+      if (on) return { marks: { ...marks, volta: null, ...(marks.volta.own ? { repeat: null } : {}) }, on: false };
+      return { marks: { ...marks, volta: { own: !marks.repeat }, ...(marks.repeat ? {} : { repeat: { to: at } }) }, on: true };
+    case 'dc': case 'fine': return { marks: { ...marks, [s.kind]: on ? null : at }, on: !on };
     case 'dot': case 'sync': case 'six': case 'trip': return { marks: { ...marks, [s.kind]: flip(lk(marks, s.kind), at) }, on: !on, len: lenWords(ph, s.kind, at) };
     case 'mixed': {
       const mt = on ? null : mixedMeter(ph, marks, at);
@@ -377,14 +522,13 @@ export function perform(ph, marks, { beat = false } = {}) {
   const sec = 60 / m.bpm / TPQ;
   const tc = m.tchange, x0 = tc ? B[tc.bar].t0 : total, g = tc ? (tc.kind === 'rit' ? RIT : ACCEL) : 1, span = total - x0;
   const warp = x => (!tc || x <= x0 ? x * sec : x0 * sec + sec * span * Math.log(1 + (g - 1) * (x - x0) / span) / (g - 1));
-  const rep = m.repeat ? B[m.repeat.to].t0 + B[m.repeat.to].len : 0;
+  const segs = segsOf(m, total);
   // 박 세기 — 마디 첫 박이 센박(못갖춘마디의 첫 마디는 여린박에서 시작) · 8분의 6박자는 넷째 8분이 그다음으로 셈
   const metricAt = x => { const bar = B[m.barOf(x)], pos = x - bar.t0; return pos === 0 && !bar.pick ? DOWN : pos > 0 && compound(bar.meter) && pos % beatTicks(bar.meter) === 0 ? MID : WEAK; };
-  const passes = rep ? [[0, rep], [0, total]] : [[0, total]];
   const events = [];
   let clock = 0, level = LV0;
-  passes.forEach(([a, b], pass) => {
-    const U = unitsOf(m, marks, a, b);
+  segs.forEach(({ a, b, pass }, seg) => {
+    const U = unitsOf(m, marks, a, b), lv0 = level;
     level = levels(U, m.hair, level);
     const holds = U.filter(u => u.fermata).map(u => ({ x: u.t + u.d, extra: warp(u.t + u.d) - warp(u.t) }));
     const at = x => clock + warp(x) - warp(a) + holds.reduce((s, h) => s + (h.x <= x ? h.extra : 0), 0);
@@ -393,22 +537,36 @@ export function perform(ph, marks, { beat = false } = {}) {
       const d = u.fermata ? len * 2 * GAP : u.stacc ? Math.max(0.08, len * STACC) : len * GAP;
       const metric = beat ? metricAt(u.t) : 1;
       const vel = clamp(u.lv * (u.accent ? ACCENT : 1) * (u.push ? SYNC : metric), 0.08, 1.45);
-      events.push({ t: at(u.t), kind: 'note', inst: m.inst, p: u.p, d, vel, k: u.k, ks: u.ks, tick: u.t, pass, len: len * (u.fermata ? 2 : 1) });
+      events.push({ t: at(u.t), kind: 'note', inst: m.inst, p: u.p, d, vel, k: u.k, ks: u.ks, tick: u.t, pass, seg, len: len * (u.fermata ? 2 : 1) });
+      const n0 = m.notes[u.k];                      // 둘째 줄 — 같은 리듬(조각마다) · 3도 아래 · 조금 여리게(화음을 넣은 마디는 화음이 대신함)
+      if (m.second && n0.p2 != null && !m.chord[u.bar]) events.push({ t: at(u.t), kind: 'note', inst: m.inst, p: n0.p2, d, vel: vel * SECOND, k: u.k, ks: u.ks, tick: u.t, pass, seg, len: len * (u.fermata ? 2 : 1), part: 'second' });
     }
-    if (beat) {                                     // 박 소리 — 늘임표로 늘인 동안에는 박도 기다린다 · 8분의 6박자는 8분마다(셋씩 묶음이 들리게)
+    const lvAt = x => { let v = lv0; for (const u of U) { if (u.t > x) break; v = u.lv; } return v; };
+    B.forEach((bar, bi) => {                        // 화음 — 그 마디 동안 세 음을 함께 길게(마디 목록을 따름 · 못갖춘마디 · 바뀌는 박자도)
+      const id = m.chord[bi];
+      if (!id || bar.t0 < a || bar.t0 >= b) return;
+      const t0 = at(bar.t0), d = (at(bar.t0 + bar.len) - t0) * GAP, vel = clamp(lvAt(bar.t0) * CHORD_V, 0.06, 0.6);
+      for (const p of chordsIn(m.key)[id]) events.push({ t: t0, kind: 'note', inst: m.inst, p, d, vel, k: null, ks: [], tick: bar.t0, pass, seg, len: d, part: 'chord', chord: id });
+    });
+    if (m.drum) for (const x of drumBeats(B)) {      // 북 반주 — 센박(4분의 4박자는 셋째 박도) 큰북 · 여린박 작은북
+      if (x.t < a || x.t >= b) continue;
+      const f = clamp(lvAt(x.t) / LV0, 0.45, 1.6);
+      events.push({ t: at(x.t), kind: 'drum', drum: x.big ? 'bassdrum' : 'snare', vel: (x.w === 1 ? 0.62 : x.big ? 0.46 : 0.34) * f, tick: x.t, pass, seg, part: 'drum' });
+    }
+    if (beat && !m.drum) {                          // 박 소리 — 늘임표로 늘인 동안에는 박도 기다린다 · 8분의 6박자는 8분마다(셋씩 묶음이 들리게) · 북 반주가 있으면 북이 박을 친다
       for (const bar of B) {
         const comp = compound(bar.meter), step = comp ? TPQ / 2 : TPQ;
         for (let x = bar.t0; x < bar.t0 + bar.len; x += step) {
           if (x < a || x >= b) continue;
           const mt = metricAt(x), down = mt === DOWN, mid = mt === MID;
-          events.push({ t: at(x), kind: 'drum', drum: down || mid ? 'kick' : 'hat', vel: down ? 0.6 : mid ? 0.36 : comp ? 0.16 : 0.22, tick: x, pass });
+          events.push({ t: at(x), kind: 'drum', drum: down || mid ? 'kick' : 'hat', vel: down ? 0.6 : mid ? 0.36 : comp ? 0.16 : 0.22, tick: x, pass, seg });
         }
       }
     }
     clock = at(b);
   });
   events.sort((p, q) => p.t - q.t || (p.kind === 'drum' ? -1 : 1));
-  return { events, total: clock + 0.35, bpm: m.bpm, passes: passes.length, inst: m.inst };
+  return { events, total: clock + 0.35, bpm: m.bpm, passes: segs.length, segs, inst: m.inst };
 }
 
 // ── 화면 — notation.js renderScore가 읽는 악보 + 판이 덧그릴 것 ──────────
@@ -440,6 +598,28 @@ export function scoreOf(ph, marks) {
     ...(marks.mixed && m.B.length > marks.mixed.bar ? { tsAt: [{ bar: marks.mixed.bar, ts: marks.mixed.meter }] } : {}),
     ...(LEN_KINDS.some(kind => Object.keys(lk(marks, kind)).length) ? { spread: true } : {}),   // 음을 쪼갰으면 촘촘한 음 사이를 벌려 그림
   };
+  if (m.spelled) {                                  // 조 · 임시표 — 음이름 자리와 붙일 기호를 악보에 직접 알려 주고, 계이름은 그 조의 이름으로(사장조는 솔 자리가 도)
+    for (const e of events) {                       // 조각 id = k 또는 'k.j'(음 길이 기호) — 임시표는 첫 조각에만
+      const k = parseInt(e.i, 10), j = typeof e.i === 'string' ? +String(e.i).split('.')[1] : 0;
+      Object.assign(e, spellOf(m, m.notes[k], j));
+      if (e.tri && e.sp) e.tri = e.tri.map((q, jj) => ({ ...q, pos: e.sp[0].pos, acc: jj ? '' : e.sp[0].acc }));
+    }
+    score.staves[0].words = 'lab';
+  }
+  if (m.key) score.ksig = [8];                      // 사장조 조표 — 오선 맨 윗줄(파) ♯
+  const low = [];                                   // 아래 오선 — 둘째 줄(3도 아래 · 같은 리듬)과 화음(마디마다 하나). 같은 마디에 둘이 겹치지 않는다
+  if (m.second) for (const n of m.notes) {          // 둘째 줄은 가락의 조각(점음표 · 당김음 · 16분 · 셋잇단)을 그대로 따름 · id가 같아 불빛도 함께
+    if (n.rest || n.p2 == null || m.chord[n.bar]) continue;
+    const sp2 = [{ pos: n.step - 2 - 37, acc: '' }];
+    if (n.parts[0].tri) { low.push({ s: n.t / STEP, d: n.d / STEP, ps: [n.p2], i: n.parts[0].id, sp: sp2, tri: n.parts.map(q => ({ p: n.p2, i: q.id, pos: sp2[0].pos, acc: '' })) }); continue; }
+    n.parts.forEach(q => low.push({ s: q.t / STEP, d: q.d / STEP, ps: [n.p2], i: q.id, sp: sp2, ...(q.push ? { whole: true } : {}) }));
+  }
+  for (const [b, id] of Object.entries(m.chord)) { const ps = chordsIn(m.key)[id], bar = m.B[b]; low.push({ s: bar.t0 / STEP, d: bar.len / STEP, ps, i: 'c' + b, sp: ps.map(p => ({ pos: stepIn(p, m.key) - 37, acc: '' })) }); }
+  if (low.length) score.staves.push({ id: 'h', clef: 'treble', words: false, minAbove: m.second ? 42 : 24, voices: [{ events: low }] });
+  if (m.drum) {                                     // 북 반주 줄(한 줄 오선) — 큰북은 줄 아래 '쿵' · 작은북은 줄 위 '짝'
+    const drum = drumBeats(m.B).map(x => ({ s: x.t / STEP, d: x.d / STEP, ps: [x.big ? 3 : 5], i: 'd' + x.t, lab: x.big ? '쿵' : '짝', col: '#5A4632' }));
+    score.staves.push({ id: 'd', clef: 'perc1', words: 'lab', solY: 14, minAbove: 20, voices: [{ stem: 'up', events: drum }] });
+  }
   const act = k => !m.notes[k].rest;
   const letters = Object.entries(marks.dyn).filter(([k]) => m.notes[+k] && act(+k)).map(([k, text]) => ({ k: +k, text }));
   const hairs = [];
@@ -455,7 +635,23 @@ export function scoreOf(ph, marks) {
     tchange: m.tchange ? { bar: m.tchange.bar, text: signById(m.tchange.kind).sym } : null,
     repeat: m.repeat,
   };
+  Object.assign(model, {
+    key: m.key, shift: m.shift, second: m.second, lower: low.length > 0, drum: m.drum,
+    chords: Object.entries(m.chord).map(([b, id]) => ({ bar: +b, id, sym: signById(id).sym, ko: signById(id).ko })).sort((a, b) => a.bar - b.bar),
+    volta: m.volta ? m.repeat.to : null, dc: m.dc ? m.bars - 1 : null, fine: m.fine,
+  });
+  if (score.staves.length > 1 && (letters.length || hairs.length)) score.staves[0].minBelow = 80;      // 셈여림 글자 · 점점 세게 줄이 아래 오선과 겹치지 않게
   return { score, model };
+}
+// 음 하나의 악보 모양 — sp = 오선 자리(아래 첫 줄 미 = 0)와 붙일 기호 · lab = 그 조의 계이름 · col = 계이름 색 · oct = 계이름 위아래 점
+function spellOf(m, n, j = 0) {
+  if (!n || n.step == null) return {};
+  const L = letterOf(n.step), tonic = m.key === 7 ? 4 : 0, idx = (L - tonic + 7) % 7, rel = n.alt - KALT[m.key][L];
+  return {
+    sp: [{ pos: n.step - 37, acc: j ? '' : n.mark === 'sharp' ? '♯' : n.mark === 'flat' ? '♭' : '' }],
+    lab: SYL[idx] + (rel > 0 ? '#' : rel < 0 ? '♭' : ''), col: colorOf(60 + LET[idx]),
+    oct: Math.floor((natOf(n.step) - 60 - m.key) / 12),
+  };
 }
 
 // ── 넣거나 뺐을 때 한 줄로 알려 주는 말(칭찬 없이 사실만) ────────────────
@@ -488,6 +684,28 @@ const meterFact = mt => (compound(mt)
   ? `8분의 ${mt[0]}박자 — 한 마디에 8분음표가 ${mt[0]}개 들어가요. 셋씩 두 묶음으로 세고, 첫째 음이 가장 세고 넷째 음이 그다음으로 세요.`
   : `4분의 ${mt[0]}박자 — 한 마디에 4분음표가 ${mt[0]}개 들어가요. 마디의 첫 박이 센박이에요.`);
 const meterName = mt => `${mt[1]}분의 ${mt[0]}박자`;
+// 묶음 D2(조 · 화음 · 되풀이 더 · 북 반주)의 말
+const FACT2 = {
+  up: '조 옮기기 — 다장조 가락을 사장조로 옮겼어요(이 판은 사장조만). 조를 옮기면 계이름은 그대로, 음 높이만 달라져요(솔 자리가 도). 맨 앞의 ♯ 하나가 조표 — 파 자리를 늘 반음 올려요.',
+  sharp: '올림표(♯) — 이 음을 반음 올려요. 같은 마디에서 뒤에 오는 같은 자리 음도 함께 올라가고, 다음 마디에서는 제자리로 돌아와요.',
+  flat: '내림표(♭) — 이 음을 반음 내려요. 같은 마디에서 뒤에 오는 같은 자리 음도 함께 내려가고, 다음 마디에서는 제자리로 돌아와요.',
+  second: '둘째 줄 — 가락의 음마다 3도 아래 음(미 아래 도, 솔 아래 미)이 같은 리듬으로 함께 나요. 두 소리가 겹쳐 어울려요.',
+  I: '으뜸화음(I) — 이 마디 동안 도 · 미 · 솔이 함께 길게 울려요.',
+  IV: '버금딸림화음(IV) — 이 마디 동안 파 · 라 · 도가 함께 길게 울려요.',
+  V: '딸림화음(V) — 이 마디 동안 솔 · 시 · 레가 함께 길게 울려요.',
+  gI: '사장조 으뜸화음(I) — 계이름 도 · 미 · 솔(음이름 사 · 나 · 라)이 이 마디 동안 함께 울려요.',
+  gIV: '사장조 버금딸림화음(IV) — 계이름 파 · 라 · 도(음이름 다 · 마 · 사)가 이 마디 동안 함께 울려요.',
+  gV: '사장조 딸림화음(V) — 계이름 솔 · 시 · 레(음이름 라 · 올림바 · 가)가 이 마디 동안 함께 울려요.',
+  volta: '1 · 2번 괄호 — 처음에는 1번 마디까지 가서 도돌이표로 돌아가요. 두 번째에는 1번 마디를 건너뛰고 2번 마디로 가요.',
+  drum: '북 반주 — 센박에는 큰북(쿵), 여린박에는 작은북(짝)이 가락과 함께 울려요. (컴퓨터로 만든 소리예요)',
+};
+// D.C. · Fine은 둘이 함께일 때 뜻이 다 선다 — 지금 넣은 것을 보고 말한다
+function dcFineFact(id, m = {}) {
+  const dc = m.dc != null, fine = m.fine != null;
+  if (dc && fine) return id === 'dc' ? 'D.C.(다 카포) — 끝에서 처음으로 돌아가 Fine(피네)까지 연주하고 마쳐요.' : 'Fine(피네) — 마침. D.C.로 처음에 돌아온 뒤 여기서 마쳐요.';
+  if (id === 'dc') return 'D.C.(다 카포) — 끝까지 연주한 뒤 처음으로 돌아가 한 번 더 연주해요. Fine(피네)을 넣으면 거기서 마쳐요.';
+  return 'Fine(피네) — 마침. D.C.로 돌아왔을 때 여기서 마쳐요. 지금은 D.C.가 없어 소리는 그대로예요. 끝 마디에 D.C.도 넣어 보세요.';
+}
 const josa = (w, pair) => { const c = w.charCodeAt(w.length - 1); const jong = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0; return w + pair.split('/')[jong ? 0 : 1]; };
 export function factOf(signId, on = true, extra = {}) {
   const s = signById(signId);
@@ -499,10 +717,14 @@ export function factOf(signId, on = true, extra = {}) {
     const mt = extra.meter || s.meter;
     return meterFact(mt) + (extra.note ? ' ' + extra.note : '');
   }
+  if (s.kind === 'keyup') return on ? FACT2.up + (extra.note ? ' ' + extra.note : '') : '조 옮기기를 뺐어요 — 다장조로 돌아왔어요. 맨 앞의 조표도 빠졌어요.';
+  if (s.kind === 'drum') return on ? FACT2.drum : '북 반주를 뺐어요 — 가락만 들려요.';
+  if (on && (s.kind === 'dc' || s.kind === 'fine')) return dcFineFact(s.id, extra.marks);
+  if (on && s.kind === 'chord' && extra.marks && extra.marks.keyup) return FACT2['g' + s.id];     // 조를 옮겼으면 사장조 화음으로
   if (!on) return `${josa(s.name, '을/를')} 뺐어요. [듣기]로 달라진 소리를 들어 보세요.`;
   const tail = extra.note ? ' ' + extra.note : '';
   if (s.kind === 'mixed' && extra.meter) return `바뀌는 박자 — ${extra.bar + 1}번째 마디부터 ${meterName(extra.meter)}로 바뀌어요. 그 자리에 박자표를 새로 적고, 센박도 새 박자를 따라가요.` + tail;
   if (s.kind === 'dot' && extra.len && extra.len.from) return `점음표 — 점은 그 음표 길이의 반을 더해요. ${extra.len.from} 둘이 ${josa(extra.len.to[0], '과/와')} ${josa(extra.len.to[1], '이/가')} 되었어요. 마디 길이는 그대로예요.`;
   if (s.kind === 'pickup' || s.kind === 'mixed') return FACT[s.id] + tail;
-  return FACT[s.id] || s.name;
+  return FACT[s.id] || FACT2[s.id] || s.name;
 }

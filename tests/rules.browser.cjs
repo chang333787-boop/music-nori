@@ -2,7 +2,7 @@
 //  ① 보이는 글자 18px 이상(SVG 글은 화면 배율을 곱함 · 답 단추 카드 그림 안 글도 — aria-hidden이어도) ② 답 단추가 다른 것에 덮이지 않음(가운데를 누르면 그 단추)
 //  ③ 보이는 주황(.go) 단추 하나 이하(지금 누를 것 하나) ④ 빈 칭찬 낱말 X(AI 슬롭 X)
 //  선생님 화면(#/teacher · records · calib · speaker · credits · tv)은 글이 많아 ①을 보지 않음
-//  악보 판(#/lab · 묶음 여섯 · 기호를 올린 모습)과 찾아 쓰기(#/find)는 네 가지 모두 봄(11-14)
+//  악보 판(#/lab · 묶음 여덟 · 기호를 올린 모습)과 찾아 쓰기(#/find)는 네 가지 모두 봄(11-14)
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 let pw;
 try { pw = require('playwright'); } catch { pw = require('/Users/dobuk/Projects/school-metaverse/node_modules/playwright'); }
@@ -75,7 +75,7 @@ function audit() {
     };
     for (const name of ['', 'map', 'tap', 'songs', 'play']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(900); await check('#/' + (name || '(처음)')); }
     // 악보 판(아이 화면 · 규칙 그대로) — 묶음 여섯 · 기호를 올린 모습도(악보 위 글자·늘임표·빠르기 글이 18px 아래로 내려가지 않게)
-    for (const name of ['lab', 'lab/tempo', 'lab/inst', 'lab/len', 'lab/repeat', 'lab/meter']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(700); await check('#/' + name); }
+    for (const name of ['lab', 'lab/tempo', 'lab/inst', 'lab/len', 'lab/repeat', 'lab/meter', 'lab/key', 'lab/chord']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(700); await check('#/' + name); }
     {
       const press = sel => page.evaluate(q => { const e = document.querySelector(q); if (e) e.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); return !!e; }, sel);
       const put = async (hash, signs) => {
@@ -90,6 +90,10 @@ function audit() {
       await put('lab/tempo', ['fast', 'rit']);
       await put('lab/len', ['rest', 'fermata', 'stacc']);
       await put('lab/meter', ['m34']);
+      await put('lab/key', ['up', 'sharp']);                    // 묶음 D2 — 조표 · 임시표
+      await put('lab/chord', ['second', 'I']);                  // 오선 둘(둘째 줄 · 화음)
+      await put('lab/repeat', ['volta', 'dc', 'fine']);         // 1 · 2번 괄호 · D.C. · Fine
+      await put('lab/inst', ['drum']);                          // 북 반주 줄
     }
     // 찾아 쓰기(선생님 화면이지만 글자 규칙도 지키게 만들었음)
     for (const name of ['find', 'find/박자', 'find/점점 세게', 'find/없는말쿵']) { await page.evaluate(n => { location.hash = '#/' + n; }, name); await page.waitForTimeout(700); await check('#/' + name); }

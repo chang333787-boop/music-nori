@@ -79,7 +79,8 @@ export function layoutVoice(song, events, restFn = splitValue) {
       if (s1 <= s0) continue;
       if (s0 > cur) for (const r of restFn(cur - a, s0 - cur, song.sub, L)) items.push({ rest: true, ...r });
       const parts = ((n.whole || n.tri) && s0 === n.s && s1 === n.s + n.d && wholeValue(s0 - a, s1 - s0, song.sub, L)) || splitValue(s0 - a, s1 - s0, song.sub, L);
-      parts.forEach((r, k) => items.push({ ...r, ps: n.ps, i: n.i, w: n.w, first: s0 === n.s && k === 0, tieNext: k < parts.length - 1 || s1 < n.s + n.d, ...(n.hs ? { hs: n.hs } : {}), ...(n.ex ? { ex: n.ex } : {}), ...(n.lab != null ? { lab: n.lab } : {}), ...(n.tri ? { tri: n.tri } : {}), ...(n.nosol ? { nosol: true } : {}) }));
+      parts.forEach((r, k) => items.push({ ...r, ps: n.ps, i: n.i, w: n.w, first: s0 === n.s && k === 0, tieNext: k < parts.length - 1 || s1 < n.s + n.d, ...(n.hs ? { hs: n.hs } : {}), ...(n.ex ? { ex: n.ex } : {}), ...(n.lab != null ? { lab: n.lab } : {}), ...(n.tri ? { tri: n.tri } : {}), ...(n.nosol ? { nosol: true } : {}),
+        ...(n.sp ? { sp: n.sp, acc0: k === 0 } : {}), ...(n.col ? { col: n.col } : {}), ...(n.oct ? { oct: n.oct } : {}) }));   // [MUSIC-LAB-D2] 음이름 자리 · 붙일 기호를 직접 받음(조 · 임시표) · 계이름 색 · 점
       cur = s1;
     }
     if (cur < z) for (const r of restFn(cur - a, z - cur, song.sub, L)) items.push({ rest: true, ...r });
@@ -166,8 +167,10 @@ export function renderStaff(song, o = {}) {
 // 한 오선 · 한 마디 그리기(가락 또는 화음). 같은 때 음(ps)은 한 기둥에 쌓는다
 //  [MUSIC-SCORE-1] 고를 것(안 주면 예전 그대로): posOf 음 → 자리(낮은음자리표 · 북 자리) · stem 기둥 방향 고정('up'|'down') · acc 올림표 그리기 · unison 같은 자리 음 옆으로 ·
 //   restDy 쉼표 위아래 · hideRests 쉼표 안 그림 · solY 계이름 높이 · words 'lab' = 계이름 대신 it.lab(칸에 적힌 글)
+//  [MUSIC-LAB-D2] 사건에 sp([{ pos, acc }] · 음마다 오선 자리와 붙일 기호 '♯' '♭' '♮' '')가 있으면 음 높이로 셈하지 않고 그대로 그린다(조표 · 임시표의 효력은 부르는 쪽이 셈함)
 function drawBar(root, items, top, X, { song, words, addEl, ties, o, carry, posOf = staffPos, stem, acc = true, unison = false, restDy = 0, hideRests = false, solY = 34, labFs = 0 }) {
   const bottom = top + 4 * LG, yOf = pos => bottom - pos * (LG / 2);
+  const psPos = it => it.ps.map((p, k) => (it.sp && it.sp[k] ? it.sp[k].pos : posOf(p)));
   // 이음줄 묶음: 같은 박 안의 8분·16분(쉼표 없이 이어진 것)
   const groups = []; let g = null;
   for (const it of items) {
@@ -178,14 +181,14 @@ function drawBar(root, items, top, X, { song, words, addEl, ties, o, carry, posO
     else g = null;
   }
   const beamed = new Set(groups.filter(q => q.items.length > 1).flatMap(q => q.items));
-  const avgPos = it => it.ps.reduce((s, p) => s + posOf(p), 0) / it.ps.length;
+  const avgPos = it => psPos(it).reduce((s, v) => s + v, 0) / it.ps.length;
   for (const q of groups) q.up = stem ? stem === 'up' : q.items.reduce((s, it) => s + avgPos(it), 0) / q.items.length < 4;
   const drawn = [];
   for (const it of items) {
     const cx = X(it);
     if (it.rest) { if (!hideRests) drawRest(root, it, cx, top, restDy); continue; }
     if (it.tri) { drawn.push(drawTri(root, it, X, { yOf, posOf, stem, words, solY, bottom, o, addEl })); continue; }   // [D1] 셋잇단
-    const poss = it.ps.map(posOf), lo = Math.min(...poss), hi = Math.max(...poss);
+    const poss = psPos(it), lo = Math.min(...poss), hi = Math.max(...poss);
     const grp = groups.find(q => q.items.includes(it));
     const up = stem ? stem === 'up' : grp && beamed.has(it) ? grp.up : avgPos(it) < 4;
     const el = svg('g', { class: 'st-note', 'data-i': it.i });
@@ -197,7 +200,8 @@ function drawBar(root, items, top, X, { song, words, addEl, ties, o, carry, posO
       const pos = poss[k], cy = yOf(pos);
       const second = k > 0 && (pos - poss[k - 1] === 1 || (unison && pos === poss[k - 1])) && !(heads[k - 1] && heads[k - 1].shift);   // 2도로 붙은 음은 옆으로 비킴(북 = 같은 자리도)
       const hx = cx + (second ? (up ? 11.5 : -11.5) : 0);
-      if (acc && SHARP.has(pc(p))) el.append(svg('text', { x: cx - 16 - (it.ps.length > 1 ? 4 * k : 0), y: cy + 5, class: 'st-acc' }, '♯'));
+      if (it.sp) { const a = it.sp[k] && it.sp[k].acc; if (a && it.acc0) el.append(svg('text', { x: cx - 16 - (it.ps.length > 1 ? 4 * k : 0), y: cy + (a === '♭' ? 4 : 5), class: 'st-acc' }, a)); }
+      else if (acc && SHARP.has(pc(p))) el.append(svg('text', { x: cx - 16 - (it.ps.length > 1 ? 4 * k : 0), y: cy + 5, class: 'st-acc' }, '♯'));
       else if (acc && FLAT.has(pc(p))) el.append(svg('text', { x: cx - 15 - (it.ps.length > 1 ? 4 * k : 0), y: cy + 4, class: 'st-acc' }, '♭'));
       const kind = it.hs && it.hs[k];
       if (kind) drawHead(el, kind, hx, cy, hollow);   // [MUSIC-SCORE-1] 북 머리(× · 열린 × · 세모)
@@ -208,7 +212,7 @@ function drawBar(root, items, top, X, { song, words, addEl, ties, o, carry, posO
     if (it.base !== 'w') {
       const sx = up ? cx + 5.8 : cx - 5.8, sy1 = up ? yOf(lo) - 1 : yOf(hi) + 1;
       let sy2 = up ? yOf(hi) - 34 : yOf(lo) + 34;
-      if (grp && beamed.has(it)) sy2 = up ? Math.min(...grp.items.map(q => yOf(Math.max(...q.ps.map(posOf))))) - 32 : Math.max(...grp.items.map(q => yOf(Math.min(...q.ps.map(posOf))))) + 32;
+      if (grp && beamed.has(it)) sy2 = up ? Math.min(...grp.items.map(q => yOf(Math.max(...psPos(q))))) - 32 : Math.max(...grp.items.map(q => yOf(Math.min(...psPos(q))))) + 32;
       el.append(svg('line', { x1: sx, x2: sx, y1: sy1, y2: sy2, class: 'st-stem' }));
       it._stem = { x: sx, y: sy2, up };
       if (!beamed.has(it) && (it.base === 'e' || it.base === 's')) {
@@ -218,7 +222,11 @@ function drawBar(root, items, top, X, { song, words, addEl, ties, o, carry, posO
         }
       }
     }
-    if (words === 'lab' && it.first && it.lab) el.append(svg('text', { x: cx, y: bottom + solY, 'text-anchor': 'middle', class: 'st-sol', fill: colorOf(it.ps[it.ps.length - 1]), ...(labFs ? { style: `font-size:${labFs}px` } : {}) }, it.lab));   // [MUSIC-SCORE-1] 칸에 적힌 글 그대로
+    if (words === 'lab' && it.first && it.lab && !it.nosol) {
+      const fill = it.col || colorOf(it.ps[it.ps.length - 1]);
+      el.append(svg('text', { x: cx, y: bottom + solY, 'text-anchor': 'middle', class: 'st-sol', fill, ...(labFs ? { style: `font-size:${labFs}px` } : {}) }, it.lab));   // [MUSIC-SCORE-1] 칸에 적힌 글 그대로
+      if (it.oct) el.append(svg('circle', { cx, cy: it.oct > 0 ? bottom + solY - 16 : bottom + solY + 6, r: 2, fill }));   // [MUSIC-LAB-D2] 계이름 위아래 점
+    }
     else if (words && it.first && !it.nosol && o.solfege !== false) {
       const p = it.ps[0], nm = solfege(p, { short: true });
       el.append(svg('text', { x: cx, y: bottom + solY, 'text-anchor': 'middle', class: 'st-sol', fill: colorOf(p) }, nm));
@@ -260,17 +268,22 @@ function drawBar(root, items, top, X, { song, words, addEl, ties, o, carry, posO
 // [D1] 셋잇단 — 한 박 자리(it.x ~ it.x + it.v)에 8분음표 셋을 고르게 · 이음줄 하나 + 숫자(이음줄 바깥) · 계이름은 첫 음에만(같은 높이)
 function drawTri(root, it, X, { yOf, posOf, stem, words, solY, bottom, o, addEl }) {
   const n = it.tri.length, xs = it.tri.map((_, j) => X({ x: it.x + (it.v * j) / n }));
-  const poss = it.tri.map(q => posOf(q.p)), up = stem ? stem === 'up' : poss.reduce((a, b) => a + b, 0) / n < 4;
+  const poss = it.tri.map(q => (q.pos != null ? q.pos : posOf(q.p))), up = stem ? stem === 'up' : poss.reduce((a, b) => a + b, 0) / n < 4;   // [MUSIC-LAB-D2] q.pos · q.acc = 음이름 자리 · 붙일 기호(조 · 임시표)
   const tip = up ? Math.min(...poss.map(yOf)) - 32 : Math.max(...poss.map(yOf)) + 32;
   const heads = [];
   it.tri.forEach((q, j) => {
     const cx = xs[j], pos = poss[j], cy = yOf(pos), el = svg('g', { class: 'st-note', 'data-i': q.i });
     for (let lp = -2; lp >= pos; lp -= 2) el.append(svg('line', { x1: cx - 9, x2: cx + 9, y1: yOf(lp), y2: yOf(lp), class: 'st-ledger' }));
     for (let lp = 10; lp <= pos; lp += 2) el.append(svg('line', { x1: cx - 9, x2: cx + 9, y1: yOf(lp), y2: yOf(lp), class: 'st-ledger' }));
+    if (q.acc && it.first) el.append(svg('text', { x: cx - 16, y: cy + (q.acc === '♭' ? 4 : 5), class: 'st-acc' }, q.acc));
     el.append(svg('ellipse', { cx, cy, rx: 6.3, ry: 4.6, transform: `rotate(-20 ${cx} ${cy})`, class: 'st-head' }));
     const sx = up ? cx + 5.8 : cx - 5.8;
     el.append(svg('line', { x1: sx, x2: sx, y1: up ? cy - 1 : cy + 1, y2: tip, class: 'st-stem' }));
-    if (j === 0 && words && it.first && o.solfege !== false) {
+    if (j === 0 && words === 'lab' && it.first && it.lab) {
+      const fill = it.col || colorOf(q.p);
+      el.append(svg('text', { x: cx, y: bottom + solY, 'text-anchor': 'middle', class: 'st-sol', fill }, it.lab));
+      if (it.oct) el.append(svg('circle', { cx, cy: it.oct > 0 ? bottom + solY - 16 : bottom + solY + 6, r: 2, fill }));
+    } else if (j === 0 && words && words !== 'lab' && it.first && o.solfege !== false) {
       el.append(svg('text', { x: cx, y: bottom + solY, 'text-anchor': 'middle', class: 'st-sol', fill: colorOf(q.p) }, solfege(q.p, { short: true })));
       if (q.p >= 72) el.append(svg('circle', { cx, cy: bottom + solY - 16, r: 2, fill: colorOf(q.p) }));
       if (q.p < 60) el.append(svg('circle', { cx, cy: bottom + solY + 6, r: 2, fill: colorOf(q.p) }));
@@ -358,6 +371,8 @@ function extentOf(st, items, minA = 14, minB = 12, pad = 4) {
     else { bot = Math.max(bot, yOf(lo) + (it.base === 'w' ? 8 : 37) + art); top = Math.min(top, yOf(hi) - 7 - (ex.stacc ? 10 : 0)); }
   }
   if (st.words) bot = Math.max(bot, 40 + (st.solY || 30) + 4);
+  if (st.minBelow) bot = Math.max(bot, 40 + st.minBelow);                          // [MUSIC-LAB-D2] 아래에 덧그릴 자리(악보 판)
+  if (st.minAbove) top = Math.min(top, -st.minAbove);
   if (st.oct > 0) top = Math.min(top, st.clef === 'bass' ? -14 : -22);            // 음자리표 위 작은 8 · 15
   if (st.oct < 0) bot = Math.max(bot, st.clef === 'bass' ? 40 : 58);
   return { above: Math.max(minA, -top + pad), below: Math.max(minB, bot - 40 + pad) };
@@ -376,7 +391,8 @@ export function renderScore(score, o = {}) {
   const named = !A && o.names !== false && staves.some(s => s.name);
   const narrow = !A && W < 600, NW = narrow ? 66 : NAMEW;                // 좁은 화면 = 이름 칸을 좁게(글자도 작게 — css .staff.narrow)
   const clefX = A ? 2 : (named ? NW : 4);
-  const left0 = A ? A.left : clefX + CLEFW;
+  const ksig = !A && Array.isArray(score.ksig) ? score.ksig : [], KSW = ksig.length ? ksig.length * 10 + 4 : 0;   // [MUSIC-LAB-D2] 조표(올림표 자리 목록 · 높은음자리표)
+  const left0 = A ? A.left : clefX + CLEFW + KSW;
   //  계이름 줄 높이 — 오선 아래로 내려간 음(덧줄)보다 아래에(오선마다 한 번 · 맞춤 모드는 음 범위로)
   const solYs = staves.map((st, k) => {
     if (!st.words) return 0;
@@ -486,6 +502,7 @@ export function renderScore(score, o = {}) {
       if (st.clef === 'perc1') root.append(svg('line', { x1: lineXs[0], x2: lineXs[1], y1: top + 20, y2: top + 20, class: 'st-line' }));
       else for (let j = 0; j < 5; j++) root.append(svg('line', { x1: lineXs[0], x2: lineXs[1], y1: top + j * LG, y2: top + j * LG, class: 'st-line' }));
       drawClef(root, st, clefX + 2, top);
+      if (!isPerc(st.clef)) ksig.forEach((pos, j) => root.append(svg('text', { x: clefX + CLEFW + 1 + j * 10, y: top + 40 - pos * 5 + 5, class: 'st-acc st-ksig' }, '♯')));
       if (L === 0) {
         const tx = A ? A.left - 11 : left0 + TSW / 2 - 2;
         root.append(svg('text', { x: tx, y: top + 18, class: 'st-ts', 'text-anchor': 'middle' }, String(score.ts[0])));
